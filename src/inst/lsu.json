@@ -1,0 +1,12 @@
+{
+    "signal":{
+        "mem_type":{
+            "length":3,
+            "stage":"d1"
+        },
+        "mem_write": {
+            "length":1,
+            "stage":"d3"
+        }
+    }
+}
