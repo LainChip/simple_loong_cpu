@@ -1,14 +1,3 @@
-# root-
-#  opcode-
-#   inst
-#   inst
-#   inst
-#   root-
-#    opcode-
-#     inst
-#     inst
-#   inst
-
 from functools import cmp_to_key
 import json
 import os
@@ -78,8 +67,8 @@ class decoder_parser:
         # struct define
         for leaf_struct in self.signal_list:
             str_builder += 'typedef logic['
-            str_builder += str(self.signal_list[leaf_struct][1],)
-            str_builder += ' - 1 : 0] '
+            str_builder += str(self.signal_list[leaf_struct][1] - 1)
+            str_builder += ' : 0] '
             str_builder += leaf_struct
             str_builder += '_t;\n'
         str_builder += '\n'
@@ -110,7 +99,7 @@ class decoder_parser:
 
     def gen_sv_module(self):
         str_builder = "`include \"common.svh\"\n`include \"decoder.svh\"\n\n"
-        str_builder += "module(\n    input logic[31:0] inst,\n    output decode_info_t decode_info\n);\n\n"
+        str_builder += "module(\n    input logic[31:0] inst,\n    output decode_info_t decode_info,\n    output logic[31:0][7:0] inst_string\n);\n\n"
         
         # main combine logic
         depth = 1
@@ -139,8 +128,8 @@ class decoder_parser:
                     if isinstance(signal_value,int):
                         signal_value = str(self.signal_list[signal][1]) + "\'d" + str(signal_value)
                         
-                    str_builder += self.gen_blank(depth) + signal + ' = ' + signal_value + ';\n'
-
+                    str_builder += self.gen_blank(depth) + 'decode_info.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
+                str_builder += self.gen_blank(depth) + 'inst_string = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in inst]) + '}; //' + inst + '\n'
                 depth -= 1
                 str_builder += self.gen_blank(depth) + "end\n"
         
@@ -152,15 +141,12 @@ class decoder_parser:
         str_builder += "endmodule"
         return str_builder
 
-parser = decoder_parser()
-parser.parse_all_file()
-# parser.debug_print()
-
-# print(parser.gen_sv_header())
-# print(parser.gen_sv_module())
-f = open('decoder.sv','w')
-f.write(parser.gen_sv_module())
-f.close()
-f = open('decoder.svh','w')
-f.write(parser.gen_sv_header())
-f.close()
+if __name__ == '__main__':
+    parser = decoder_parser()
+    parser.parse_all_file()
+    f = open('decoder.sv','w')
+    f.write(parser.gen_sv_module())
+    f.close()
+    f = open('decoder.svh','w')
+    f.write(parser.gen_sv_header())
+    f.close()
