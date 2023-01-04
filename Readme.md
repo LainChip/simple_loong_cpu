@@ -111,3 +111,9 @@
     demo_t[arr_size - 1 : 0]demo_arr;
     // 一个长度为arr_size的数组，其元素长度为demo_t结构体的对象
     ```
+
+## 核心架构
+
+（2023.1.4暂定）
+
+![image-20230104135358874](D:\Source\FPGA\new_cpu\pic\image-20230104135358874.png)
