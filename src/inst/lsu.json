@@ -25,47 +25,47 @@
     "inst": {
         "ld.wu": {
             "opcode": "0010101010",
-            "mem_type": "`_MEM_TYPE_NONE",
-            "mem_write": 1
+            "mem_type": "`_MEM_TYPE_UWORD",
+            "mem_write": 0
         },
         "ld.hu": {
             "opcode": "0010101001",
-            "mem_type": "`_MEM_TYPE_NONE",
-            "mem_write": 1
+            "mem_type": "`_MEM_TYPE_UHALF",
+            "mem_write": 0
         },
         "ld.bu": {
             "opcode": "0010101000",
-            "mem_type": "`_MEM_TYPE_NONE",
-            "mem_write": 1
+            "mem_type": "`_MEM_TYPE_UBYTE",
+            "mem_write": 0
         },
         "ld.w": {
             "opcode": "0010100010",
-            "mem_type": "`_MEM_TYPE_NONE",
-            "mem_write": 1
+            "mem_type": "`_MEM_TYPE_WORD",
+            "mem_write": 0
         },
         "ld.h": {
             "opcode": "0010100001",
-            "mem_type": "`_MEM_TYPE_NONE",
-            "mem_write": 1
+            "mem_type": "`_MEM_TYPE_HALF",
+            "mem_write": 0
         },
         "ld.b": {
             "opcode": "0010100000",
-            "mem_type": "`_MEM_TYPE_NONE",
-            "mem_write": 1
+            "mem_type": "`_MEM_TYPE_BYTE",
+            "mem_write": 0
         },
         "st.w": {
             "opcode": "0010100110",
-            "mem_type": "`_MEM_TYPE_NONE",
+            "mem_type": "`_MEM_TYPE_WORD",
             "mem_write": 1
         },
         "st.h": {
             "opcode": "0010100101",
-            "mem_type": "`_MEM_TYPE_NONE",
+            "mem_type": "`_MEM_TYPE_HALF",
             "mem_write": 1
         },
         "st.b": {
             "opcode": "0010100100",
-            "mem_type": "`_MEM_TYPE_NONE",
+            "mem_type": "`_MEM_TYPE_BYTE",
             "mem_write": 1
         }
     }
