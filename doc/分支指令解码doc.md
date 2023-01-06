@@ -24,8 +24,8 @@ loong架构中`r1`寄存器充当返回地址寄存器
 {
     "const": {
         "_BRANCH_INVALID":   2'b0, // 非跳转指令
-        "_BRANCH_IMMEDIATE": 2'b1, // 无条件立即数跳转
-        "_BRANCH_REGIMM"     2'b2, // 无条件寄存器+立即数跳转
+        "_BRANCH_IMMEDIATE": 2'b1, // 无条件立即数跳转或直接跳转
+        "_BRANCH_INDIRECT"   2'b2, // 无条件间接跳转
         "_BRANCH_CONDITION"  2'b3  // 有条件跳转(目标地址均由imm决定)
     },
     
@@ -41,7 +41,7 @@ loong架构中`r1`寄存器充当返回地址寄存器
     "inst": {
         "jirl": {
             "opcode": "010011",
-            "branch_type": "_BRANCH_REGIMM",
+            "branch_type": "_BRANCH_INDIRECT",
             // TODO
         },
         "b": {
