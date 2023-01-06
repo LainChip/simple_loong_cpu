@@ -22,8 +22,8 @@ module axi_converter#(
 )(
     input clk,input rst_n,
 	AXI_BUS.Master   axi_bus, // 来自pulp_axi 库
-    input cache_bus_req_t  [CACHE_PORT_NUM - 1 : 0]req,       // cache的访问请求
-    input cache_bus_resp_t [CACHE_PORT_NUM - 1 : 0]resp       // cache的访问应答
+    input cache_bus_req_t  [CACHE_PORT_NUM - 1 : 0]req_i,       // cache的访问请求
+    output cache_bus_resp_t [CACHE_PORT_NUM - 1 : 0]resp_o      // cache的访问应答
 );
 ```
 
