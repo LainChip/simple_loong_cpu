@@ -12,12 +12,8 @@ module arbiter_round_robin #(
 );
 // Print some stuff as an example
    initial begin
-      if ($test$plusargs("trace") != 0) begin
-         $display("[%0t] Tracing to logs/vlt_dump.vcd...\n", $time);
-         $dumpfile("logs/vlt_dump.vcd");
-         $dumpvars();
-      end
-      $display("[%0t] Model running...\n", $time);
+    	$dumpfile("logs/vlt_dump.vcd");
+    	$dumpvars();
    end
 
 	logic[2 * REQ_NUM - 1 : 0] round_robin_mask,round_robin_mask_next,masked_req;
