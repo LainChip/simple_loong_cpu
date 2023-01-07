@@ -4,3 +4,4 @@ src/inst/decoder.svh
 *obj_dir
 *.vcd
 *.dat
+.vscode
