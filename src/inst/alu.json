@@ -1,34 +1,35 @@
 {
     "const": {
-        "_ALU_TYPE_NIL" : "3'b0",
-        "_ALU_TYPE_ADD" : "3'b1",
-        "_ALU_TYPE_SUB" : "3'b2",
-        "_ALU_TYPE_SLT" : "3'b3",
-        "_ALU_TYPE_AND" : "3'b5",
-        "_ALU_TYPE_OR"  : "3'b6",
-        "_ALU_TYPE_XOR" : "3'b7",
-        "_ALU_TYPE_NOR" : "3'b8",
-        "_ALU_TYPE_SLL" : "3'b9",
-        "_ALU_TYPE_SRL" : "3'b10",
-        "_ALU_TYPE_SRA" : "3'b11",
-        "_ALU_TYPE_MUL" : "3'b12",
-        "_ALU_TYPE_MULH": "3'b13",
-        "_ALU_TYPE_DIV" : "3'b14",
-        "_ALU_TYPE_MOD" : "3'b15",
-        "_ALU_TYPE_LUI" : "3'b16",
-        "_ALU_TYPE_PCADDU": "3'b17",
-        "_OPD_REG" : "0",
-        "_OPD_IMM" : "1"
+        "_ALU_TYPE_NIL" : "4'd0",
+        "_ALU_TYPE_ADD" : "4'd1",
+        "_ALU_TYPE_SUB" : "4'd2",
+        "_ALU_TYPE_SLT" : "4'd3",
+        "_ALU_TYPE_AND" : "4'd4",
+        "_ALU_TYPE_OR"  : "4'd5",
+        "_ALU_TYPE_XOR" : "4'd6",
+        "_ALU_TYPE_NOR" : "4'd7",
+        "_ALU_TYPE_SL"  : "4'd8",
+        "_ALU_TYPE_SR"  : "4'd9",
+        "_ALU_TYPE_MUL" : "4'd10",
+        "_ALU_TYPE_MULH": "4'd11",
+        "_ALU_TYPE_DIV" : "4'd12",
+        "_ALU_TYPE_MOD" : "4'd13",
+        "_ALU_TYPE_LUI" : "4'd14",
+        "_OPD_REG"     : "3'b000",
+        "_OPD_IMM_U5"  : "3'b001",
+        "_OPD_IMM_S12" : "3'b010",
+        "_OPD_IMM_U12" : "3'b011",
+        "_OPD_IMM_S20" : "3'b100"
     },
     "signal": {
         "alu_type": {
-            "length": 5,
+            "length": 4,
             "stage": "ex",
             "default_value": 0,
             "invalid_value": 0
         },
         "opd_type": {
-            "length": 1,
+            "length": 3,
             "stage": "ex",
             "default_value": 0,
             "invalid_value": 0
@@ -91,19 +92,19 @@
         },
         "sll.w": {
             "opcode": "00000000000101110",
-            "alu_type": "`_ALU_TYPE_SLL",
+            "alu_type": "`_ALU_TYPE_SL",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "srl.w": {
             "opcode": "00000000000101111",
-            "alu_type": "`_ALU_TYPE_SRL",
+            "alu_type": "`_ALU_TYPE_SR",
             "opd_type": "`_OPD_REG",
-            "opd_unsigned": 0
+            "opd_unsigned": 1
         },
         "sra.w": {
             "opcode": "00000000000110000",
-            "alu_type": "`_ALU_TYPE_SRA",
+            "alu_type": "`_ALU_TYPE_SR",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
@@ -151,57 +152,69 @@
         },
         "slli.w": {
             "opcode": "00000000010000001",
-            "alu_type": "`_ALU_TYPE_SLL",
-            "opd_type": "`_OPD_IMM",
-            "opd_unsigned": 1
+            "alu_type": "`_ALU_TYPE_SL",
+            "opd_type": "`_OPD_IMM_U5",
+            "opd_unsigned": 0
         },
         "srli.w": {
             "opcode": "00000000010001001",
-            "alu_type": "`_ALU_TYPE_SRL",
-            "opd_type": "`_OPD_IMM",
+            "alu_type": "`_ALU_TYPE_SR",
+            "opd_type": "`_OPD_IMM_U5",
             "opd_unsigned": 1
         },
         "srai.w": {
             "opcode": "00000000010010001",
-            "alu_type": "`_ALU_TYPE_SRA",
-            "opd_type": "`_OPD_IMM",
-            "opd_unsigned": 1
+            "alu_type": "`_ALU_TYPE_SR",
+            "opd_type": "`_OPD_IMM_U5",
+            "opd_unsigned": 0
         },
         "slti": {
             "opcode": "0000001000",
             "alu_type": "`_ALU_TYPE_SLT",
-            "opd_type": "`_OPD_IMM",
+            "opd_type": "`_OPD_IMM_S12",
             "opd_unsigned": 0
         },
         "sltui": {
             "opcode": "0000001001",
             "alu_type": "`_ALU_TYPE_SLT",
-            "opd_type": "`_OPD_IMM",
+            "opd_type": "`_OPD_IMM_S12",
             "opd_unsigned": 1
         },
         "addi.w": {
             "opcode": "0000001010",
             "alu_type": "`_ALU_TYPE_ADD",
-            "opd_type": "`_OPD_IMM",
+            "opd_type": "`_OPD_IMM_S12",
             "opd_unsigned": 0
         },
         "andi": {
             "opcode": "0000001101",
             "alu_type": "`_ALU_TYPE_AND",
-            "opd_type": "`_OPD_IMM",
-            "opd_unsigned": 1
+            "opd_type": "`_OPD_IMM_U12",
+            "opd_unsigned": 0
         },
         "ori": {
             "opcode": "0000001110",
             "alu_type": "`_ALU_TYPE_OR",
-            "opd_type": "`_OPD_IMM",
-            "opd_unsigned": 1
+            "opd_type": "`_OPD_IMM_U12",
+            "opd_unsigned": 0
         },
         "xori": {
             "opcode": "0000001111",
             "alu_type": "`_ALU_TYPE_XOR",
-            "opd_type": "`_OPD_IMM",
-            "opd_unsigned": 1
+            "opd_type": "`_OPD_IMM_U12",
+            "opd_unsigned": 0
+        },
+        "lu12i.w": {
+            "opcode": "0001010",
+            "alu_type": "`_ALU_TYPE_LUI",
+            "opd_type": "`_OPD_IMM_S20",
+            "opd_unsigned": 0
+        },
+        "pcaddu12i": {
+            "opcode": "0001110",
+            "alu_type": "`_ALU_TYPE_ADD",
+            "opd_type": "`_OPD_IMM_S20",
+            "opd_unsigned": 0
         }     
     }
 }
