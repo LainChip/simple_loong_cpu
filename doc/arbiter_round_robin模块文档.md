@@ -50,4 +50,4 @@ module arbiter_round_robin #(
 }
 ~~~
 
-![image-20230106130529761](..\..\..\new_cpu\pic\image-4.png)
+![image-20230106130529761](../pic/image-4.png)

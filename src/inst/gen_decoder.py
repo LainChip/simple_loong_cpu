@@ -2,6 +2,8 @@ from functools import cmp_to_key
 import json
 import os
 import types
+import re
+
 class decoder_parser:
     def __init__(self) -> None:
         self.const_list = []
@@ -30,6 +32,11 @@ class decoder_parser:
     def parse_inst_list(self,inst_info:dict):
         for inst_name in inst_info:
             self.inst_list[inst_name] = inst_info[inst_name]
+            text = inst_info[inst_name]['opcode']
+            m = re.findall(r'-\d*-',text)
+            for s in m:
+                text = text.replace(s,int(s[1:-1]) * 'x')
+            inst_info[inst_name]['opcode'] = text
 
     def parse_single_file(self,file_info:dict):
         if file_info.get('const') is not None:
