@@ -17,7 +17,13 @@
         },
         "mem_write": {
             "length": 1,
-            "stage": "m2",
+            "stage": "m1",
+            "default_value": 0,
+            "invalid_value": 0
+        },
+        "mem_valid": {
+            "length": 1,
+            "stage": "m1",
             "default_value": 0,
             "invalid_value": 0
         }

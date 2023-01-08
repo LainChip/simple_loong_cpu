@@ -1,11 +1,13 @@
 {
     "const" :{
-        "_REG_TYPE_RR": "3'd0",
-        "_REG_TYPE_RRR": "3'd1",
-        "_REG_TYPE_8RR": "3'd2",
-        "_REG_TYPE_IRR": "3'd3",
-        "_REG_TYPE_IR": "3'd4",
-        "_REG_TYPE_I": "3'd5",
+        "_REG_TYPE_RW": "3'd0",
+        "_REG_TYPE_RRW": "3'd1",
+        "_REG_TYPE_IRW": "3'd2",
+        "_REG_TYPE_IW": "3'd3",
+        "_REG_TYPE_I": "3'd4",
+        "_REG_TYPE_BL": "3'd5",
+        "_REG_TYPE_RR": "3'd6",
+        "_REG_TYPE_CSRXCHG": "3'd6",
 
         "_READY_EX": "1'b0",
         "_READY_M2": "1'b1",
