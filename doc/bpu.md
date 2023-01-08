@@ -11,7 +11,7 @@
 | bpinfo | output | bpu_predict_info_t | bpu的预测信息，用于生成更新信号 |
 | pc     | output | [31:0]             | 下一次取指令的起始地址          |
 | npc    | output | [31:0]             | bpu预测的下一次取指位置         |
-| valid  | output | logic              | 标志pc有效，否则需要pipe暂停    |
+| valid  | output | logic              | 标志pc有效，否则需要暂停pipe    |
 
 - `bpu_update_info_t`
 
@@ -21,9 +21,8 @@
 - `bpu_predict_info_t`
 
   ```
+  
   ```
-
-
 
 ## 二、实现
 

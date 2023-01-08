@@ -5,3 +5,9 @@ src/inst/decoder.svh
 *.vcd
 *.dat
 *.vscode
+*.log
+*.pb
+*.dir
+*.dir
+*.sublime-project
+*.sublime-workspace
