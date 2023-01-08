@@ -4,9 +4,11 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : npc.sv
 // Create : 2023-01-07 20:49:15
-// Revise : 2023-01-08 17:07:09
+// Revise : 2023-01-08 17:15:35
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
+
+`include "bpu.svh"
 
 module npc (
 	input clk,    // Clock
