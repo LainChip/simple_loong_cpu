@@ -1,2 +1,6 @@
-src/inst/decoder.sv
-src/inst/decoder.svh
+rtl/bpu/xvlog.log
+rtl/bpu/xvlog.pb
+rtl/bpu/xsim.dir
+rtl/bpu/xsim.dir
+rtl/bpu/bpu.sublime-project
+rtl/bpu/bpu.sublime-workspace
