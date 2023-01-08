@@ -13,7 +13,8 @@ typedef struct packed{
 
     // 数据
     logic data_ok;                           // 写入时，此信号用于说明cache已准备好提供数据。 读取时，此信号说明cache已准备好接受数据。
-    logic data_lest;                         // 拉高时标记最后一个元素，只有读到此信号才认为传输事务结束
+    logic data_last;                         // 拉高时标记最后一个元素，只有读到此信号才认为传输事务结束
+    logic[$clog2(`_CACHE_BUS_DATA_LEN / 8) - 1 : 0]data_strobe;
     logic[`_CACHE_BUS_DATA_LEN - 1:0] w_data; // cache请求的写数据
 }cache_bus_req_t;
 
