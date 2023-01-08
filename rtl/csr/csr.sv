@@ -1,12 +1,8 @@
-# csr模块文档
+`include "common.svh"
+`include "csr.svh"
 
-csr模块是一系列控制状态寄存器（Control and Status Register）。
+`ifdef __CSR_VER_1
 
-该模块负责进行中断异常处理，描述cpu状态，为特权指令提供支持。
-
-## 模块定义
-
-```systemverilog
 module csr(
     input           clk,
     input           rst_n,
@@ -46,51 +42,9 @@ module csr(
     //todo: tlb related addr translate
 
 );
-```
 
-## 模块时序说明
 
-### 读csr
 
-```json
-{
-    {
-    signal: [
-    {name: 'clk',        wave: 'p..'},
-      {name: 'rd_addr_i',  wave: 'x2x', data:["rd_addr"]},
-      {name: 'rd_data_o',  wave: 'x2x', data:["rd_data"]}
-    ],
-    config:{hscale:3}
-}
-}
-```
-![read_csr](../pic/read_csr.png)
+endmodule : csr
 
-### 写csr
-
-* csrwr、csrxchg指令涉及写csr，与mips不同的是，这两条写指令在写csr寄存器的同时，需要将csr寄存器的旧值写入rd
-
-* reg_data_old: wr_addr对应的csr寄存器中的旧值
-
-```json
-{
-    signal: [
-    {name: 'clk',        wave: 'p...'},
-      {name: 'wr_addr_i',  wave: 'x2xx', data:["wr_addr"]},
-      {name: 'wr_data_i',  wave: 'x2xx', data:["wr_data"]},
-      {name: 'rd_data_o',  wave: 'x2xx', data:["reg_data_old"]},
-      {name: 'reg_to_write',  wave: 'x22x', data:["reg_data_old", "wr_data"]},
-    ],
-  config:{hscale:3}
-}
-```
-
-![write_csr](../pic/write_csr.png)
-
-### todo
-中断响应， 例外响应，例外返回
-
-## todo & questions
-1. todo: 确认每个指令的类型
-2. question：只需要use单个寄存器数据或不需要use寄存器数据的"use_time"域如何填写
-3. 注意：rdcntid指令写rj寄存器
+`endif

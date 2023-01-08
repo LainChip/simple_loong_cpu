@@ -99,61 +99,85 @@
     },
     "inst": {
         "syscall": {
-            "opcode": "00000000001010110"
+            "opcode": "00000000001010110",
+            "reg_type":"`_REG_TYPE_RRW"
         },
         "break":{
-            "opcode":"00000000001010100"
+            "opcode":"00000000001010100",
+            "reg_type":"`_REG_TYPE_RRW"
         },
         "ertn":{
-            "opcode":"0000011001001000001110"
+            "opcode":"0000011001001000001110",
+            "reg_type":"`_REG_TYPE_RW"
         },
         "csrrd": {
             "opcode": "00000100xxxxxxxxxxxxxx00000",
-            "do_csrrd":1
+            "do_csrrd":1,
+            "reg_type":"`_REG_TYPE_RW",
+            "ready_time":"`_READY_M2"
         },
         "csrwr": {
             "opcode": "00000100xxxxxxxxxxxxxx00001",
-            "csr_write_en":1
+            "csr_write_en":1,
+            "reg_type":"`_REG_TYPE_RR",
+            "use_time":"{`_USE_M2,`_USE_M2}",
+            "ready_time":"`_READY_M2"
         },
         "csrxchg": {
             "opcode": "00000100",
-            "csr_write_en":1
+            "csr_write_en":1,
+            "reg_type":"`_REG_TYPE_CSRXCHG",
+            "use_time":"{`_USE_M2,`_USE_M2}",
+            "ready_time":"`_READY_M2"
         },
         "tlbsrch": {
             "opcode": "0000011001001000001010",
-            "tlbsrch_en":1
+            "tlbsrch_en":1,
+            "reg_type":"`_REG_TYPE_RW"
         },
         "tlbrd": {
             "opcode": "0000011001001000001011",
-            "tlbrd_en":1
+            "tlbrd_en":1,
+            "reg_type":"`_REG_TYPE_RW"
         },
         "tlbwr": {
             "opcode": "0000011001001000001100",
-            "tlbwr_en":1
+            "tlbwr_en":1,
+            "reg_type":"`_REG_TYPE_RW"
         },
         "tlbfill": {
             "opcode": "0000011001001000001101",
-            "tlbfill_en":1
+            "tlbfill_en":1,
+            "reg_type":"`_REG_TYPE_RW"
         },
         "invtlb":{
             "opcode":"00000110010010011",
-            "invtlb_en":1
+            "invtlb_en":1,
+            "reg_type":"`_REG_TYPE_RRW",
+            "use_time":"{`_USE_M2,`_USE_M2}"
         },
 
         "rdcntid.w": {
             "opcode": "0000000000000000011000",
-            "do_rdcntid":1
+            "do_rdcntid":1,
+            "reg_type":"`_REG_TYPE_RW",
+            "ready_time":"`_READY_M2"
         },
         "rdcntvl.w": {
             "opcode": "0000000000000000011000",
-            "rdcntv_type":"`RDCNTV_TYPE_LOW"
+            "rdcntv_type":"`RDCNTV_TYPE_LOW",
+            "reg_type":"`_REG_TYPE_RW",
+            "ready_time":"`_READY_M2"
         },
         "rdcntvh.w": {
             "opcode": "0000000000000000011001",
-            "rdcntv_type":"`RDCNTV_TYPE_HIGH"
+            "rdcntv_type":"`RDCNTV_TYPE_HIGH",
+            "reg_type":"`_REG_TYPE_RW",
+            "ready_time":"`_READY_M2"
         },
         "idle":{
-            "opcode":"00000110010010001"
+            "opcode":"00000110010010001",
+            "reg_type":"`_REG_TYPE_RRW"
         }
     }
 }
