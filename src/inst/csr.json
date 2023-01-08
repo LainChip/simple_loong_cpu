@@ -108,11 +108,11 @@
             "opcode":"0000011001001000001110"
         },
         "csrrd": {
-            "opcode": "00000100",
+            "opcode": "00000100xxxxxxxxxxxxxx00000",
             "do_csrrd":1
         },
         "csrwr": {
-            "opcode": "00000100",
+            "opcode": "00000100xxxxxxxxxxxxxx00001",
             "csr_write_en":1
         },
         "csrxchg": {
