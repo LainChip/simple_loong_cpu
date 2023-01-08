@@ -1,12 +1,12 @@
 {
     "const": {
-        "_MEM_TYPE_NONE":  "3'b0",
-        "_MEM_TYPE_WORD":  "3'b1",
-        "_MEM_TYPE_HALF":  "3'b2",
-        "_MEM_TYPE_BYTE":  "3'b3",
-        "_MEM_TYPE_UWORD": "3'b5",
-        "_MEM_TYPE_UHALF": "3'b6",
-        "_MEM_TYPE_UBYTE": "3'b7"
+        "_MEM_TYPE_NONE":  "3'd0",
+        "_MEM_TYPE_WORD":  "3'd1",
+        "_MEM_TYPE_HALF":  "3'd2",
+        "_MEM_TYPE_BYTE":  "3'd3",
+        "_MEM_TYPE_UWORD": "3'd5",
+        "_MEM_TYPE_UHALF": "3'd6",
+        "_MEM_TYPE_UBYTE": "3'd7"
     },
     "signal": {
         "mem_type": {
@@ -17,7 +17,13 @@
         },
         "mem_write": {
             "length": 1,
-            "stage": "m2",
+            "stage": "m1",
+            "default_value": 0,
+            "invalid_value": 0
+        },
+        "mem_valid": {
+            "length": 1,
+            "stage": "m1",
             "default_value": 0,
             "invalid_value": 0
         }
@@ -26,46 +32,55 @@
         "ld.wu": {
             "opcode": "0010101010",
             "mem_type": "`_MEM_TYPE_UWORD",
+            "mem_valid": 1,
             "mem_write": 0
         },
         "ld.hu": {
             "opcode": "0010101001",
             "mem_type": "`_MEM_TYPE_UHALF",
+            "mem_valid": 1,
             "mem_write": 0
         },
         "ld.bu": {
             "opcode": "0010101000",
             "mem_type": "`_MEM_TYPE_UBYTE",
+            "mem_valid": 1,
             "mem_write": 0
         },
         "ld.w": {
             "opcode": "0010100010",
             "mem_type": "`_MEM_TYPE_WORD",
+            "mem_valid": 1,
             "mem_write": 0
         },
         "ld.h": {
             "opcode": "0010100001",
             "mem_type": "`_MEM_TYPE_HALF",
+            "mem_valid": 1,
             "mem_write": 0
         },
         "ld.b": {
             "opcode": "0010100000",
             "mem_type": "`_MEM_TYPE_BYTE",
+            "mem_valid": 1,
             "mem_write": 0
         },
         "st.w": {
             "opcode": "0010100110",
             "mem_type": "`_MEM_TYPE_WORD",
+            "mem_valid": 1,
             "mem_write": 1
         },
         "st.h": {
             "opcode": "0010100101",
             "mem_type": "`_MEM_TYPE_HALF",
+            "mem_valid": 1,
             "mem_write": 1
         },
         "st.b": {
             "opcode": "0010100100",
             "mem_type": "`_MEM_TYPE_BYTE",
+            "mem_valid": 1,
             "mem_write": 1
         }
     }

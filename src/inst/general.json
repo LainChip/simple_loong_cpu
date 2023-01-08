@@ -1,0 +1,38 @@
+{
+    "const" :{
+        "_REG_TYPE_RW": "3'd0",
+        "_REG_TYPE_RRW": "3'd1",
+        "_REG_TYPE_IRW": "3'd2",
+        "_REG_TYPE_IW": "3'd3",
+        "_REG_TYPE_I": "3'd4",
+        "_REG_TYPE_BL": "3'd5",
+        "_REG_TYPE_RR": "3'd6",
+        "_REG_TYPE_CSRXCHG": "3'd6",
+
+        "_READY_EX": "1'b0",
+        "_READY_M2": "1'b1",
+
+        "_USE_EX": "1'b0",
+        "_USE_M2": "1'b1"
+    },
+    "signal" :{
+        "ready_time": {
+            "length": 1,
+            "stage": "is",
+            "default_value": "`_READY_M2",
+            "invalid_value": "`_READY_EX"
+        },
+        "use_time": {
+            "length": 2,
+            "stage": "is",
+            "default_value": "{`_USE_EX,`_USE_EX}",
+            "invalid_value": "{`_USE_EX,`_USE_EX}"
+        },
+        "reg_type": {
+            "length": 3,
+            "stage": "is",
+            "default_value": "`_REG_TYPE_RR",
+            "invalid_value": "`_REG_TYPE_RR"
+        }
+    }
+}
