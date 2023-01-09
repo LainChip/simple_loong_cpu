@@ -27,6 +27,7 @@
         "_CSR_TICLR" : "14'h44",
         "_CSR_LLBCTL" : "14'h60",
         "_CSR_TLBRENTRY" : "14'h88",
+        "_CSR_CTAG":"14'h98",
         "_CSR_DMW0" : "14'h180",
         "_CSR_DMW1" : "14'h181",
         "_CSR_BRK" : "14'h100",
