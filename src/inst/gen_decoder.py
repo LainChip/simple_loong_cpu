@@ -102,7 +102,9 @@ class decoder_parser:
         str_b : str= self.inst_list[b]['opcode']
         if len(str_a) != len(str_b):
             return (len(str_a) - len(str_b))
-        return (int(str_a) - int(str_b))
+        str_a_std = str_a.replace('x','0')
+        str_b_std = str_b.replace('x','0')
+        return (int(str_a_std) - int(str_b_std))
 
     def gen_sv_module(self):
         str_builder = "`include \"common.svh\"\n`include \"decoder.svh\"\n\n"
