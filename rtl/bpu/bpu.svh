@@ -14,6 +14,10 @@
 
 `define _BTB_ADDR_WIDTH 10
 
+`define _PHT_ADDR_WIDTH 10
+
+`define _RAS_WRITE_GUARD "OFF"
+`define _RAS_STACK_WIDTH 8
 
 // Br_type
 `define _PC_RELATIVE 2'b00
@@ -32,11 +36,7 @@ typedef struct packed {
 
 typedef struct packed {
 	logic [31:0] npc;
+	// TODO
 } bpu_predict_info_t;
-
-
-
-
-
 
 `endif // _BPU_SVH_

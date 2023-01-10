@@ -19,7 +19,9 @@
         "jirl": {
             "opcode": "010011",
             "branch_type": "`_BRANCH_INDIRECT",
-            "reg_type": "`_REG_TYPE_BL"
+            "reg_type": "`_REG_TYPE_RW",
+            "ready_time": "`_READY_EX",
+            "use_time": "`_USE_EX"
         },
         "b": {
             "opcode": "010100",
@@ -29,37 +31,44 @@
         "bl": {
             "opcode": "010101",
             "branch_type": "`_BRANCH_IMMEDIATE",
-            // TODO
+            "reg_type": "`_REG_TYPE_BL",
+            "ready_time": "`_READY_EX"
         },
         "beq": {
             "opcode": "010110",
             "branch_type": "`_BRANCH_CONDITION",
-            // TODO
+            "reg_type": "`_REG_TYPE_RR",
+            "use_time": "`_USE_EX"
         },
         "bne": {
             "opcode": "010111",
             "branch_type": "`_BRANCH_CONDITION",
-            // TODO
+            "reg_type": "`_REG_TYPE_RR",
+            "use_time": "`_USE_EX"
         },
         "blt": {
             "opcode": "011000",
             "branch_type": "`_BRANCH_CONDITION",
-            // TODO
+            "reg_type": "`_REG_TYPE_RR",
+            "use_time": "`_USE_EX"
         },
         "bge": {
             "opcode": "011001",
             "branch_type": "`_BRANCH_CONDITION",
-            // TODO
+            "reg_type": "`_REG_TYPE_RR",
+            "use_time": "`_USE_EX"
         },
         "bltu": {
             "opcode": "011010",
             "branch_type": "`_BRANCH_CONDITION",
-            // TODO
+            "reg_type": "`_REG_TYPE_RR",
+            "use_time": "`_USE_EX"
         },
         "bgeu": {
             "opcode": "011011",
             "branch_type": "`_BRANCH_CONDITION",
-            // TODO
+            "reg_type": "`_REG_TYPE_RR",
+            "use_time": "`_USE_EX"
         }
     }
 }
