@@ -4,14 +4,14 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : btb.sv
 // Create : 2023-01-08 09:57:03
-// Revise : 2023-01-08 10:06:46
+// Revise : 2023-01-08 18:51:03
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
 
 `include "bpu.svh"
 
 module btb #(
-    parameter ADDR_WIDTH = `BTB_ADDR_WIDTH,
+    parameter ADDR_WIDTH = `_BTB_ADDR_WIDTH,
     parameter BANK = 1
 )(
     input         clk,
@@ -26,7 +26,7 @@ module btb #(
     output [ 1:0] Br_type_o
     );
 
-/*                      -btb entry-
+/*                        -btb entry-
     =======================================================
     || valid || BIA[14:0] || BTA[31：2] || Br_type[1 :0] ||
     =======================================================
@@ -74,7 +74,7 @@ module btb #(
     end
 
     assign bta_o = valid & tag == pre_tag ? bta : pre_pc + 8;
-    assign Br_type_o = valid & tag == pre_tag ? Br_type : `PC_RELATIVE;
+    assign Br_type_o = valid & tag == pre_tag ? Br_type : `_PC_RELATIVE;
     assign miss = ~hit;
 
     // ram

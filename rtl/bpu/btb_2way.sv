@@ -4,43 +4,40 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : btb_2way.sv
 // Create : 2023-01-08 08:48:44
-// Revise : 2023-01-08 09:55:19
+// Revise : 2023-01-08 18:51:59
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
 
 `include "bpu.svh"
 
 module btb #(
-    parameter ADDR_WIDTH = `BTB_ADDR_WIDTH,
+    parameter ADDR_WIDTH = `_BTB_ADDR_WIDTH,
     parameter BANK = 1
 )(
     input         clk,
     input         reset,
-    input  [31:0] rpc,
+    input  [31:2] rpc,
     input         we,
-    input  [31:0] wpc,
-    input  [31:0] bta_i,
+    input  [31:2] wpc,
+    input  [31:2] bta_i,
     input  [ 1:0] Br_type_i,
     output        miss,
-    output [31:0] bta_o,
+    output [31:2] bta_o,
     output [ 1:0] Br_type_o
     );
 
 /*                      -btb entry-
     =======================================================
-    || valid || BIA[15:0] || BTA[31：0] || Br_type[1 :0] ||
+    || valid || BIA[14:0] || BTA[31：2] || Br_type[1 :0] ||
     =======================================================
 */
-    function logic[15:0] mktag(logic[31:0] pc);
-        return {pc[31:28] ^ pc[27:24], 
-                pc[23:20] ^ pc[19:16],
-                pc[15:12] ^ pc[11: 8],
-                pc[ 7: 4] ^ pc[ 3: 0]};
+    function logic[14:0] mktag(logic[31:2] pc);
+        return {pc[31:17] ^ pc[16:2]};
     endfunction
 
     localparam BUFFER_SIZE = 1 << ADDR_WIDTH;
-    localparam TAG_WIDTH   = 16;
-    localparam ENTRY_WIDTH = 1 + TAG_WIDTH + 32 + 2;
+    localparam TAG_WIDTH   = 15;
+    localparam ENTRY_WIDTH = 1 + TAG_WIDTH + 30 + 2;
 
     // wire
     logic [TAG_WIDTH - 1:0] tag_r;
@@ -54,16 +51,16 @@ module btb #(
 
     logic en0, en1, we0, we1, valid0, valid1;
     logic [ 1: 0] Br_type0, Br_type1;
-    logic [31: 0] bta0, bta1;
+    logic [31: 2] bta0, bta1;
     logic [TAG_WIDTH - 1: 0] tag0, tag1;
 
     // reg
     logic lru_reg [ 0: 1 << ADDR_WIDTH];
-    logic [31: 0] pre_pc; // store pre pc to renew lru
+    logic [31: 2] pre_pc; // store pre pc to renew lru
     logic [TAG_WIDTH - 1:0] pre_tag;
     logic [ADDR_WIDTH - 1:0] pre_index;
 
-    wire hit = (valid0 & tag0 == pre_tag) | (valid1 & tag1 == pre_tag);
+    
     wire new_lru = reset ? 1'b0 : 
                    tag0 == pre_tag & valid0 ? 1'b0 : 
                    tag1 == pre_tag & valid1 ? 1'b1 :
@@ -91,14 +88,15 @@ module btb #(
         end
     end
 
+    wire hit = (valid0 & tag0 == pre_tag) | (valid1 & tag1 == pre_tag);
     assign we0 = index_w == pre_index ? we &  new_lru : we &  lru_reg[index_w];
     assign we1 = index_w == pre_index ? we & ~new_lru : we & ~lru_reg[index_w];
     assign bta_o = valid0 & tag0 == pre_tag ? bta0 : 
                    valid1 & tag1 == pre_tag ? bta1 :
-                   pre_pc + 8;
+                   pre_pc + 2'b10;
     assign Br_type_o = valid0 & tag0 == pre_tag ? Br_type0 : 
                        valid1 & tag1 == pre_tag ? Br_type1 :
-                       2'b00;
+                       `_PC_RELATIVE;
     assign miss = ~hit;
 
     // ram
