@@ -11,7 +11,7 @@ module csr(
     input           clk,
     input           rst_n,
     
-    input   logic                   stall_pipe_i       //输入：流水线暂停
+    input   logic                   stall_i       //输入：流水线暂停
     input   logic   [25:0]          instr_i,           //输入：指令后26位
 
     //for read
@@ -89,3 +89,8 @@ module csr(
 
 ### todo
 中断响应， 例外响应，例外返回
+
+## todo & questions
+1. todo: 确认每个指令的类型
+2. question：只需要use单个寄存器数据或不需要use寄存器数据的"use_time"域如何填写
+3. 注意：rdcntid指令写rj寄存器
