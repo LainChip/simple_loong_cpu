@@ -3,7 +3,6 @@
 
 module lsu_test_plantform (
 	input clk,    // Clock
-	input rst_n  // Asynchronous reset active low
-;
+	input rst_n  // Asynchronous reset active low);
 
 endmodule : lsu_test_plantform
