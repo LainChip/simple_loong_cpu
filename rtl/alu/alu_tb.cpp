@@ -5,14 +5,14 @@
 #include <verilated.h>
 
 // Include model header, generated from Verilating "top.v"
-#include "Valu.h"
+#include "Valu_tester.h"
 
 // 导出vcd
 #include "verilated_vcd_c.h"
 
-struct DecodeInfo {
-    uint32_t addr;
-};
+// 使用cpp
+#include "alu_tb.h"
+#include <iostream>
 
 // Legacy function required only so linking works on Cygwin and MSVC++
 double sc_time_stamp() { return 0; }
@@ -55,40 +55,30 @@ int main(int argc, char** argv) {
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v".
     // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end.
     // "TOP" will be the hierarchical name of the module.
-    const std::unique_ptr<Valu> top{new Valu{contextp.get(), "TOP"}};
+    const std::unique_ptr<Valu_tester> top{new Valu_tester{contextp.get(), "TOP"}};
 
     // Set Vtop's input signals
-    top->decode_info_i = 0;
-    // top->decode_info_i.ex.alu_type = 1;
-    // top->decode_info_i.ex.opd_type = 0;
-    // top->decode_info_i.ex.opd_unsigned = 0;
-    // top->decode_info_i.general.inst25_0 = 1234;
-    top->reg_fetch_i = 0x1234567800114514;
-    top->pc_i = 0xbc100100;
-
     u_int16_t alu_type = 0;
+    top->pc = 0x9f105380;
+    top->reg_fetch0 = 128;
+    top->reg_fetch1 = 63;
+    top->ui5 = 3;
+    top->si12 = 1145;
+    top->si20 = 0x10300;
+    printf("%d %d; %d %d %08x\n", top->reg_fetch0, top->reg_fetch1, top->ui5, top->si12, top->si20);
 
-    // Simulate until all alu_type is browsed
-    while (alu_type < 15) {
+    for (auto& inst : inst_seqs) {
+        
+        top->alu_type = inst.alu_type;
+        top->opd_type = inst.opd_type;
+        top->opd_unsigned = inst.opd_unsigned;
 
-        contextp->timeInc(1);  // 1 timeprecision period passes...
-        // Historical note, before Verilator 4.200 a sc_time_stamp()
-        // function was required instead of using timeInc.  Once timeInc()
-        // is called (with non-zero), the Verilated libraries assume the
-        // new API, and sc_time_stamp() will no longer work.
-
-        // Evaluate model
-        // (If you have multiple models being simulated in the same
-        // timestep then instead of eval(), call eval_step() on each, then
-        // eval_end_step() on each. See the manual.)
+        contextp->timeInc(10);
         top->eval();
-
-        // Read outputs
-        printf("alu_res: %d\n", top->alu_res_o);
-
-        alu_type ++;
+        
+        std::cout << inst.toString() << ": " << top->alu_res << std::endl;
     }
-    printf("alu_res: %d\n", top->alu_res_o);
+    
     // Final model cleanup
     top->final();
 

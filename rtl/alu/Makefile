@@ -56,7 +56,7 @@ VERILATOR_FLAGS += -I..
 VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL
 
 # Input files for Verilator
-VERILATOR_INPUT = -f input.vc alu.sv alu_tb.cpp
+VERILATOR_INPUT = -f input.vc alu_tester.sv alu_tb.cpp
 
 ######################################################################
 default: run
@@ -82,7 +82,7 @@ run:
 	@echo "-- RUN ---------------------"
 	@rm -rf logs
 	@mkdir -p logs
-	obj_dir/Valu +trace
+	obj_dir/Valu_tester +trace
 
 	@echo
 	@echo "-- COVERAGE ----------------"
