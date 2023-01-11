@@ -48,7 +48,7 @@ module axi2mem #(
     typedef struct packed {
         logic [AXI_ID_WIDTH-1:0]   id;
         logic [AXI_ADDR_WIDTH-1:0] addr;
-        logic [7:0]                len;
+        logic [3:0]                len;
         logic [2:0]                size;
         axi_burst_t                burst;
     } ax_req_t;
@@ -59,7 +59,7 @@ module axi2mem #(
     logic [AXI_ADDR_WIDTH-1:0] req_addr_d, req_addr_q;
     logic [7:0]                cnt_d, cnt_q;
 
-    function automatic logic [AXI_ADDR_WIDTH-1:0] get_wrap_boundary (input logic [AXI_ADDR_WIDTH-1:0] unaligned_address, input logic [7:0] len);
+    function automatic logic [AXI_ADDR_WIDTH-1:0] get_wrap_boundary (input logic [AXI_ADDR_WIDTH-1:0] unaligned_address, input logic [3:0] len);
         logic [AXI_ADDR_WIDTH-1:0] warp_address = '0;
         //  for wrapping transfers ax_len can only be of size 1, 3, 7 or 15
         if (len == 4'b1)
@@ -67,9 +67,9 @@ module axi2mem #(
         else if (len == 4'b11)
             warp_address[AXI_ADDR_WIDTH-1:2+LOG_NR_BYTES] = unaligned_address[AXI_ADDR_WIDTH-1:2+LOG_NR_BYTES];
         else if (len == 4'b111)
-            warp_address[AXI_ADDR_WIDTH-1:3+LOG_NR_BYTES] = unaligned_address[AXI_ADDR_WIDTH-3:2+LOG_NR_BYTES];
+            warp_address[AXI_ADDR_WIDTH-1:3+LOG_NR_BYTES] = unaligned_address[AXI_ADDR_WIDTH-1:3+LOG_NR_BYTES];
         else if (len == 4'b1111)
-            warp_address[AXI_ADDR_WIDTH-1:4+LOG_NR_BYTES] = unaligned_address[AXI_ADDR_WIDTH-3:4+LOG_NR_BYTES];
+            warp_address[AXI_ADDR_WIDTH-1:4+LOG_NR_BYTES] = unaligned_address[AXI_ADDR_WIDTH-1:4+LOG_NR_BYTES];
 
         return warp_address;
     endfunction
@@ -84,7 +84,7 @@ module axi2mem #(
         aligned_address = {ax_req_q.addr[AXI_ADDR_WIDTH-1:LOG_NR_BYTES], {{LOG_NR_BYTES}{1'b0}}};
         wrap_boundary = get_wrap_boundary(ax_req_q.addr, ax_req_q.len);
         // this will overflow
-        upper_wrap_boundary = wrap_boundary + ((ax_req_q.len + 1) << LOG_NR_BYTES);
+        upper_wrap_boundary = wrap_boundary + ((ax_req_q.len + 4'd1) << LOG_NR_BYTES);
         // calculate consecutive address
         cons_addr = aligned_address + (cnt_q << LOG_NR_BYTES);
 
@@ -121,6 +121,8 @@ module axi2mem #(
         slave.b_user   = 1'b0;
 
         case (state_q)
+            default:begin
+            end
 
             IDLE: begin
                 // Wait for a read or write
@@ -191,6 +193,8 @@ module axi2mem #(
                     // ----------------------------
                     // handle the correct burst type
                     case (ax_req_q.burst)
+                        default:begin
+                        end
                         FIXED, INCR: addr_o = cons_addr;
                         WRAP:  begin
                             // check if the address reached warp boundary
@@ -233,7 +237,8 @@ module axi2mem #(
                     // ----------------------------
                     // handle the correct burst type
                     case (ax_req_q.burst)
-
+                        default:begin
+                        end
                         FIXED, INCR: addr_o = cons_addr;
                         WRAP:  begin
                             // check if the address reached warp boundary
@@ -263,9 +268,6 @@ module axi2mem #(
                 slave.b_id    = ax_req_q.id;
                 if (slave.b_ready)
                     state_d = IDLE;
-            end
-
-            default:begin
             end
 
         endcase

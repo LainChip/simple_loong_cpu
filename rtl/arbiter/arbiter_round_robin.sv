@@ -22,7 +22,7 @@ module arbiter_round_robin #(
 
 	assign valid_sel = |req_i;
 	assign masked_req = round_robin_mask & {req_i,req_i};
-	assign round_robin_mask_next = {(round_robin_sel_onehot - 4'd1),(~(round_robin_sel_onehot - 4'd1))};
+	assign round_robin_mask_next = {(round_robin_sel_onehot - {REQ_NUM{1'd1}}),(~(round_robin_sel_onehot - {REQ_NUM{1'd1}}))};
 	assign sel_o = round_robin_sel_onehot;
 	// assign sel_o = '0;
 

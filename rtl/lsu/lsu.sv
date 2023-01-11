@@ -60,19 +60,17 @@ module lsu (
 		mem_req_comb.mem_sel_1 = decode_info_i[1].m1.mem_valid;
 	end
 	always_ff@(posedge clk) begin
-		if(rst_n) begin
+		if(~rst_n) begin
 			mem_req_stage_1 <= '0;
 			mem_req_stage_2 <= '0;
+		end else if(transfer_done) begin 
+			mem_req_stage_2.mem_valid <= '0;
 		end else if(~busy_o & ~stall_i) begin
 			mem_req_stage_1 <= mem_req_comb;
 			{mem_req_stage_2.mem_type,mem_req_stage_2.mem_write,mem_req_stage_2.mem_sel_1} <= 
 			{mem_req_stage_1.mem_type,mem_req_stage_1.mem_write,mem_req_stage_1.mem_sel_1};
 			mem_req_stage_2.mem_addr <= paddr_i[mem_req_stage_1.mem_sel_1];
-			if(transfer_done) begin
-				mem_req_stage_2.mem_valid <= '0;
-			end else begin
-				mem_req_stage_2.mem_valid <= mem_req_stage_1.mem_valid;
-			end
+			mem_req_stage_2.mem_valid <= mem_req_stage_1.mem_valid;
 		end
 	end
 
@@ -80,6 +78,7 @@ module lsu (
 	assign transfer_done = ((mem_req_stage_2.mem_write & bus_req_o.data_last) | 
 				(~mem_req_stage_2.mem_write & bus_resp_i.data_last)) & bus_resp_i.data_ok & bus_req_o.data_ok;
 	always_comb begin
+		fsm_state_next = fsm_state;
 		case(fsm_state)
 			STATE_IDLE:begin
 				if(mem_req_stage_2.mem_valid) begin

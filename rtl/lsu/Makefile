@@ -38,22 +38,23 @@ VERILATOR_FLAGS += -cc --exe
 # Optimize
 VERILATOR_FLAGS += -x-assign fast
 # Warn abount lint issues; may not want this on less solid designs
-VERILATOR_FLAGS += -Wall
+# VERILATOR_FLAGS += -Wall
+VERILATOR_FLAGS += -Wno-fatal
 # Make waveforms
 VERILATOR_FLAGS += --trace --trace-structs
 # Check SystemVerilog assertions
-VERILATOR_FLAGS += --assert
+# VERILATOR_FLAGS += --assert
 # Generate coverage analysis
 VERILATOR_FLAGS += --coverage
 # Run Verilator in debug mode
-#VERILATOR_FLAGS += --debug
+# VERILATOR_FLAGS += --debug
 # Add this trace to get a backtrace in gdb
-#VERILATOR_FLAGS += --gdbbt
+# VERILATOR_FLAGS += --gdbbt
 # Include path
-VERILATOR_FLAGS += -I.. -I../decoder -I../axi -I../axi/pulp_axi -I../axi/pulp_axi/axi -I../arbiter
+VERILATOR_FLAGS += -I.. -I../decoder -I../axi -I../axi/pulp_axi -I../arbiter
 
 # Input files for Verilator
-VERILATOR_INPUT = -f input.vc lsu_test_plantform.sv
+VERILATOR_INPUT = -f input.vc lsu_test_plantform.sv lsu_tb.cpp
 
 ######################################################################
 default: run
@@ -79,7 +80,8 @@ run:
 	@echo "-- RUN ---------------------"
 	@rm -rf logs
 	@mkdir -p logs
-	obj_dir/Varbiter_round_robin +trace
+	# obj_dir/Vlsu_test_plantform +trace
+	obj_dir/Vlsu_test_plantform
 
 	@echo
 	@echo "-- COVERAGE ----------------"

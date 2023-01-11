@@ -14,7 +14,6 @@
 // - Wolfgang Roenninger <wroennin@iis.ee.ethz.ch>
 // - Andreas Kurth <akurth@iis.ee.ethz.ch>
 `include "common.svh"
-`include "axi_pkg.sv"
 
 /// An AXI4 interface.
 interface AXI_BUS #(
@@ -31,18 +30,27 @@ interface AXI_BUS #(
   typedef logic [AXI_DATA_WIDTH-1:0] data_t;
   typedef logic [AXI_STRB_WIDTH-1:0] strb_t;
   typedef logic [AXI_USER_WIDTH-1:0] user_t;
+  typedef logic [4             -1:0] len_t;
+  typedef logic [3             -1:0] size_t;
+  typedef logic [2             -1:0] burst_t;
+  typedef logic [4             -1:0] cache_t;
+  typedef logic [3             -1:0] prot_t;
+  typedef logic [1             -1:0] qos_t;
+  typedef logic [1             -1:0] region_t;
+  typedef logic [1             -1:0] atop_t;
+  typedef logic [1             -1:0] resp_t;
 
   id_t              aw_id;
   addr_t            aw_addr;
-  axi_pkg::len_t    aw_len;
-  axi_pkg::size_t   aw_size;
-  axi_pkg::burst_t  aw_burst;
+  len_t    aw_len;
+  size_t   aw_size;
+  burst_t  aw_burst;
   logic             aw_lock;
-  axi_pkg::cache_t  aw_cache;
-  axi_pkg::prot_t   aw_prot;
-  axi_pkg::qos_t    aw_qos;
-  axi_pkg::region_t aw_region;
-  axi_pkg::atop_t   aw_atop;
+  cache_t  aw_cache;
+  prot_t   aw_prot;
+  qos_t    aw_qos;
+  region_t aw_region;
+  atop_t   aw_atop;
   user_t            aw_user;
   logic             aw_valid;
   logic             aw_ready;
@@ -55,28 +63,28 @@ interface AXI_BUS #(
   logic             w_ready;
 
   id_t              b_id;
-  axi_pkg::resp_t   b_resp;
+  resp_t   b_resp;
   user_t            b_user;
   logic             b_valid;
   logic             b_ready;
 
   id_t              ar_id;
   addr_t            ar_addr;
-  axi_pkg::len_t    ar_len;
-  axi_pkg::size_t   ar_size;
-  axi_pkg::burst_t  ar_burst;
+  len_t    ar_len;
+  size_t   ar_size;
+  burst_t  ar_burst;
   logic             ar_lock;
-  axi_pkg::cache_t  ar_cache;
-  axi_pkg::prot_t   ar_prot;
-  axi_pkg::qos_t    ar_qos;
-  axi_pkg::region_t ar_region;
+  cache_t  ar_cache;
+  prot_t   ar_prot;
+  qos_t    ar_qos;
+  region_t ar_region;
   user_t            ar_user;
   logic             ar_valid;
   logic             ar_ready;
 
   id_t              r_id;
   data_t            r_data;
-  axi_pkg::resp_t   r_resp;
+  resp_t   r_resp;
   logic             r_last;
   user_t            r_user;
   logic             r_valid;

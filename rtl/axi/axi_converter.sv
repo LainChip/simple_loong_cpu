@@ -28,7 +28,7 @@ module axi_converter#(
 	typedef struct packed{
 		logic data_ok;                           // 写入时，此信号用于说明cache已准备好提供数据。 读取时，此信号说明cache已准备好接受数据。
     	logic data_last;                         // 拉高时标记最后一个元素，只有读到此信号才认为传输事务结束
-        logic[$clog2(`_CACHE_BUS_DATA_LEN / 8) - 1 : 0]data_strobe;
+        logic[(`_CACHE_BUS_DATA_LEN / 8) - 1 : 0]data_strobe;
         logic[`_CACHE_BUS_DATA_LEN - 1:0] w_data; // cache请求的写数据
 	}inner_data_info_t;
 
@@ -73,6 +73,7 @@ module axi_converter#(
 			arr_sel_r <= arr_sel_comb;
 		end
 	end
+	assign take = fsm_state == STATE_IDLE;
 
 	// 状态转移维护
 	always_comb begin
@@ -151,9 +152,9 @@ module axi_converter#(
 		axi_bus_if.ar_id = '0;
 		axi_bus_if.ar_addr = sel_req_r.addr;
 		axi_bus_if.ar_len = sel_req_r.burst ? `_AXI_BURST_SIZE : '0;
-		axi_bus_if.ar_size = $clog2(`_CACHE_BUS_DATA_LEN / 8);
+		axi_bus_if.ar_size = 3'b010;
 		axi_bus_if.ar_burst = 2'b10; // WARP TYPE
-		axi_bus_if.ar_lock = 2'b00;
+		axi_bus_if.ar_lock = 1'b0;
 		axi_bus_if.ar_cache = {2'b00,sel_req_r.cached,1'b0};
 		axi_bus_if.ar_prot = 3'b001;
 		axi_bus_if.ar_qos = '0;
@@ -164,9 +165,9 @@ module axi_converter#(
 		axi_bus_if.aw_id = '0;
 		axi_bus_if.aw_addr = sel_req_r.addr;
 		axi_bus_if.aw_len = sel_req_r.burst ? `_AXI_BURST_SIZE : '0;
-		axi_bus_if.aw_size = $clog2(`_CACHE_BUS_DATA_LEN / 8);
+		axi_bus_if.aw_size = 3'b010;
 		axi_bus_if.aw_burst = 2'b10; // WARP TYPE
-		axi_bus_if.aw_lock = 2'b00;
+		axi_bus_if.aw_lock = 1'b0;
 		axi_bus_if.aw_cache = {2'b00,sel_req_r.cached,1'b0};
 		axi_bus_if.aw_prot = 3'b001;
 		axi_bus_if.aw_qos = '0;
@@ -177,8 +178,8 @@ module axi_converter#(
 
 		axi_bus_if.w_data = sel_data_r.w_data;
 		axi_bus_if.w_strb = sel_data_r.data_strobe;
-		axi_bus_if.w_strb = sel_data_r.data_strobe;
 		axi_bus_if.w_valid = sel_data_ready;
+		axi_bus_if.w_last = sel_data_ready;
 	end
 
 endmodule
