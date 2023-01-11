@@ -56,10 +56,13 @@ module alu (
     end
 
     logic [63:0] product, productu;
+    // logic unsigned [63:0] productu;  //效果一样
+    // logic signed [63:0] product;
 
     always_comb begin
         productu = alu_opd1 * alu_opd2;
         product  = $signed(alu_opd1) * $signed(alu_opd2);
+        // product  = $signed({{32{alu_opd1[31]}}, alu_opd1}) * $signed({{32{alu_opd2[31]}}, alu_opd});  // 效果一样
         case (alu_type)
             `_ALU_TYPE_ADD  : begin
                 alu_res_o = alu_opd1 + alu_opd2;
