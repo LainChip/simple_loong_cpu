@@ -69,11 +69,11 @@ int main(int argc, char** argv) {
 
     for (auto& inst : inst_seqs) {
         
+        contextp->timeInc(1);
         top->alu_type = inst.alu_type;
         top->opd_type = inst.opd_type;
         top->opd_unsigned = inst.opd_unsigned;
 
-        contextp->timeInc(10);
         top->eval();
         
         std::cout << inst.toString() << ": " << top->alu_res << std::endl;

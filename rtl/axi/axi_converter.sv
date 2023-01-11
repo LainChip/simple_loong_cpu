@@ -1,6 +1,7 @@
 `include "common.svh"
 `include "lsu_types.svh"
 
+
 `ifdef __AXI_CONVERTER_VER_1
 
 module axi_converter#(
@@ -115,9 +116,9 @@ module axi_converter#(
 	// 暂存来自请求侧的请求，减少后端axi r w 的逻辑复杂度
 	always_comb begin
 		sel_data_comb = '0;
-		for(integer i = 0 ; i < REQ_NUM; i+= 1) begin
+		for(integer i = 0 ; i < CACHE_PORT_NUM; i+= 1) begin
 			if(arr_sel_r[i]) begin
-				sel_data_comb |= {req_i[i].data_ok,req_i[i].data_last,req_i[i].data_strobe,,req_i[i].w_data};
+				sel_data_comb |= {req_i[i].data_ok,req_i[i].data_last,req_i[i].data_strobe,req_i[i].w_data};
 			end
 		end
 	end
@@ -138,20 +139,13 @@ module axi_converter#(
 
 	// 对数据信号握手进行回复
 	generate
-		for(genvar i = 0 ; i < REQ_NUM ; i += 1) begin
+		for(genvar i = 0 ; i < CACHE_PORT_NUM ; i += 1) begin
 			assign resp_o[i].data_ok = (((~sel_data_ready | axi_bus_if.w_ready) & (sel_req_r.write)) | (axi_bus_if.r_valid & (~sel_req_r.write))) & arr_sel_r[i] ;
 			assign resp_o[i].data_last = axi_bus_if.r_last & arr_sel_r[i] & (~sel_req_r.write);
 			assign resp_o[i].r_data = axi_bus_if.r_data;
 		end
 	endgenerate
 	
-  data_t            w_data;
-  strb_t            w_strb;
-  logic             w_last;
-  user_t            w_user;
-  logic             w_valid;
-  logic             w_ready;
-
 	// axi信号控制
 	always_comb begin
 		axi_bus_if.ar_id = '0;
@@ -184,7 +178,7 @@ module axi_converter#(
 		axi_bus_if.w_data = sel_data_r.w_data;
 		axi_bus_if.w_strb = sel_data_r.data_strobe;
 		axi_bus_if.w_strb = sel_data_r.data_strobe;
-		axi_bus_if.w_ready = sel_data_ready;
+		axi_bus_if.w_valid = sel_data_ready;
 	end
 
 endmodule

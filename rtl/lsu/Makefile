@@ -50,10 +50,10 @@ VERILATOR_FLAGS += --coverage
 # Add this trace to get a backtrace in gdb
 #VERILATOR_FLAGS += --gdbbt
 # Include path
-VERILATOR_FLAGS += -I.. -I../decoder
+VERILATOR_FLAGS += -I.. -I../decoder -I../axi -I../axi/pulp_axi -I../axi/pulp_axi/axi -I../arbiter
 
 # Input files for Verilator
-VERILATOR_INPUT = -f input.vc lsu.sv
+VERILATOR_INPUT = -f input.vc lsu_test_plantform.sv
 
 ######################################################################
 default: run
