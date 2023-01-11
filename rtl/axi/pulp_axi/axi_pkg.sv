@@ -15,7 +15,9 @@
 // - Wolfgang Roenninger <wroennin@iis.ee.ethz.ch>
 // - Fabian Schuiki <fschuiki@iis.ee.ethz.ch>
 // - Matheus Cavalcante <matheusd@iis.ee.ethz.ch>
-
+`include "common.svh"
+`ifndef __PULP_AXI_PKG
+`define __PULP_AXI_PKG
 //! AXI Package
 /// Contains all necessary type definitions, constants, and generally useful functions.
 package axi_pkg;
@@ -531,3 +533,5 @@ package axi_pkg;
   } xbar_rule_32_t;
 
 endpackage
+
+`endif

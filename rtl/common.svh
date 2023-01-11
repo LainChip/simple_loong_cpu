@@ -1,7 +1,6 @@
+`timescale 1ns/1ps
 `ifndef _COMMON_HEADER
 `define _COMMON_HEADER
-
-`timescale 1ns/1ps
 
 `define __AXI_CONVERTER_VER_1
 `define __DLSU_VER_1

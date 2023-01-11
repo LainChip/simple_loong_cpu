@@ -11,10 +11,10 @@
 #
 #######################################################################
 
-default: Valu
+default: Valu_tester
 
 # Include the rules made by Verilator
-include Valu.mk
+include Valu_tester.mk
 
 # Use OBJCACHE (ccache) if using gmake and its installed
 COMPILE.cc = $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c

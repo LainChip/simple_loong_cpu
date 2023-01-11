@@ -1,5 +1,5 @@
 /*
-2022-01-08 v1: xrb初步完成
+2023-01-08 v1: xrb初步完成
 */
 
 `include "common.svh"
@@ -19,11 +19,15 @@ module alu (
     	$dumpvars();
     end
 
-    alu_type_t alu_type = decode_info_i.ex.alu_type;
-    opd_type_t opd_type = decode_info_i.ex.opd_type;
-    opd_unsigned_t opd_unsigned = decode_info_i.ex.opd_unsigned;
+    alu_type_t alu_type;
+    opd_type_t opd_type;
+    opd_unsigned_t opd_unsigned;
+    assign alu_type = decode_info_i.ex.alu_type;
+    assign opd_type = decode_info_i.ex.opd_type;
+    assign opd_unsigned = decode_info_i.ex.opd_unsigned;
 
-    inst25_0_t inst25_0 = decode_info_i.general.inst25_0;
+    inst25_0_t inst25_0;
+    assign inst25_0 = decode_info_i.general.inst25_0;
 
     logic [31:0] alu_opd1, alu_opd2;
 
