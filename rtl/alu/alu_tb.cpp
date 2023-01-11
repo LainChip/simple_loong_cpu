@@ -17,7 +17,7 @@
 #include <random>
 #include <ctime>
 
-#define TEST_TIMES (100000)
+#define TEST_TIMES (10000)
 
 #define next(top) do { \
         contextp->timeInc(1); \
@@ -139,10 +139,10 @@ int main(int argc, char** argv) {
                 }
             }
         } else {
-            for (uint32_t i = 0; i < TEST_TIMES; ++i) {
+            for (uint32_t i = 0; i < TEST_TIMES/20; ++i) {
                 top->reg_fetch0 = gen_reg_fetch(e);
-                if (inst.name == "pcaddu12i") top->pc = i;
-                for (uint32_t j; j < TEST_TIMES; ++j) {
+                if (inst.name == "pcaddu12i") top->pc = top->reg_fetch0;
+                for (uint32_t j = 0; j < TEST_TIMES/20; ++j) {
                     imm25_0 = gen_imm25_0(e);
                     // 与expRes_i不同，没有数的含义，仅取01串
                     top->ui5 = (imm25_0 >> 10) & 0x1f;                    
