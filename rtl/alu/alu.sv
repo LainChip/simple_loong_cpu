@@ -29,7 +29,7 @@ module alu (
     inst25_0_t inst25_0;
     assign inst25_0 = decode_info_i.general.inst25_0;
 
-    logic [31:0] alu_opd1, alu_opd2;
+    logic [31:0] alu_opd1, alu_opd2; // GR[rj], GR[rk]/imm
 
     always_comb begin
         alu_opd1 = reg_fetch_i[0];
