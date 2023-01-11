@@ -14,6 +14,16 @@
 #include "alu_tb.h"
 #include <iostream>
 #include <climits>
+#include <random>
+#include <ctime>
+
+#define TEST_TIMES (10000)
+
+#define next(top) do { \
+        contextp->timeInc(1); \
+        top->eval();          \
+    } while (0)
+
 
 // Legacy function required only so linking works on Cygwin and MSVC++
 double sc_time_stamp() { return 0; }
@@ -64,6 +74,12 @@ int main(int argc, char** argv) {
     top->si12 = 0;
     top->si20 = 0;
     uint32_t expRes;
+    uint32_t imm25_0;
+
+    std::default_random_engine e;
+    std::uniform_int_distribution<uint32_t> gen_reg_fetch(0, ULONG_MAX);
+    std::uniform_int_distribution<uint32_t> gen_imm25_0(0, 0x03ffffff);
+    e.seed(time(0));
 
     for (auto& inst : inst_seqs) {
         top->alu_type = inst.alu_type;
@@ -73,13 +89,12 @@ int main(int argc, char** argv) {
         std::cout << "testing " << inst.name << " ...\n";
 
         if (inst.opd_type == 0) {
-            for (uint64_t i = 0; i < 1024; ++i) {
+            for (uint64_t i = 0; i < TEST_TIMES; ++i) {
                 //printf("%d\n", i);
-                top->reg_fetch0 = (uint32_t)(i & 0xffffffff);
-                top->reg_fetch1 = (uint32_t)(i >> 32) | 0x1;
+                top->reg_fetch0 = gen_reg_fetch(e);
+                top->reg_fetch1 = gen_reg_fetch(e);
                 
-                contextp->timeInc(1);
-                top->eval();
+                next(top);
 
                 expRes = inst.expRes_r(top->reg_fetch0, top->reg_fetch1);
                 if (top->alu_res != expRes) {
@@ -87,23 +102,22 @@ int main(int argc, char** argv) {
                     printf("got   : %08x\n", top->alu_res);
                     printf("expect: %08x\n", expRes);
 
-                    contextp->timeInc(1);
-                    top->eval();
+                    next(top);
                     goto finished;
                 }
             }
         } else {
-            for (uint32_t i = 0; i < ULONG_MAX; ++i) {
-                top->reg_fetch0 = i;
+            for (uint32_t i = 0; i < TEST_TIMES; ++i) {
+                top->reg_fetch0 = gen_reg_fetch(e);
                 if (inst.name == "pcaddu12i") top->pc = i;
-                for (uint32_t imm25_0 = 0; i < 0x04000000; ++i) {
+                for (uint32_t j; j < TEST_TIMES; ++j) {
+                    imm25_0 = gen_imm25_0(e);
                     // 与expRes_i不同，没有数的含义，仅取01串
                     top->ui5 = (imm25_0 >> 10) & 0x1f;                    
                     top->si12 = (imm25_0 >> 10) & 0xfff;
-                    top->si20 = (imm25_0 >> 5) & 0x03ffffff;
+                    top->si20 = (imm25_0 >> 5) & 0x000fffff;
 
-                    contextp->timeInc(1);
-                    top->eval();
+                    next(top);
 
                     expRes = inst.expRes_i(top->reg_fetch0, imm25_0);
                     if (top->alu_res != expRes) {
@@ -111,8 +125,7 @@ int main(int argc, char** argv) {
                         printf("got   : %08x\n", top->alu_res);
                         printf("expect: %08x\n", expRes);
 
-                        contextp->timeInc(1);
-                        top->eval();
+                        next(top);
                         goto finished;
                     }
                 }

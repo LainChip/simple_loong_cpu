@@ -108,17 +108,25 @@ module alu (
                 end
             end
             `_ALU_TYPE_DIV  : begin
-                if (opd_unsigned) begin
-                    alu_res_o = alu_opd1 / alu_opd2;
+                if (alu_opd2 != 0) begin
+                    if (opd_unsigned) begin
+                        alu_res_o = alu_opd1 / alu_opd2;
+                    end else begin
+                        alu_res_o = $signed(alu_opd1) / $signed(alu_opd2);
+                    end
                 end else begin
-                    alu_res_o = $signed(alu_opd1) / $signed(alu_opd2);
+                    alu_res_o = -1;
                 end
             end
             `_ALU_TYPE_MOD  : begin
-                if (opd_unsigned) begin
-                    alu_res_o = alu_opd1 % alu_opd2;
+                if (alu_opd2 != 0) begin
+                    if (opd_unsigned) begin
+                        alu_res_o = alu_opd1 % alu_opd2;
+                    end else begin
+                        alu_res_o = $signed(alu_opd1) % $signed(alu_opd2);
+                    end
                 end else begin
-                    alu_res_o = $signed(alu_opd1) % $signed(alu_opd2);
+                    alu_res_o = -1;
                 end
             end
             `_ALU_TYPE_LUI  : begin
