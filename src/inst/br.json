@@ -1,14 +1,30 @@
 {
     "const": {
-        "_BRANCH_INVALID": "2'b00", // 非跳转指令
-        "_BRANCH_IMMEDIATE": "2'b01", // 无条件立即数跳转或直接跳转
-        "_BRANCH_INDIRECT": "2'b10", // 无条件间接跳转
-        "_BRANCH_CONDITION": "2'b11" // 有条件跳转(目标地址均由imm决定)
+        "_BRANCH_INVALID": "2'b00",
+        "_BRANCH_IMMEDIATE": "2'b01",
+        "_BRANCH_INDIRECT": "2'b10",
+        "_BRANCH_CONDITION": "2'b11",
+
+        "_CMP_EQL": "3'd0",
+        "_CMP_NEQ": "3'd1",
+        "_CMP_LSS": "3'd2",
+        "_CMP_GER": "3'd3",
+        "_CMP_LEQ": "3'd4",
+        "_CMP_GEQ": "3'd5",
+        "_CMP_LTU": "3'd6",
+        "_CMP_GEU": "3'd7"
     },
     
     "signal": {
        	"branch_type": {
             "length": 2,
+            "stage": "ex",
+            "default_value": 0,
+            "invalid_value": 0
+        },
+
+        "cmp_type": {
+            "length": 3,
             "stage": "ex",
             "default_value": 0,
             "invalid_value": 0
@@ -38,37 +54,43 @@
             "opcode": "010110",
             "branch_type": "`_BRANCH_CONDITION",
             "reg_type": "`_REG_TYPE_RR",
-            "use_time": "`_USE_EX"
+            "use_time": "{`_USE_EX, `_USE_EX}",
+            "cmp_type": "`_CMP_EQL"
         },
         "bne": {
             "opcode": "010111",
             "branch_type": "`_BRANCH_CONDITION",
             "reg_type": "`_REG_TYPE_RR",
-            "use_time": "`_USE_EX"
+            "use_time": "{`_USE_EX, `_USE_EX}",
+            "cmp_type": "`_CMP_NEQ"
         },
         "blt": {
             "opcode": "011000",
             "branch_type": "`_BRANCH_CONDITION",
             "reg_type": "`_REG_TYPE_RR",
-            "use_time": "`_USE_EX"
+            "use_time": "{`_USE_EX, `_USE_EX}",
+            "cmp_type": "`_CMP_LSS"
         },
         "bge": {
             "opcode": "011001",
             "branch_type": "`_BRANCH_CONDITION",
             "reg_type": "`_REG_TYPE_RR",
-            "use_time": "`_USE_EX"
+            "use_time": "{`_USE_EX, `_USE_EX}",
+            "cmp_type": "_CMP_GER"
         },
         "bltu": {
             "opcode": "011010",
             "branch_type": "`_BRANCH_CONDITION",
             "reg_type": "`_REG_TYPE_RR",
-            "use_time": "`_USE_EX"
+            "use_time": "{`_USE_EX, `_USE_EX}",
+            "cmp_type": "`_CMP_LTU"
         },
         "bgeu": {
             "opcode": "011011",
             "branch_type": "`_BRANCH_CONDITION",
             "reg_type": "`_REG_TYPE_RR",
-            "use_time": "`_USE_EX"
+            "use_time": "{`_USE_EX, `_USE_EX}",
+            "cmp_type": "`_CMP_GEU"
         }
     }
 }

@@ -11,7 +11,7 @@
 `include "bpu.svh"
 
 module pht #(
-	parameter ADDR_WIDTH = `_PHT_ADDR_WIDTH
+	parameter ADDR_WIDTH = 8
 ) (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low

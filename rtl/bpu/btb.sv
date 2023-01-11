@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : btb.sv
 // Create : 2023-01-08 09:57:03
-// Revise : 2023-01-08 18:51:03
+// Revise : 2023-01-10 10:11:39
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
 
@@ -28,15 +28,15 @@ module btb #(
 
 /*                        -btb entry-
     =======================================================
-    || valid || BIA[14:0] || BTA[31：2] || Br_type[1 :0] ||
+    || valid || BIA[15:0] || BTA[31：2] || Br_type[1 :0] ||
     =======================================================
 */
-    function logic[14:0] mktag(logic[31:2] pc);
-        return {pc[31:17] ^ pc[16:2]};
+    function logic[15:0] mktag(logic[31:2] pc);
+        return {pc[31:17] ^ pc[16:2], pc[2]};
     endfunction
 
     localparam BUFFER_SIZE = 1 << ADDR_WIDTH;
-    localparam TAG_WIDTH   = 15;
+    localparam TAG_WIDTH   = 16;
     localparam ENTRY_WIDTH = 1 + TAG_WIDTH + 30 + 2;
 
     // wire

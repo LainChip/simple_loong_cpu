@@ -4,144 +4,49 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : ras.sv
 // Create : 2023-01-08 19:14:41
-// Revise : 2023-01-08 19:26:17
+// Revise : 2023-01-10 09:59:50
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
 
 `include "bpu.svh"
 
 module ras #(
-	parameter WRITE_GUARD = `_RAS_WRITE_GUARD,
-	parameter STACK_WIDTH = `_RAS_STACK_WIDTH
+	parameter STACK_DEPTH = `_RAS_STACK_DEPTH
 ) (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous rst_n active low
 	input pop_i,
     input push_i,
     input  [31:2] din,
-    output full,
-    output empty,
     output [31:2] dout
 );
 
-	localparam STACK_DEPTH = 1 << STACK_WIDTH;
+	localparam PTR_WIDTH = $clog2(STACK_DEPTH);
     
-    reg [31:0] ras [STACK_DEPTH - 1:0];
+    reg [31:2] ras [STACK_DEPTH - 1:0];
+    reg [PTR_WIDTH - 1:0] ras_ptr;
 
-    reg		[STACK_WIDTH - 1:0]	sp;	// Stack Point
-    wire    we;
-    wire    [31:0] rdata; // ram read data
-    reg     [31:0] din_buffer;
-    reg     push_i_buffer;
-    reg     pop_i_buffer;
-    reg     empty_buffer;
-    generate
-        if (WRITE_GUARD == "NO") begin
-            assign we = push_i & ~pop_i & ~full;
-        end else begin
-            assign we = push_i & ~pop_i;
-        end
-    endgenerate
-    assign dout =   (push_i_buffer & pop_i_buffer)  ? din_buffer : 
-                    (pop_i_buffer & ~empty_buffer) ? rdata : 32'b0;
-    wire [STACK_WIDTH - 1:0] addr = we ? sp : sp - 1;
-    // RAM control
+    wire ras_full;
+    wire ras_empty;
 
-    always @(posedge clk ) begin
+    assign ras_full  = (ras_ptr == STACK_DEPTH);
+    assign ras_empty = (ras_ptr == 0);
+
+    always @(posedge clk) begin
         if (~rst_n) begin
-            din_buffer <= 32'b0;
-            push_i_buffer <= 1'b0;
-            pop_i_buffer <= 1'b0;
-            empty_buffer <= 1'b0;
-        end else begin
-            din_buffer <= din;
-            push_i_buffer <= push_i;
-            pop_i_buffer <= pop_i;
-            empty_buffer <= empty;
+            ras_ptr <= 0;
         end
-    end
-
-    generate
-        if( WRITE_GUARD == "ON" ) begin
-            always @(posedge clk ) begin
-                if (~rst_n) begin
-                    sp <= 0;
-                end else if (push_i && pop_i) begin
-                    sp <= sp;
-                end else if (push_i && ~full) begin
-                    sp <= sp + 1;
-                end else if (pop_i && ~empty) begin
-                    sp <= sp - 1;
-                end else begin
-                    sp <= sp;
-                end
+        else begin
+            if (push_i && !ras_full) begin
+                ras[ras_ptr] <= din;
+                ras_ptr <= ras_ptr + 1;
             end
-        end else begin
-            always @(posedge clk ) begin
-                if (~rst_n) begin
-                    sp <= 0;
-                end else if (push_i && pop_i) begin
-                    sp <= sp;
-                end else if (push_i) begin
-                    sp <= sp + 1;
-                end else if (pop_i && ~empty) begin
-                    sp <= sp - 1;
-                end else begin
-                    sp <= sp;
-                end
-            end
-        end
-    endgenerate
-
-    // spram #(
-    //     .ADDR_WIDTH ( STACK_WIDTH   ),
-    //     .DATA_WIDTH ( 32            ),
-    //     .WRITE_MODE ( "read_first"  )
-    // ) u_spram (
-    //     .clk                     ( clk     ),
-    //     .~rst_n                   ( ~rst_n   ),
-    //     .en                      ( 1'b1    ),
-    //     .we                      ( we      ),
-    //     .addr                    ( addr    ),
-    //     .wdata                   ( din     ),
-
-    //     .rdata                   ( rdata   )
-    // );
-
-    assign rdata = ras[addr];
-    always @(posedge clk ) begin
-        if (~rst_n) begin
-            integer i;
-            for (i = 0; i < STACK_DEPTH ; i = i + 1) begin
-                ras[i] <= 32'h0000_0000;
-            end
-        end else if (we) begin
-            ras[addr] <= din;
-        end else begin
-            ras[addr] <= ras[addr];
-        end
-    end
-    
-    // full and empty
-    reg [STACK_WIDTH:0] count;
-
-    always @(posedge clk ) begin
-        if (~rst_n) begin
-            count <= 0;
-        end else begin
-            if (push_i && pop_i) begin
-                count <= count;
-            end else if (push_i && ~full) begin
-                count <= count + 1;
-            end else if (pop_i && ~empty) begin
-                count <= count - 1;
-            end else begin
-                count <= count;
+            else if (pop_i && !ras_empty) begin
+                ras_ptr <= ras_ptr - 1;
             end
         end
     end
 
-    assign full = count == STACK_DEPTH;
-    assign empty = count == 0;
+    assign dout = ras[ras_ptr - 1];
 
 endmodule : ras
