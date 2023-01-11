@@ -94,3 +94,5 @@ module csr(
 1. todo: 确认每个指令的类型
 2. question：只需要use单个寄存器数据或不需要use寄存器数据的"use_time"域如何填写
 3. 注意：rdcntid指令写rj寄存器
+4. LLBit 是什么
+5. ESTAT 描述中10位读返回0且软件不改变，但参考核实现中对该位进行了写操作（LA32R 龙芯架构32位精简版参考手册P69 7.4.5； csr.v line 368）
