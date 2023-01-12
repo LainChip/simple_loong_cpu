@@ -9,6 +9,7 @@
 *.dir
 *.sublime-project
 *.sublime-workspace
+*.idea
 ./src/inst/decoder.sv
 ./src/inst/decoder.svh
 .gitconfig
