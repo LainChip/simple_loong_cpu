@@ -223,7 +223,7 @@ always_comb begin
 end
 
 //simple reg write
-logic [31:0] wr_data = instr_i[`_INSTR_RJ] == 5'd1 ? wr_data_i : wr_data_i & wr_mask_i;
+logic [31:0] wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : wr_data_i & wr_mask_i;
 
 logic wen_crmd             = csr_write_en_i & (wr_addr_i == addr_crmd) ;
 logic wen_prmd             = csr_write_en_i & (wr_addr_i == addr_prmd) ;
