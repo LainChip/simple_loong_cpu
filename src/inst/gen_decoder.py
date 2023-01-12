@@ -91,7 +91,7 @@ class decoder_parser:
             str_builder += '    ' + parent_struct + '_t ' + parent_struct + ';\n'
         str_builder += '}decode_info_t;\n\n'
 
-        str_builder += "`endif"
+        str_builder += "`endif\n"
         return str_builder
 
     def gen_blank(self,times:int):
@@ -147,7 +147,7 @@ class decoder_parser:
         str_builder += self.gen_blank(depth) + "endcase\n"
         depth -= 1
         str_builder += self.gen_blank(depth) + "end\n\n"
-        str_builder += "endmodule"
+        str_builder += "endmodule\n"
         return str_builder
 
 if __name__ == '__main__':
