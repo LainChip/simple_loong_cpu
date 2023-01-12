@@ -11,7 +11,7 @@
 `define _WEAKLY_LOCAL 2'b01
 `define _STRONGLY_LOCAL 2'b00
 
-
+// scale
 `define _BTB_ADDR_WIDTH 10
 `define _LPHT_ADDR_WIDTH 10
 `define _RAS_STACK_DEPTH 8
@@ -47,6 +47,7 @@ typedef struct packed {
 
 
 typedef struct packed {
+	logic valid;
 	logic [31:2] npc;
 	logic [1:0] lphr;
 	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;

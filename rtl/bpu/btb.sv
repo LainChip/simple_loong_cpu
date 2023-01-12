@@ -11,20 +11,21 @@
 `include "bpu.svh"
 
 module btb #(
-    parameter ADDR_WIDTH = `_BTB_ADDR_WIDTH,
+    parameter ADDR_WIDTH = 10,
     parameter BANK = 1
 )(
-    input         clk,
-    input         reset,
-    input  [31:2] rpc,
-    input         we,
-    input  [31:2] wpc,
+    input clk,    // Clock
+    input rst_n,  // Asynchronous reset active low
+    input  [31:2] rpc_i,
+    input         update_i,
+    input  [31:2] wpc_i,
     input  [31:2] bta_i,
     input  [ 1:0] Br_type_i,
-    output        miss,
+    output        miss_o,
     output [31:2] bta_o,
     output [ 1:0] Br_type_o
-    );
+);
+
 
 /*                        -btb entry-
     =======================================================
@@ -44,10 +45,10 @@ module btb #(
     logic [ADDR_WIDTH - 1:0] index_r;
     logic [TAG_WIDTH - 1:0] tag_w;
     logic [ADDR_WIDTH - 1:0] index_w;
-    assign tag_r = mktag(rpc);
-    assign index_r = rpc[ADDR_WIDTH + 1 + BANK:2 + BANK];
-    assign tag_w = mktag(wpc);
-    assign index_w = wpc[ADDR_WIDTH + 1 + BANK:2 + BANK];
+    assign tag_r = mktag(rpc_i);
+    assign index_r = rpc_i[ADDR_WIDTH + 1 + BANK:2 + BANK];
+    assign tag_w = mktag(wpc_i);
+    assign index_w = wpc_i[ADDR_WIDTH + 1 + BANK:2 + BANK];
 
     logic en, valid;
     logic [ 1: 0] Br_type;
@@ -67,15 +68,15 @@ module btb #(
             pre_index <= 0;
             pre_tag <= 0;
         end else begin
-            pre_pc    <= rpc;
+            pre_pc    <= rpc_i;
             pre_index <= index_r;
             pre_tag   <= tag_r;
         end
     end
 
-    assign bta_o = valid & tag == pre_tag ? bta : pre_pc + 8;
+    assign bta_o = valid & tag == pre_tag ? bta : {pre_pc[31:3] + 1, 1'b0};
     assign Br_type_o = valid & tag == pre_tag ? Br_type : `_PC_RELATIVE;
-    assign miss = ~hit;
+    assign miss_o = ~hit;
 
     // ram
     sdpram #(
@@ -85,11 +86,13 @@ module btb #(
         .clk    (clk),
         .reset  (reset),
         .en     (1'b1),
-        .we     (we),
+        .update_i     (update_i),
         .raddr  (index_r),
         .waddr  (index_w),
         .wdata  ({1'b1, tag_w, bta_i, Br_type_i}),
         .rdata  ({valid, tag, bta, Br_type})
     );
 
-endmodule
+
+
+endmodule : btb

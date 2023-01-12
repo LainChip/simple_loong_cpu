@@ -17,8 +17,8 @@ module ras #(
 	input rst_n,  // Asynchronous rst_n active low
 	input pop_i,
     input push_i,
-    input  [31:2] din,
-    output [31:2] dout
+    input  [31:2] target_i,
+    output [31:2] target_o
 );
 
 	localparam PTR_WIDTH = $clog2(STACK_DEPTH);
@@ -38,7 +38,7 @@ module ras #(
         end
         else begin
             if (push_i && !ras_full) begin
-                ras[ras_ptr] <= din;
+                ras[ras_ptr] <= target_i;
                 ras_ptr <= ras_ptr + 1;
             end
             else if (pop_i && !ras_empty) begin
@@ -47,6 +47,6 @@ module ras #(
         end
     end
 
-    assign dout = ras[ras_ptr - 1];
+    assign target_o = ras[ras_ptr - 1];
 
 endmodule : ras
