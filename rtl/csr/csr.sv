@@ -45,6 +45,7 @@ module csr(
 
 logic [31:0]    reg_crmd;
 logic [31:0]    reg_prmd;
+logic [31:0]    reg_euen;
 logic [31:0]    reg_ectl;
 logic [31:0]    reg_estat;
 logic [31:0]    reg_era;
@@ -79,6 +80,7 @@ logic [31:0]    reg_disable_cache;
 
 parameter int addr_crmd             = 0;
 parameter int addr_prmd             = 1;
+parameter int addr_euen             = 2;
 parameter int addr_ectl             = 4;
 parameter int addr_estat            = 5;
 parameter int addr_era              = 6;
@@ -122,6 +124,9 @@ always_comb begin
         end
         addr_prmd          : begin
             read_reg_result = reg_prmd;
+        end
+        addr_euen          : begin
+            read_reg_result = reg_euen;
         end
         addr_ectl          : begin
             read_reg_result = reg_ectl;
@@ -217,11 +222,12 @@ always_comb begin
     endcase
 end
 
-//write
-logic [31:0] wr_data = instr_i[`_INSTR_RJ] == 5'd1 ? wr_data_i : wr_data_i & wr_mask_i;
+//simple reg write
+logic [31:0] wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : wr_data_i & wr_mask_i;
 
 logic wen_crmd             = csr_write_en_i & (wr_addr_i == addr_crmd) ;
 logic wen_prmd             = csr_write_en_i & (wr_addr_i == addr_prmd) ;
+logic wen_euen             = csr_write_en_i & (wr_addr_i == addr_euen) ;
 logic wen_ectl             = csr_write_en_i & (wr_addr_i == addr_ectl) ;
 logic wen_estat            = csr_write_en_i & (wr_addr_i == addr_estat) ;
 logic wen_era              = csr_write_en_i & (wr_addr_i == addr_era) ;
@@ -253,6 +259,7 @@ logic wen_dmw1             = csr_write_en_i & (wr_addr_i == addr_dmw1) ;
 
 logic wr_data_crmd        ;
 logic wr_data_prmd        ;
+logic wr_data_euen        ;
 logic wr_data_ectl        ;
 logic wr_data_estat       ;
 logic wr_data_era         ;
@@ -282,54 +289,70 @@ logic wr_data_ctag        ;
 logic wr_data_dmw0        ;
 logic wr_data_dmw1        ;
 
+
+logic [5:0] ecode_selcted;
+logic [8:0] esubcode_selected;
+logic [7:0] hard_interrupt;
+assign hard_interrupt = interrupt_i[7:0];
+logic       timer_interrupt;//to assigin
+logic       ipi_interrupt;//to assigin
+logic       va_error;//to assign
+
+
+logic [31:0] target_era;
+
 always_comb begin
-    wr_data_crmd       = (wen_crmd       & ~(|do_redirect_o)) ? wr_data : reg_crmd ;
-    wr_data_prmd       = (wen_prmd       & ~(|do_redirect_o)) ? wr_data : reg_prmd ;
+    
+
+    wr_data_euen       = (wen_euen       & ~(|do_redirect_o)) ? wr_data : reg_euen ;//todo
     wr_data_ectl       = (wen_ectl       & ~(|do_redirect_o)) ? wr_data : reg_ectl ;
-    wr_data_estat      = (wen_estat      & ~(|do_redirect_o)) ? wr_data : reg_estat ;
-    wr_data_era        = (wen_era        & ~(|do_redirect_o)) ? wr_data : reg_era ;
-    wr_data_badv       = (wen_badv       & ~(|do_redirect_o)) ? wr_data : reg_badv;
-    wr_data_eentry     = (wen_eentry     & ~(|do_redirect_o)) ? wr_data : reg_eentry ;
-    wr_data_tlbidx     = (wen_tlbidx     & ~(|do_redirect_o)) ? wr_data : reg_tlbidx ;
-    wr_data_tlbehi     = (wen_tlbehi     & ~(|do_redirect_o)) ? wr_data : reg_tlbehi ;
-    wr_data_tlbelo0    = (wen_tlbelo0    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo0 ;
-    wr_data_tlbelo1    = (wen_tlbelo1    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo1 ;
-    wr_data_asid       = (wen_asid       & ~(|do_redirect_o)) ? wr_data : reg_asid ;
-    wr_data_pgdl       = (wen_pgdl       & ~(|do_redirect_o)) ? wr_data : reg_pgdl ;
-    wr_data_pgdh       = (wen_pgdh       & ~(|do_redirect_o)) ? wr_data : reg_pgdh ;
-    wr_data_pgd        = (wen_pgd        & ~(|do_redirect_o)) ? wr_data : reg_pgd ;
-    wr_data_cpuid      = (wen_cpuid      & ~(|do_redirect_o)) ? wr_data : reg_cpuid ;
-    wr_data_save0      = (wen_save0      & ~(|do_redirect_o)) ? wr_data : reg_save0 ;
-    wr_data_save1      = (wen_save1      & ~(|do_redirect_o)) ? wr_data : reg_save1 ;
-    wr_data_save2      = (wen_save2      & ~(|do_redirect_o)) ? wr_data : reg_save2 ;
-    wr_data_save3      = (wen_save3      & ~(|do_redirect_o)) ? wr_data : reg_save3 ;
-    wr_data_tid        = (wen_tid        & ~(|do_redirect_o)) ? wr_data : reg_tid;
-    wr_data_tcfg       = (wen_tcfg       & ~(|do_redirect_o)) ? wr_data : reg_tcfg ;
-    wr_data_tval       = (wen_tval       & ~(|do_redirect_o)) ? wr_data : reg_tval ;
-    wr_data_cntc       = (wen_cntc       & ~(|do_redirect_o)) ? wr_data : reg_cntc ;
-    wr_data_ticlr      = (wen_ticlr      & ~(|do_redirect_o)) ? wr_data : reg_ticlr ;
-    wr_data_llbctl     = (wen_llbctl     & ~(|do_redirect_o)) ? wr_data : reg_llbctl ;
-    wr_data_tlbrentry  = (wen_tlbrentry  & ~(|do_redirect_o)) ? wr_data : reg_tlbrentry ;
-    wr_data_ctag       = (wen_ctag       & ~(|do_redirect_o)) ? wr_data : reg_ctag ;
-    wr_data_dmw0       = (wen_dmw0       & ~(|do_redirect_o)) ? wr_data : reg_dmw0 ;
-    wr_data_dmw1       = (wen_dmw1       & ~(|do_redirect_o)) ? wr_data : reg_dmw1 ;
+    wr_data_estat      = (wen_estat      & ~(|do_redirect_o)) ? 
+                        { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, wr_data[1:0]}; : 
+                        { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, reg_estat[1:0]};
+    wr_data_era        = (wen_era        & ~(|do_redirect_o)) ? wr_data : target_era ;//todo
+    
+    wr_data_eentry     = (wen_eentry     & ~(|do_redirect_o)) ? wr_data : reg_eentry ;//todo
+    wr_data_tlbidx     = (wen_tlbidx     & ~(|do_redirect_o)) ? wr_data : reg_tlbidx ;//todo
+    wr_data_tlbehi     = (wen_tlbehi     & ~(|do_redirect_o)) ? wr_data : reg_tlbehi ;//todo
+    wr_data_tlbelo0    = (wen_tlbelo0    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo0 ;//todo
+    wr_data_tlbelo1    = (wen_tlbelo1    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo1 ;//todo
+    wr_data_asid       = (wen_asid       & ~(|do_redirect_o)) ? wr_data : reg_asid ;//todo
+    wr_data_pgdl       = (wen_pgdl       & ~(|do_redirect_o)) ? wr_data : reg_pgdl ;//todo
+    wr_data_pgdh       = (wen_pgdh       & ~(|do_redirect_o)) ? wr_data : reg_pgdh ;//todo
+    wr_data_pgd        = (wen_pgd        & ~(|do_redirect_o)) ? wr_data : reg_pgd ;//todo
+    wr_data_cpuid      = (wen_cpuid      & ~(|do_redirect_o)) ? wr_data : reg_cpuid ;//todo
+    wr_data_save0      = (wen_save0      & ~(|do_redirect_o)) ? wr_data : reg_save0 ;//todo
+    wr_data_save1      = (wen_save1      & ~(|do_redirect_o)) ? wr_data : reg_save1 ;//todo
+    wr_data_save2      = (wen_save2      & ~(|do_redirect_o)) ? wr_data : reg_save2 ;//todo
+    wr_data_save3      = (wen_save3      & ~(|do_redirect_o)) ? wr_data : reg_save3 ;//todo
+    wr_data_tid        = (wen_tid        & ~(|do_redirect_o)) ? wr_data : reg_tid;//todo
+    wr_data_tcfg       = (wen_tcfg       & ~(|do_redirect_o)) ? wr_data : reg_tcfg ;//todo
+    wr_data_tval       = (wen_tval       & ~(|do_redirect_o)) ? wr_data : reg_tval ;//todo
+    wr_data_cntc       = (wen_cntc       & ~(|do_redirect_o)) ? wr_data : reg_cntc ;//todo
+    wr_data_ticlr      = (wen_ticlr      & ~(|do_redirect_o)) ? wr_data : reg_ticlr ;//todo
+    wr_data_llbctl     = (wen_llbctl     & ~(|do_redirect_o)) ? wr_data : reg_llbctl ;//todo
+    wr_data_tlbrentry  = (wen_tlbrentry  & ~(|do_redirect_o)) ? wr_data : reg_tlbrentry ;//todo
+    wr_data_ctag       = (wen_ctag       & ~(|do_redirect_o)) ? wr_data : reg_ctag ;//todo
+    wr_data_dmw0       = (wen_dmw0       & ~(|do_redirect_o)) ? wr_data : reg_dmw0 ;//todo
+    wr_data_dmw1       = (wen_dmw1       & ~(|do_redirect_o)) ? wr_data : reg_dmw1 ;//todo
 
 end
 
 always_ff @(posedge clk) begin
     if(~rst_n) begin
-        reg_crmd        <= 32'd0;
-        reg_prmd        <= 32'd0;
+        
+        
+        reg_euen        <= 32'd0;
         reg_ectl        <= 32'd0;
         reg_estat       <= 32'd0;
         reg_era         <= 32'd0;
-        reg_badv        <= 32'd0;
+        
         reg_eentry      <= 32'd0;
         reg_tlbidx      <= 32'd0;
         reg_tlbehi      <= 32'd0;
         reg_tlbelo0     <= 32'd0;
         reg_tlbelo1     <= 32'd0;
-        reg_asid        <= 32'd0;
+        reg_asid        <= 32'd0;//todo init asidbits
         reg_pgdl        <= 32'd0;
         reg_pgdh        <= 32'd0;
         reg_pgd         <= 32'd0;
@@ -349,38 +372,195 @@ always_ff @(posedge clk) begin
         reg_dmw0        <= 32'd0;
         reg_dmw1        <= 32'd0;
     end else begin
-        reg_crmd        <= (wr_data_crmd & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_crmd & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_prmd        <= (wr_data_prmd & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_prmd & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_ectl        <= (wr_data_ectl & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_ectl & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_estat       <= (wr_data_estat & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_estat & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
+        
+        
+        reg_euen        <= (wr_data_euen & 32'b0000_0000_0000_0000_0000_0000_0000_0001) | (reg_euen & ~32'b0000_0000_0000_0000_0000_0000_0000_0111);
+        reg_ectl        <= (wr_data_ectl & 32'b0000_0000_0000_0000_0001_1011_1111_1111) | (reg_ectl & ~32'b0000_0000_0000_0000_0001_1011_1111_1111);
+        reg_estat       <= (wr_data_estat & 32'b0111_1111_1111_1111_0001_1011_1111_1111) | (reg_estat & ~32'b0111_1111_1111_1111_0001_1011_1111_1111);
         reg_era         <= (wr_data_era & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_era & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_badv        <= (wr_data_badv & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_badv & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_eentry      <= (wr_data_eentry & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_eentry & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_tlbidx      <= (wr_data_tlbidx & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tlbidx & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_tlbehi      <= (wr_data_tlbehi & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tlbehi & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_tlbelo0     <= (wr_data_tlbelo0 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tlbelo0 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_tlbelo1     <= (wr_data_tlbelo1 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tlbelo1 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_asid        <= (wr_data_asid & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_asid & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_pgdl        <= (wr_data_pgdl & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_pgdl & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_pgdh        <= (wr_data_pgdh & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_pgdh & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_pgd         <= (wr_data_pgd & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_pgd & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_cpuid       <= (wr_data_cpuid & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_cpuid & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
+        
+        reg_eentry      <= (wr_data_eentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_eentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
+        reg_tlbidx      <= (wr_data_tlbidx & 32'b1011_1111_0000_0000_1111_1111_1111_1111) | (reg_tlbidx & ~32'b1011_1111_0000_0000_1111_1111_1111_1111);// tlb size define
+        reg_tlbehi      <= (wr_data_tlbehi & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_tlbehi & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
+        reg_tlbelo0     <= (wr_data_tlbelo0 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo0 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
+        reg_tlbelo1     <= (wr_data_tlbelo1 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo1 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
+        reg_asid        <= (wr_data_asid & 32'b0000_0000_0000_0000_0000_0011_1111_1111) | (reg_asid & ~32'b0000_0000_0000_0000_0000_0011_1111_1111);
+        reg_pgdl        <= (wr_data_pgdl & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdl & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
+        reg_pgdh        <= (wr_data_pgdh & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdh & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
+        reg_pgd         <= (wr_data_pgd & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgd & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
+        reg_cpuid       <= (wr_data_cpuid & 32'b0000_0000_0000_0000_0000_0000_0000_0000) | (reg_cpuid & ~32'b0000_0000_0000_0000_0000_0000_0000_0000);
         reg_save0       <= (wr_data_save0 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_save0 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_save1       <= (wr_data_save1 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_save1 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_save2       <= (wr_data_save2 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_save2 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_save3       <= (wr_data_save3 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_save3 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_tid         <= (wr_data_tid & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tid & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_tcfg        <= (wr_data_tcfg & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tcfg & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_tval        <= (wr_data_tval & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tval & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_cntc        <= (wr_data_cntc & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_cntc & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_ticlr       <= (wr_data_ticlr & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_ticlr & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_llbctl      <= (wr_data_llbctl & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_llbctl & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_tlbrentry   <= (wr_data_tlbrentry & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tlbrentry & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_ctag        <= (wr_data_ctag & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_ctag & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_dmw0        <= (wr_data_dmw0 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_dmw0 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
-        reg_dmw1        <= (wr_data_dmw1 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_dmw1 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
+        reg_tcfg        <= (wr_data_tcfg & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tcfg & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);//change with n?
+        reg_tval        <= (wr_data_tval & 32'b0000_0000_0000_0000_0000_0000_0000_0000) | (reg_tval & ~32'b0000_0000_0000_0000_0000_0000_0000_0000);
+        reg_cntc        <= (wr_data_cntc & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_cntc & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);//todo
+        reg_ticlr       <= (wr_data_ticlr & 32'b0000_0000_0000_0000_0000_0000_0000_0000) | (reg_ticlr & ~32'b0000_0000_0000_0000_0000_0000_0000_0000); // w1 to read about timer
+        reg_llbctl      <= (wr_data_llbctl & 32'b0000_0000_0000_0000_0000_0000_0000_0100) | (reg_llbctl & ~32'b0000_0000_0000_0000_0000_0000_0000_0100);//w1 to read about llbit
+        reg_tlbrentry   <= (wr_data_tlbrentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_tlbrentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
+        reg_ctag        <= (wr_data_ctag & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_ctag & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);//todo
+        reg_dmw0        <= (wr_data_dmw0 & 32'b1110_1110_0000_0000_0000_0000_0011_1001) | (reg_dmw0 & ~32'b1110_1110_0000_0000_0000_0000_0011_1001);
+        reg_dmw1        <= (wr_data_dmw1 & 32'b1110_1110_0000_0000_0000_0000_0011_1001) | (reg_dmw1 & ~32'b1110_1110_0000_0000_0000_0000_0011_1001);
     end
 end
+
+//difficult reg write
+
+//crmd
+always_ff @(posedge clk) begin
+    if(~rst_n) begin
+        reg_crmd[  `_CRMD_PLV] <= 2'b0;
+        reg_crmd[   `_CRMD_IE] <=  1'b0;
+        reg_crmd[   `_CRMD_DA] <=  1'b1;
+        reg_crmd[   `_CRMD_PG] <=  1'b0;
+        reg_crmd[ `_CRMD_DATF] <=  2'b0;
+        reg_crmd[ `_CRMD_DATM] <=  2'b0;
+        reg_crmd[      31 : 9] <= 23'b0;
+    end
+    else if((|do_redirect_o)) begin
+        reg_crmd[`_CRMD_PLV] <= 2'b0;
+        reg_crmd[`_CRMD_IE] <= 1'b0;
+        //todo tlbrefill
+    end
+    else if((|do_ertn_i)) begin
+        reg_crmd[`_CRMD_PLV] <= reg_prmd[`_PRMD_PPLV];
+        reg_crmd[`_CRMD_IE] <= reg_prmd[`_PRMD_PIE];
+        //todo tlbrefill
+    end
+    else if(wen_crmd) begin
+        reg_crmd[ `_CRMD_PLV] <= wr_data[ `_CRMD_PLV];
+        reg_crmd[  `_CRMD_IE] <= wr_data[  `_CRMD_IE];
+        reg_crmd[  `_CRMD_DA] <= wr_data[  `_CRMD_DA];
+        reg_crmd[  `_CRMD_PG] <= wr_data[  `_CRMD_PG];
+        reg_crmd[`_CRMD_DATF] <= wr_data[`_CRMD_DATF];
+        reg_crmd[`_CRMD_DATM] <= wr_data[`_CRMD_DATM];
+    end
+end
+
+//prmd
+always_ff @(posedge clk) begin
+    if (~rst_n) begin
+        reg_prmd[31:3] <= 29'b0;
+    end
+    else if ((|do_redirect_o)) begin
+        reg_prmd[`_PRMD_PPLV] <= reg_crmd[`_PRMD_PLV];
+        reg_prmd[ `_PRMD_PIE] <= reg_crmd[`_PRMD_IE ];
+    end
+    else if (wen_prmd) begin
+        reg_prmd[`_PRMD_PPLV] <= wr_data[`_PRMD_PPLV];
+        reg_prmd[ `_PRMD_PIE] <= wr_data[ `_PRMD_PIE];
+    end
+end
+
+logic [31:0]    bad_va_selected;
+//badv
+always_ff @(posedge clk) begin
+    if (~rst_n) begin
+        reg_badv <= 32'd0;
+    end
+    else if (wen_badv) begin
+        reg_badv <= wr_data;
+    end
+    else if (va_error) begin
+        reg_badv <= bad_va_selected;
+    end
+end
+
+//Exception handling
+logic [31:0]    exception_handler;
+logic [31:0]    interrupt_handler;
+logic [31:0]    tlbrefill_handler;//todo
+logic do_interrupt;
+assigin do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
+
+always_comb begin
+    do_redirect_o       = 2'b00;
+    target_era          = reg_era;
+    ecode_selcted       = reg_estat[`_ESTAT_ECODE];
+    esubcode_selected   = reg_estat[`_ESTAT_ESUBCODE];
+    va_error = 0;
+    bad_va_selected = reg_badv;
+    exception_handler = reg_eentry;
+    interrupt_handler = reg_eentry;
+    // redirect_addr_o
+    if(do_interrupt) begin
+        redirect_addr_o = interrupt_handler;
+    end else if (excp_trigger_i[1] )begin
+        //todo: tlb exception
+        redirect_addr_o = exception_handler;
+    end else if (do_ertn_i[1]) begin
+        redirect_addr_o = reg_era;
+    end else if (excp_trigger_i[0]) begin
+        //todo: tlb exception
+        redirect_addr_o = exception_handler;
+    end else if (do_ertn_i[0]) begin
+        redirect_addr_o = reg_era;
+    end else begin
+        redirect_addr_o = exception_handler;
+    end
+
+    /*  assign:
+        ecode_selected
+        esubcode_selected
+        target_era
+        do_redirect_o
+        va_error
+        bad_va_selected 
+    */
+    if(do_interrupt) begin
+        ecode_selcted = 0;
+        esubcode_selected = 0;
+        target_era = instr_pc_i[1];
+        do_redirect_o = 2'b11;
+    end else if (excp_trigger_i[1])begin
+        ecode_selcted = ecode_i[1];
+        esubcode_selected = esubcode_i[1];
+        target_era = instr_pc_i[1];
+        do_redirect_o = 2'b11;
+        if (   ecode_i[1] == `_ECODE_ADEF 
+            || ecode_i[1] == `_ECODE_ADEM
+            || ecode_i[1] == `_ECODE_ALE
+            || ecode_i[1] == `_ECODE_PIL
+            || ecode_i[1] == `_ECODE_PIS
+            || ecode_i[1] == `_ECODE_PIF
+            || ecode_i[1] == `_ECODE_PME
+            || ecode_i[1] == `_ECODE_PPI  
+        //todo: tlbrefill
+        ) begin
+            va_error = 1'b1;
+            bad_va_selected = bad_va_i[1];
+        end      
+    end else if (do_ertn_i[1]) begin
+        do_redirect_o = 2'b11;
+    end else if (excp_trigger_i[0]) begin
+        ecode_selcted = ecode_i[0];
+        esubcode_selected = esubcode_i[0];
+        target_era = instr_pc_i[0];
+        do_redirect_o = 2'b01;
+        if (   ecode_i[0] == `_ECODE_ADEF 
+            || ecode_i[0] == `_ECODE_ADEM
+            || ecode_i[0] == `_ECODE_ALE
+            || ecode_i[0] == `_ECODE_PIL
+            || ecode_i[0] == `_ECODE_PIS
+            || ecode_i[0] == `_ECODE_PIF
+            || ecode_i[0] == `_ECODE_PME
+            || ecode_i[0] == `_ECODE_PPI  
+        //todo: tlbrefill
+        ) begin
+            va_error = 1'b1;
+            bad_va_selected = bad_va_i[0];
+        end
+    end else if (do_ertn_i[0]) begin
+        do_redirect_o = 2'b01;
+    end 
+    else begin
+        do_redirect_o = 2'b00;
+    end
+
+end
+
 
 
 endmodule : csr
