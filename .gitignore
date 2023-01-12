@@ -11,6 +11,6 @@
 *.sublime-workspace
 *.idea
 *DVEfiles
-./src/inst/decoder.sv
-./src/inst/decoder.svh
+src/inst/decoder.sv
+src/inst/decoder.svh
 .gitconfig
