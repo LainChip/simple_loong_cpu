@@ -7,41 +7,47 @@ module csr(
     input           clk,
     input           rst_n,
     
-    input   logic                   stall_i       //输入：流水线暂停
+    input   decode_info_t           decode_info_i,     //输入：解码信息
+    input   logic                   stall_i,           //输入：流水线暂停
     input   logic   [25:0]          instr_i,           //输入：指令后26位
 
     //for read
-    input   logic   [13:0]          rd_addr_i,         //输入：读csr寄存器编号
     output  logic   [31:0]          rd_data_o,         //输出：读数据
     
     // for write
-    input   logic                   csr_write_en_i,    //输入：csr写使能
-    input   logic   [13:0]          wr_addr_i,         //输入：写csr寄存器编号
-    input   logic   [31:0]          wr_data_i          //输入：写数据
-    input   logic   [31:0]          wr_mask_i          //输入：rj寄存器存放的写掩码
+    
+    input   logic   [31:0]          wr_data_i,          //输入：写数据
+    input   logic   [31:0]          wr_mask_i,          //输入：rj寄存器存放的写掩码
 
     //for interrupt
-    input   logic   [8:0]           interrupt_i        //输入：中断信号
+    input   logic   [8:0]           interrupt_i,        //输入：中断信号
 
     //for exception
-    input   logic   [5:0][1:0]      ecode_i            //输入：两条流水线的例外一级码
-    input   logic   [8:0][1:0]      esubcode_i         //输入：两条流水线的例外二级码
-    input   logic   [1:0]           excp_trigger_i     //输入：发生异常的流水级
-    input   logic   [32:0][1:0]     bad_va_i           //输入：地址相关例外出错的虚地址
-    input   logic   [32:0][1:0]     instr_pc_i         //输入：指令pc
-    input   logic   [1:0]           do_ertn_i          //输入：两条流水线的例外返回
-    output  logic                   do_redirect_o      //输出：是否发生跳转
-    output  logic   [31:0]          redirect_addr_o    //输出：返回或跳转的地址
+    input   logic   [1:0][5:0]      ecode_i,            //输入：两条流水线的例外一级码
+    input   logic   [1:0][8:0]      esubcode_i,         //输入：两条流水线的例外二级码
+    input   logic   [1:0]           excp_trigger_i,     //输入：发生异常的流水级
+    input   logic   [1:0][31:0]     bad_va_i,           //输入：地址相关例外出错的虚地址
+    input   logic   [1:0][31:0]     instr_pc_i,         //输入：指令pc
+    input   logic   [1:0]           do_ertn_i,          //输入：两条流水线的例外返回
+    output  logic   [1:0]           do_redirect_o,      //输出：是否发生跳转
+    output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
     //todo：tlb related exceptions
 
     // timer
-    output  logic  [63:0]  timer_data_o               //输出：定时器值
-    output  logic  [31:0]  tid_o                      //输出：定时器id
+    output  logic  [63:0]  timer_data_o,                //输出：定时器值
+    output  logic  [31:0]  tid_o,                       //输出：定时器id
 
     //todo: llbit
     //todo: tlb related addr translate
 
 );
+logic   [13:0]          rd_addr_i,         //输入：读csr寄存器编号
+logic                   csr_write_en_i,     //输入：csr写使能
+logic   [13:0]          wr_addr_i,         //输入：写csr寄存器编号
+
+assigin rd_addr_i = instr_i[`_INSTR_CSR_NUM];
+assigin wr_addr_i = instr_i[`_INSTR_CSR_NUM];
+assigin csr_write_en_i = decode_info_i.csr_write_en;
 
 logic [31:0]    reg_crmd;
 logic [31:0]    reg_prmd;
@@ -78,40 +84,40 @@ logic [31:0]    reg_brk;
 logic [31:0]    reg_disable_cache;
 
 
-parameter int addr_crmd             = 0;
-parameter int addr_prmd             = 1;
-parameter int addr_euen             = 2;
-parameter int addr_ectl             = 4;
-parameter int addr_estat            = 5;
-parameter int addr_era              = 6;
-parameter int addr_badv             = 7;
-parameter int addr_eentry           = 12;
-parameter int addr_tlbidx           = 16;
-parameter int addr_tlbehi           = 17;
-parameter int addr_tlbelo0          = 18;
-parameter int addr_tlbelo1          = 19;
-parameter int addr_asid             = 24;
-parameter int addr_pgdl             = 25;
-parameter int addr_pgdh             = 26;
-parameter int addr_pgd              = 27;
-parameter int addr_cpuid            = 32;
-parameter int addr_save0            = 48;
-parameter int addr_save1            = 49;
-parameter int addr_save2            = 50;
-parameter int addr_save3            = 51;
-parameter int addr_tid              = 64;
-parameter int addr_tcfg             = 65;
-parameter int addr_tval             = 66;
-parameter int addr_cntc             = 67;
-parameter int addr_ticlr            = 68;
-parameter int addr_llbctl           = 96;
-parameter int addr_tlbrentry        = 136;
-parameter int addr_ctag             = 152;
-parameter int addr_dmw0             = 384;
-parameter int addr_dmw1             = 385;
+parameter int ADDR_CRMD             = 0;
+parameter int ADDR_PRMD             = 1;
+parameter int ADDR_EUEN             = 2;
+parameter int ADDR_ECTL             = 4;
+parameter int ADDR_ESTAT            = 5;
+parameter int ADDR_ERA              = 6;
+parameter int ADDR_BADV             = 7;
+parameter int ADDR_EENTRY           = 12;
+parameter int ADDR_TLBIDX           = 16;
+parameter int ADDR_TLBEHI           = 17;
+parameter int ADDR_TLBELO0          = 18;
+parameter int ADDR_TLBELO1          = 19;
+parameter int ADDR_ASID             = 24;
+parameter int ADDR_PGDL             = 25;
+parameter int ADDR_PGDH             = 26;
+parameter int ADDR_PGD              = 27;
+parameter int ADDR_CPUID            = 32;
+parameter int ADDR_SAVE0            = 48;
+parameter int ADDR_SAVE1            = 49;
+parameter int ADDR_SAVE2            = 50;
+parameter int ADDR_SAVE3            = 51;
+parameter int ADDR_TID              = 64;
+parameter int ADDR_TCFG             = 65;
+parameter int ADDR_TVAL             = 66;
+parameter int ADDR_CNTC             = 67;
+parameter int ADDR_TICLR            = 68;
+parameter int ADDR_LLBCTL           = 96;
+parameter int ADDR_TLBRENTRY        = 136;
+parameter int ADDR_CTAG             = 152;
+parameter int ADDR_DMW0             = 384;
+parameter int ADDR_DMW1             = 385;
 
-parameter int addr_brk              = 256;
-parameter int addr_disable_cache    = 257;
+parameter int ADDR_BRK              = 256;
+parameter int ADDR_DISABLE_CACHE    = 257;
 
 //Read
 logic read_reg_result;
@@ -119,104 +125,104 @@ assign rd_data_o = read_reg_result;
 
 always_comb begin
     case (rd_addr_i)
-        addr_crmd          : begin
+        ADDR_CRMD          : begin
             read_reg_result = reg_crmd;
         end
-        addr_prmd          : begin
+        ADDR_PRMD          : begin
             read_reg_result = reg_prmd;
         end
-        addr_euen          : begin
+        ADDR_EUEN          : begin
             read_reg_result = reg_euen;
         end
-        addr_ectl          : begin
+        ADDR_ECTL          : begin
             read_reg_result = reg_ectl;
         end
-        addr_estat         : begin
+        ADDR_ESTAT         : begin
             read_reg_result = reg_estat;
         end
-        addr_era           : begin
+        ADDR_ERA           : begin
             read_reg_result = reg_era;
         end
-        addr_badv          : begin
+        ADDR_BADV          : begin
             read_reg_result = reg_badv;
         end
-        addr_eentry        : begin
+        ADDR_EENTRY        : begin
             read_reg_result = reg_eentry;
         end
-        addr_tlbidx        : begin
+        ADDR_TLBIDX        : begin
             read_reg_result = reg_tlbidx;
         end
-        addr_tlbehi        : begin
+        ADDR_TLBEHI        : begin
             read_reg_result = reg_tlbehi;
         end
-        addr_tlbelo0       : begin
+        ADDR_TLBELO0       : begin
             read_reg_result = reg_tlbelo0;
         end
-        addr_tlbelo1       : begin
+        ADDR_TLBELO1       : begin
             read_reg_result = reg_tlbelo1;
         end
-        addr_asid          : begin
+        ADDR_ASID          : begin
             read_reg_result = reg_asid;
         end
-        addr_pgdl          : begin
+        ADDR_PGDL          : begin
             read_reg_result = reg_pgdl;
         end
-        addr_pgdh          : begin
+        ADDR_PGDH          : begin
             read_reg_result = reg_pgdh;
         end
-        addr_pgd           : begin
+        ADDR_PGD           : begin
             read_reg_result = reg_pgd;
         end
-        addr_cpuid         : begin
+        ADDR_CPUID         : begin
             read_reg_result = reg_cpuid;
         end
-        addr_save0         : begin
+        ADDR_SAVE0         : begin
             read_reg_result = reg_save0;
         end
-        addr_save1         : begin
+        ADDR_SAVE1         : begin
             read_reg_result = reg_save1;
         end
-        addr_save2         : begin
+        ADDR_SAVE2         : begin
             read_reg_result = reg_save2;
         end
-        addr_save3         : begin
+        ADDR_SAVE3         : begin
             read_reg_result = reg_save3;
         end
-        addr_tid           : begin
+        ADDR_TID           : begin
             read_reg_result = reg_tid;
         end
-        addr_tcfg          : begin
+        ADDR_TCFG          : begin
             read_reg_result = reg_tcfg;
         end
-        addr_tval          : begin
+        ADDR_TVAL          : begin
             read_reg_result = reg_tval;
         end
-        addr_cntc          : begin
+        ADDR_CNTC          : begin
             read_reg_result = reg_cntc;
         end
-        addr_ticlr         : begin
+        ADDR_TICLR         : begin
             read_reg_result = reg_ticlr;
         end
-        addr_llbctl        : begin
+        ADDR_LLBCTL        : begin
             read_reg_result = reg_llbctl;
         end
-        addr_tlbrentry     : begin  
+        ADDR_TLBRENTRY     : begin  
             read_reg_result = reg_tlbrentry;
         end
-        addr_ctag          : begin
+        ADDR_CTAG          : begin
             read_reg_result = reg_ctag;
         end
-        addr_dmw0          : begin
+        ADDR_DMW1          : begin
             read_reg_result = reg_dmw0;
         end
-        addr_dmw1          : begin
+        ADDR_DMW1          : begin
             read_reg_result = reg_dmw1;
         end
 
-        addr_brk           : begin
+        ADDR_BRK           : begin
             read_reg_result = reg_brk;
         end
-        addr_disable_cache : begin
+        ADDR_DISABLE_CACHE : begin
             read_reg_result = reg_disable_cache;
         end
     endcase
@@ -225,37 +231,37 @@ end
 //simple reg write
 logic [31:0] wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : wr_data_i & wr_mask_i;
 
-logic wen_crmd             = csr_write_en_i & (wr_addr_i == addr_crmd) ;
-logic wen_prmd             = csr_write_en_i & (wr_addr_i == addr_prmd) ;
-logic wen_euen             = csr_write_en_i & (wr_addr_i == addr_euen) ;
-logic wen_ectl             = csr_write_en_i & (wr_addr_i == addr_ectl) ;
-logic wen_estat            = csr_write_en_i & (wr_addr_i == addr_estat) ;
-logic wen_era              = csr_write_en_i & (wr_addr_i == addr_era) ;
-logic wen_badv             = csr_write_en_i & (wr_addr_i == addr_badv) ;
-logic wen_eentry           = csr_write_en_i & (wr_addr_i == addr_eentry) ;
-logic wen_tlbidx           = csr_write_en_i & (wr_addr_i == addr_tlbidx) ;
-logic wen_tlbehi           = csr_write_en_i & (wr_addr_i == addr_tlbehi) ;
-logic wen_tlbelo0          = csr_write_en_i & (wr_addr_i == addr_tlbelo0) ;
-logic wen_tlbelo1          = csr_write_en_i & (wr_addr_i == addr_tlbelo1) ;
-logic wen_asid             = csr_write_en_i & (wr_addr_i == addr_asid) ;
-logic wen_pgdl             = csr_write_en_i & (wr_addr_i == addr_pgdl) ;
-logic wen_pgdh             = csr_write_en_i & (wr_addr_i == addr_pgdh) ;
-logic wen_pgd              = csr_write_en_i & (wr_addr_i == addr_pgd) ;
-logic wen_cpuid            = csr_write_en_i & (wr_addr_i == addr_cpuid) ;
-logic wen_save0            = csr_write_en_i & (wr_addr_i == addr_save0) ;
-logic wen_save1            = csr_write_en_i & (wr_addr_i == addr_save1) ;
-logic wen_save2            = csr_write_en_i & (wr_addr_i == addr_save2) ;
-logic wen_save3            = csr_write_en_i & (wr_addr_i == addr_save3) ;
-logic wen_tid              = csr_write_en_i & (wr_addr_i == addr_tid) ;
-logic wen_tcfg             = csr_write_en_i & (wr_addr_i == addr_tcfg) ;
-logic wen_tval             = csr_write_en_i & (wr_addr_i == addr_tval) ;
-logic wen_cntc             = csr_write_en_i & (wr_addr_i == addr_cntc) ;
-logic wen_ticlr            = csr_write_en_i & (wr_addr_i == addr_ticlr) ;
-logic wen_llbctl           = csr_write_en_i & (wr_addr_i == addr_llbctl) ;
-logic wen_tlbrentry        = csr_write_en_i & (wr_addr_i == addr_tlbrentry) ;
-logic wen_ctag             = csr_write_en_i & (wr_addr_i == addr_ctag) ;
-logic wen_dmw0             = csr_write_en_i & (wr_addr_i == addr_dmw0) ;
-logic wen_dmw1             = csr_write_en_i & (wr_addr_i == addr_dmw1) ;
+logic wen_crmd             = csr_write_en_i & (wr_addr_i == ADDR_CRMD) ;
+logic wen_prmd             = csr_write_en_i & (wr_addr_i == ADDR_PRMD) ;
+logic wen_euen             = csr_write_en_i & (wr_addr_i == ADDR_EUEN) ;
+logic wen_ectl             = csr_write_en_i & (wr_addr_i == ADDR_ECTL) ;
+logic wen_estat            = csr_write_en_i & (wr_addr_i == ADDR_ESTAT) ;
+logic wen_era              = csr_write_en_i & (wr_addr_i == ADDR_ERA) ;
+logic wen_badv             = csr_write_en_i & (wr_addr_i == ADDR_BADV) ;
+logic wen_eentry           = csr_write_en_i & (wr_addr_i == ADDR_EENTRY) ;
+logic wen_tlbidx           = csr_write_en_i & (wr_addr_i == ADDR_TLBIDX) ;
+logic wen_tlbehi           = csr_write_en_i & (wr_addr_i == ADDR_TLBEHI) ;
+logic wen_tlbelo0          = csr_write_en_i & (wr_addr_i == ADDR_TLBELO0) ;
+logic wen_tlbelo1          = csr_write_en_i & (wr_addr_i == ADDR_TLBELO1) ;
+logic wen_asid             = csr_write_en_i & (wr_addr_i == ADDR_ASID) ;
+logic wen_pgdl             = csr_write_en_i & (wr_addr_i == ADDR_PGDL) ;
+logic wen_pgdh             = csr_write_en_i & (wr_addr_i == ADDR_PGDH) ;
+logic wen_pgd              = csr_write_en_i & (wr_addr_i == ADDR_PGD) ;
+logic wen_cpuid            = csr_write_en_i & (wr_addr_i == ADDR_CPUID) ;
+logic wen_save0            = csr_write_en_i & (wr_addr_i == ADDR_SAVE0) ;
+logic wen_save1            = csr_write_en_i & (wr_addr_i == ADDR_SAVE1) ;
+logic wen_save2            = csr_write_en_i & (wr_addr_i == ADDR_SAVE2) ;
+logic wen_save3            = csr_write_en_i & (wr_addr_i == ADDR_SAVE3) ;
+logic wen_tid              = csr_write_en_i & (wr_addr_i == ADDR_TID) ;
+logic wen_tcfg             = csr_write_en_i & (wr_addr_i == ADDR_TCFG) ;
+logic wen_tval             = csr_write_en_i & (wr_addr_i == ADDR_TVAL) ;
+logic wen_cntc             = csr_write_en_i & (wr_addr_i == ADDR_CNTC) ;
+logic wen_ticlr            = csr_write_en_i & (wr_addr_i == ADDR_TICLR) ;
+logic wen_llbctl           = csr_write_en_i & (wr_addr_i == ADDR_LLBCTL) ;
+logic wen_tlbrentry        = csr_write_en_i & (wr_addr_i == ADDR_TLBRENTRY) ;
+logic wen_ctag             = csr_write_en_i & (wr_addr_i == ADDR_CTAG) ;
+logic wen_dmw0             = csr_write_en_i & (wr_addr_i == ADDR_DMW1) ;
+logic wen_dmw1             = csr_write_en_i & (wr_addr_i == ADDR_DMW1) ;
 
 logic wr_data_crmd        ;
 logic wr_data_prmd        ;
@@ -311,7 +317,7 @@ always_comb begin
                         { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, reg_estat[1:0]};
     wr_data_era        = (wen_era        & ~(|do_redirect_o)) ? wr_data : target_era ;//todo
     
-    wr_data_eentry     = (wen_eentry     & ~(|do_redirect_o)) ? wr_data : reg_eentry ;//todo
+    wr_data_eentry     = (wen_eentry     & ~(|do_redirect_o)) ? wr_data : reg_eentry ;
     wr_data_tlbidx     = (wen_tlbidx     & ~(|do_redirect_o)) ? wr_data : reg_tlbidx ;//todo
     wr_data_tlbehi     = (wen_tlbehi     & ~(|do_redirect_o)) ? wr_data : reg_tlbehi ;//todo
     wr_data_tlbelo0    = (wen_tlbelo0    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo0 ;//todo
@@ -320,11 +326,11 @@ always_comb begin
     wr_data_pgdl       = (wen_pgdl       & ~(|do_redirect_o)) ? wr_data : reg_pgdl ;//todo
     wr_data_pgdh       = (wen_pgdh       & ~(|do_redirect_o)) ? wr_data : reg_pgdh ;//todo
     wr_data_pgd        = (wen_pgd        & ~(|do_redirect_o)) ? wr_data : reg_pgd ;//todo
-    wr_data_cpuid      = (wen_cpuid      & ~(|do_redirect_o)) ? wr_data : reg_cpuid ;//todo
-    wr_data_save0      = (wen_save0      & ~(|do_redirect_o)) ? wr_data : reg_save0 ;//todo
-    wr_data_save1      = (wen_save1      & ~(|do_redirect_o)) ? wr_data : reg_save1 ;//todo
-    wr_data_save2      = (wen_save2      & ~(|do_redirect_o)) ? wr_data : reg_save2 ;//todo
-    wr_data_save3      = (wen_save3      & ~(|do_redirect_o)) ? wr_data : reg_save3 ;//todo
+    wr_data_cpuid      = (wen_cpuid      & ~(|do_redirect_o)) ? wr_data : reg_cpuid ;
+    wr_data_save0      = (wen_save0      & ~(|do_redirect_o)) ? wr_data : reg_save0 ;
+    wr_data_save1      = (wen_save1      & ~(|do_redirect_o)) ? wr_data : reg_save1 ;
+    wr_data_save2      = (wen_save2      & ~(|do_redirect_o)) ? wr_data : reg_save2 ;
+    wr_data_save3      = (wen_save3      & ~(|do_redirect_o)) ? wr_data : reg_save3 ;
     wr_data_tid        = (wen_tid        & ~(|do_redirect_o)) ? wr_data : reg_tid;//todo
     wr_data_tcfg       = (wen_tcfg       & ~(|do_redirect_o)) ? wr_data : reg_tcfg ;//todo
     wr_data_tval       = (wen_tval       & ~(|do_redirect_o)) ? wr_data : reg_tval ;//todo
