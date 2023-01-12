@@ -6,6 +6,7 @@
 
 //INSTR
 `define _INSTR_RJ       9:5
+`define _INSTR_CSR_NUM  23:10
 //CRMD
 `define _CRMD_PLV       1:0
 `define _CRMD_IE        2
