@@ -41,9 +41,9 @@ module csr(
     //todo: tlb related addr translate
 
 );
-logic   [13:0]          rd_addr_i,         //输入：读csr寄存器编号
-logic                   csr_write_en_i,     //输入：csr写使能
-logic   [13:0]          wr_addr_i,         //输入：写csr寄存器编号
+logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
+logic                   csr_write_en_i;     //输入：csr写使能
+logic   [13:0]          wr_addr_i;         //输入：写csr寄存器编号
 
 assigin rd_addr_i = instr_i[`_INSTR_CSR_NUM];
 assigin wr_addr_i = instr_i[`_INSTR_CSR_NUM];
