@@ -12,8 +12,8 @@ module backend(
 	input decode_info_t [1:0] decode_info_i,
 
 	// BPU 输入（随指令走）
-	input bpu_info_t [1:0] bpu_info_i,
-	output bpu_feedback_t bpu_feedback_o,
+	input bpu_predict_t [1:0] bpu_predict_i,
+	output bpu_update_t bpu_feedback_o,
 
     // 特权控制信号
     input priv_resp_t priv_resp_i,

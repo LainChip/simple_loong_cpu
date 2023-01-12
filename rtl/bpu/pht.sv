@@ -11,15 +11,15 @@
 `include "bpu.svh"
 
 module pht #(
-	parameter ADDR_WIDTH = `_PHT_ADDR_WIDTH
+	parameter ADDR_WIDTH = 8
 ) (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
 	input we_i,
     input taken_i,
     input [1:0] phr_i,
-    input [ADDR_WIDTH - 1:0] raddr_i,
-    input [ADDR_WIDTH - 1:0] waddr_i,
+    input [ADDR_WIDTH - 1:0] rindex_i,
+    input [ADDR_WIDTH - 1:0] windex_i,
     output [1:0] phr_o
 );
 
@@ -38,8 +38,8 @@ module pht #(
         .reset                   ( reset   ),
         .en                      ( 1'b1    ),
         .we                      ( we_i    ),
-        .raddr                   ( raddr_i ),
-        .waddr                   ( waddr_i ),
+        .rindex                  ( rindex_i ),
+        .windex                  ( windex_i ),
         .wdata                   ( wdata   ),
         .rdata                   ( phr_o   )
     );

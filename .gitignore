@@ -1,5 +1,3 @@
-src/inst/decoder.sv
-src/inst/decoder.svh
 *logs
 *obj_dir
 *.vcd
