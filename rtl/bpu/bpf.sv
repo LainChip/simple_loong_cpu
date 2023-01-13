@@ -16,18 +16,19 @@ module bpf (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
 	input [31:0] pc_i,
-	input [25:0] offs_i,
 	input [31:0] rj_i,
 	input [31:0] rd_i,
-	input [4:0] rj_index_i,
-	input [4:0] rd_index_i,
-	input reg_type_t reg_type_i,
-	input cmp_type_t cmp_type_i,
+	input decode_info_t decode_i,
 	input branch_type_t br_type_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
 	output [31:0] target_o
 );
+
+	wire [25:0] offs_i = decode_i.general.inst25_0; 
+	wire [4:0] rj_index_i = decode_i.general.inst25_0[9:5];
+	wire [4:0] rd_index_i = decode_i.general.inst25_0[4:0];
+	cmp_type_t cmp_type_i = decode_i.ex.cmp_type;
 	
 	wire [31:0] offs_26 = {{6{offs_i[25]}}, offs_i};
 	wire [31:0] offs_16 = {{16{offs_i[25]}}, offs_i[25:10]};
@@ -66,7 +67,7 @@ module bpf (
 
 	assign update_o.btb_update = update_o.flush;
 	always_comb begin : proc_br_type
-		if ((br_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || reg_type_i == `_REG_TYPE_BL) begin
+		if ((br_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || decode_i.ex.branch_link) begin
 			update_o.br_type = `_CALL;
 		end else if (br_type_i == `_BRANCH_INDIRECT && rj_index_i == 1 && offs_16 == 0) begin
 			update_o.br_type = `_RETURN;
