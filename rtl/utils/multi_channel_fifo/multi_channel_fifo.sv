@@ -2,7 +2,7 @@
 
 module multi_channel_fifo #(
 	parameter int DATA_WIDTH = 32,
-	parameter int DEPTH = 4,
+	parameter int DEPTH = 8,
 	parameter int BANK = 4,
 	parameter int WRITE_PORT = 2,
 	parameter int READ_PORT = 2,
@@ -31,7 +31,7 @@ module multi_channel_fifo #(
 
 	typedef logic [$clog2(BANK) - 1 : 0] ptr_t;
 
-	ptr_t [BANK - 1 : 0] read_index,write_index,port_read_index,port_write_index;
+	ptr_t [BANK - 1 : 0] read_index,port_read_index,port_write_index;
 	logic [BANK - 1 : 0] fifo_full,fifo_empty,fifo_push,fifo_pop;
 	dtype [BANK - 1 : 0] data_in, data_out;
 	logic [$clog2(BANK + 1) - 1 : 0] count_full;
@@ -54,14 +54,6 @@ module multi_channel_fifo #(
 				end else begin
 					if(read_ready_i)
 						read_index[i] <= read_index[i] + read_num_i;
-				end
-			end
-			always_ff @(posedge clk) begin : proc_write_index
-				if(~rst_n || flush_i) begin
-					write_index[i] <= i % BANK;
-				end else begin
-					if(write_valid_i & write_ready_o)
-						write_index[i] <= write_index[i] + write_num_i;
 				end
 			end
 			always_ff @(posedge clk) begin : proc_port_read_index

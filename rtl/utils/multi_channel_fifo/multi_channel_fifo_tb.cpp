@@ -95,7 +95,7 @@ int main(int argc, char **argv, char **env)
         }
 
         if (top->clk && top->rst_n) {
-            if(contextp->time() % 1000 == 1) {
+            if(contextp->time() % 10000 == 1) {
                 printf("time: %d, cnt: %d,r_cnt: %d\n",contextp->time(),cnt,r_cnt);
             }
             top->write_valid_i = rand() & 1;
