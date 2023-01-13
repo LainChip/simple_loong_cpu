@@ -84,10 +84,8 @@ module multiplier (
     endgenerate
 
 
-    /*======= final 68bit add =======*/
-    logic [67:0] result;
-    assign result = {wallace_c[66:0], booth_carry[14]} + wallace_s + {67'b0, booth_carry[15]};
-    assign res_o = result[63:0];
+    /*======= final 68bit add, and select [63:0] part =======*/
+    assign res_o = {wallace_c[62:0], booth_carry[14]} + wallace_s[63:0] + {62'b0, booth_carry[15]};
 
 
 endmodule
