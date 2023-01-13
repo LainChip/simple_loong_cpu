@@ -30,35 +30,27 @@ module multi_channel_fifo #(
    end
 
 	typedef logic [$clog2(BANK) - 1 : 0] ptr_t;
-
-	ptr_t [BANK - 1 : 0] read_index,port_read_index,port_write_index;
+	ptr_t [READ_PORT - 1 : 0] read_index;
+	ptr_t [BANK - 1 : 0] port_read_index,port_write_index;
 	logic [BANK - 1 : 0] fifo_full,fifo_empty,fifo_push,fifo_pop;
 	dtype [BANK - 1 : 0] data_in, data_out;
 	logic [$clog2(BANK + 1) - 1 : 0] count_full;
-	assign write_ready_o = count_full <= (BANK - WRITE_PORT);
+	assign write_ready_o = count_full <= (BANK[$clog2(BANK + 1) - 1 : 0] - WRITE_PORT[$clog2(BANK + 1) - 1 : 0]);
 
 	// FIFO 部分
 	always_comb begin
 		count_full = '0;
 		for(integer i = 0 ; i < BANK; i += 1) begin
-			count_full = count_full + fifo_full[i];
+			count_full = count_full + {{($clog2(BANK + 1) - 1){1'b0}},fifo_full[i]};
 		end
 	end
 
 	generate
 		for(genvar i = 0 ; i < BANK; i += 1) begin
 			// 指针更新策略
-			always_ff @(posedge clk) begin : proc_read_index
-				if(~rst_n || flush_i) begin
-					read_index[i] <= i % BANK;
-				end else begin
-					if(read_ready_i)
-						read_index[i] <= read_index[i] + read_num_i;
-				end
-			end
 			always_ff @(posedge clk) begin : proc_port_read_index
 				if(~rst_n || flush_i) begin
-					port_read_index[i] <= i % BANK;
+					port_read_index[i] <= i[$clog2(BANK) - 1 : 0];
 				end else begin
 					if(read_ready_i)
 						port_read_index[i] <= port_read_index[i] - read_num_i;
@@ -66,7 +58,7 @@ module multi_channel_fifo #(
 			end
 			always_ff @(posedge clk) begin : proc_port_write_index
 				if(~rst_n || flush_i) begin
-					port_write_index[i] <= i % BANK;
+					port_write_index[i] <= i[$clog2(BANK) - 1 : 0];
 				end else begin
 					if(write_valid_i & write_ready_o)
 						port_write_index[i] <= port_write_index[i] - write_num_i;
@@ -76,7 +68,7 @@ module multi_channel_fifo #(
 			// FIFO 控制信号
 			assign fifo_pop[i] = read_ready_i & (port_read_index[i] < read_num_i);
 			assign fifo_push[i] = write_valid_i & write_ready_o & (port_write_index[i] < write_num_i);
-			assign data_in[i] = write_data_i[port_write_index[i] & (WRITE_PORT - 1)];
+			assign data_in[i] = write_data_i[port_write_index[i][$clog2(WRITE_PORT) - 1: 0]];
 
 			// FIFO 生成
 			fifo_v3 #(
@@ -101,6 +93,15 @@ module multi_channel_fifo #(
 	// 输出部分
 	generate
 		for(genvar i = 0 ; i < READ_PORT; i+= 1) begin
+			// 指针更新策略
+			always_ff @(posedge clk) begin : proc_read_index
+				if(~rst_n || flush_i) begin
+					read_index[i] <= i[$clog2(BANK) - 1 : 0];
+				end else begin
+					if(read_ready_i)
+						read_index[i] <= read_index[i] + read_num_i;
+				end
+			end
 			assign read_data_o[i] = data_out[read_index[i]];
 			assign read_valid_o[i] = ~fifo_empty[read_index[i]];
 		end

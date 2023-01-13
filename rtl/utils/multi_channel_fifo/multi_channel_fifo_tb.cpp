@@ -96,7 +96,7 @@ int main(int argc, char **argv, char **env)
 
         if (top->clk && top->rst_n) {
             if(contextp->time() % 10000 == 1) {
-                printf("time: %d, cnt: %d,r_cnt: %d\n",contextp->time(),cnt,r_cnt);
+                printf("time: %ld, cnt: %d,r_cnt: %d\n",contextp->time(),cnt,r_cnt);
             }
             top->write_valid_i = rand() & 1;
             top->read_ready_i = 0;
@@ -117,7 +117,7 @@ int main(int argc, char **argv, char **env)
                     int err = 0;
                     for(int i = 0 ; i < random_read_num; i++) {
                         if(((top->read_data_o >> (i * 32)) & 0xffffffff) != r_cnt) {
-                            printf("i:%d,top->read_data_o[0]: %d,top->read_data_o[1]: %d,r_cnt: %d\n",i,top->read_data_o & 0xffffffff,
+                            printf("i:%d,top->read_data_o[0]: %ld,top->read_data_o[1]: %ld,r_cnt: %d\n",i,top->read_data_o & 0xffffffff,
                             (top->read_data_o >> (32)) & 0xffffffff, r_cnt);
                             err = 1;
                             // assert(0);
