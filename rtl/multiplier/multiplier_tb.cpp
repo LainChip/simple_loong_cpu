@@ -83,8 +83,8 @@ int main(int argc, char** argv) {
     // specific test
     std::cout << "[specific test]" << std::endl;
     top->mul_signed_i = 1;
-    top->X_i = 0x98765432;
-    top->Y_i = 0x12345678;
+    top->X_i = 0x000003e8;
+    top->Y_i = 0x00000003;
     next(top);
     expRes = mult_expRes(top->X_i, top->Y_i, top->mul_signed_i);
     if (top->res_o != expRes) {
