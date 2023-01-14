@@ -96,6 +96,12 @@
             "stage":"m1",
             "default_value":0,
             "invalid_value":0
+        },
+        "do_ertn":{
+            "length":1,
+            "stage":"m2",
+            "default_value":0,
+            "invalid_value":0
         }
     },
     "inst": {
@@ -109,7 +115,8 @@
         },
         "ertn":{
             "opcode":"0000011001001000001110",
-            "reg_type":"`_REG_TYPE_I"
+            "reg_type":"`_REG_TYPE_I",
+            "do_ertn":1
         },
         "csrrd": {
             "opcode": "00000100xxxxxxxxxxxxxx00000",
