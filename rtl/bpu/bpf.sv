@@ -19,7 +19,6 @@ module bpf (
 	input [31:0] rj_i,
 	input [31:0] rd_i,
 	input decode_info_t decode_i,
-	input branch_type_t br_type_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
 	output [31:0] target_o
@@ -28,7 +27,9 @@ module bpf (
 	wire [25:0] offs_i = decode_i.general.inst25_0; 
 	wire [4:0] rj_index_i = decode_i.general.inst25_0[9:5];
 	wire [4:0] rd_index_i = decode_i.general.inst25_0[4:0];
-	cmp_type_t cmp_type_i = decode_i.ex.cmp_type;
+	cmp_type_t cmp_type_i;
+	assign cmp_type_i = decode_i.ex.cmp_type;
+	branch_type_t br_type_i = decode_i.ex.cmp_type;
 	
 	wire [31:0] offs_26 = {{6{offs_i[25]}}, offs_i};
 	wire [31:0] offs_16 = {{16{offs_i[25]}}, offs_i[25:10]};
