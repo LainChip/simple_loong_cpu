@@ -17,7 +17,7 @@ module npc (
 	input rst_n,  // Asynchronous reset active low
 	input stall_i,
 	input bpu_update_t update_i,
-	output bpu_predict_t [1:0] predict_o,
+	output bpu_predict_t predict_o,
 	output reg [31:0] pc_o,
 	output stall_o
 );
@@ -43,8 +43,8 @@ module npc (
 	end
 
 	assign stall_o = 1'b0;
-	assign predict_o[0].npc = npc;
-	assign predict_o[1].npc = npc;
+	assign predict_o.npc = npc;
+	assign predict_o.fsc = pc_o[2];
 
 	
 endmodule : npc

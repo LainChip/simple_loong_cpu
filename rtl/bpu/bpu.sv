@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-12 12:06:51
+// Revise : 2023-01-14 11:40:01
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -16,7 +16,7 @@ module bpu (
 	input rst_n,  // Asynchronous reset active low
 	input stall_i,
 	input bpu_update_t update_i,
-	output bpu_predict_t [1:0] predict_o,
+	output bpu_predict_t predict_o,
 	output reg [31:0] pc_o,
 	output stall_o
 );
@@ -56,12 +56,12 @@ module bpu (
 
 	// ====================== BTB ======================
 	wire btb_miss;
+	wire btb_fsc;
 	wire [1:0] btb_br_type;
 	wire [31:2] btb_bta;
 
 	btb #(
-		.ADDR_WIDTH(`_BTB_ADDR_WIDTH),
-		.BANK(1)
+		.ADDR_WIDTH(`_BTB_ADDR_WIDTH)
 	) inst_btb (
 		.clk       (clk),
 		.rst_n     (rst_n),
@@ -70,6 +70,7 @@ module bpu (
 		.wpc_i     (update_i.pc),
 		.bta_i     (update_i.br_target),
 		.Br_type_i (update_i.br_type),
+		.fsc_o     (btb_fsc),
 		.miss_o    (btb_miss),
 		.bta_o     (btb_bta),
 		.Br_type_o (btb_br_type)
@@ -112,14 +113,9 @@ module bpu (
 	assign ppc = btb_br_type == `_RETURN ? ras_target :
 				 taken ? btb_bta : {pc[31:3] + 1, 1'b0};
 
-	assign predict_o[0].valid = ~npc[2];
-	assign predict_o[0].npc = npc;
-	assign predict_o[0].lphr = lphr;
-	assign predict_o[0].lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];
-
-	assign predict_o[1].valid = npc[2];
-	assign predict_o[1].npc = npc;
-	assign predict_o[1].lphr = lphr;
-	assign predict_o[1].lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];
+	assign predict_o.fsc = btb_fsc;
+	assign predict_o.npc = npc;
+	assign predict_o.lphr = lphr;
+	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];
 
 endmodule : bpu

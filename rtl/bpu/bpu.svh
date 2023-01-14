@@ -47,7 +47,7 @@ typedef struct packed {
 
 
 typedef struct packed {
-	logic valid;
+	logic fsc;
 	logic [31:2] npc;
 	logic [1:0] lphr;
 	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
