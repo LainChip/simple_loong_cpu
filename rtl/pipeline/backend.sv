@@ -10,9 +10,9 @@ module backend(
 
 	// 指令输入
 	input  inst_t [1:0] inst_i,
-	input  logic  [1:0] inst_valid,
-	output logic  [1:0] issue_num, // 0, 1, 2
-	output logic        backend_stall, 
+	input  logic  [1:0] inst_valid_i,
+	output logic  [1:0] issue_num_o, // 0, 1, 2
+	output logic        backend_stall_o, 
 
 	// BPU 输入（随指令走）
 	// input bpu_predict_t [1:0] bpu_predict_i,
