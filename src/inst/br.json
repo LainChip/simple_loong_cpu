@@ -28,6 +28,13 @@
             "stage": "ex",
             "default_value": 0,
             "invalid_value": 0
+        },
+
+        "branch_link": {
+            "length": 1,
+            "stage": "ex",
+            "default_value": 0,
+            "invalid_value": 0
         }
     },
     
@@ -48,7 +55,8 @@
             "opcode": "010101",
             "branch_type": "`_BRANCH_IMMEDIATE",
             "reg_type": "`_REG_TYPE_BL",
-            "ready_time": "`_READY_EX"
+            "ready_time": "`_READY_EX",
+            "branch_link": 1
         },
         "beq": {
             "opcode": "010110",
