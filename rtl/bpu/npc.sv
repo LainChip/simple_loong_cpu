@@ -44,7 +44,7 @@ module npc (
 
 	assign stall_o = 1'b0;
 	assign predict_o.npc = npc;
-	assign predict_o.fsc = pc[2];
+	assign predict_o.fsc = pc_o[2];
 
 	
 endmodule : npc
