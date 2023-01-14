@@ -64,12 +64,12 @@ struct InstSeq {
         } else if (name == "mul.w"  ) {
             return (int32_t)a * (int32_t)b;
         } else if (name == "mulh.w" ) {
-            // 显示转换仅会在高位补0!
+            // 显示转换仅会在高位补0，因为a和b原来的类型符号性为unsigned
             int64_t a64 = (int64_t)a << 32 >> 32;
             int64_t b64 = (int64_t)b << 32 >> 32;
             return (a64 * b64) >> 32;   // 强转自动截取后32位
         } else if (name == "mulh.wu") {
-            return ((int64_t)a * (int64_t)b) >> 32;
+            return ((uint64_t)a * (uint64_t)b) >> 32;
         } else if (name == "div.w"  ) {
             return (int32_t)a / (int32_t)b;
         } else if (name == "mod.w"  ) {

@@ -24,7 +24,7 @@
     } while (0)
 
 
-uint64_t mult_expRes(int32_t x, int32_t y, bool isSigned) {
+uint64_t mult_expRes(uint32_t x, uint32_t y, bool isSigned) {
     if (isSigned) {
         int64_t x64 = (int64_t)x << 32 >> 32;
         int64_t y64 = (int64_t)y << 32 >> 32;
@@ -82,9 +82,9 @@ int main(int argc, char** argv) {
 
     // specific test
     std::cout << "[specific test]" << std::endl;
-    top->mul_signed_i = 1;
-    top->X_i = 0x000003e8;
-    top->Y_i = 0x00000003;
+    top->mul_signed_i = 0;
+    top->X_i = 0x2905ea84;
+    top->Y_i = 0xd6474f4a;
     next(top);
     expRes = mult_expRes(top->X_i, top->Y_i, top->mul_signed_i);
     if (top->res_o != expRes) {
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
 
     for (int mul_signed = 0; mul_signed < 2; ++mul_signed) {
         top->mul_signed_i = mul_signed;
-        printf(mul_signed ? "test signed:\n" : "test unsigned:\n");
+        printf(mul_signed ? "== test signed ==\n" : "== test unsigned ==\n");
         for (int i = 0; i < TEST_TIMES; ++i) {
             top->X_i = gen_reg_fetch(e);
             top->Y_i = gen_reg_fetch(e);
@@ -120,7 +120,7 @@ int main(int argc, char** argv) {
                 goto finished;
             }
         }
-        std::cout << "pass\n\n";
+        std::cout << "pass\n";
     }
 
     finished:

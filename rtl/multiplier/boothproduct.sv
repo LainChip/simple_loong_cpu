@@ -15,8 +15,8 @@ module boothproduct #(
     logic S_negx, S_x, S_neg2x, S_2x;
 
     /* prepare for select signal */
-    assign S_negx = ( y[2] & ~y[1] &  y[0]) | ( y[2] & y[1] & ~y[0]); 
-    assign S_x    = (~y[2] & ~y[1] &  y[0]) | (~y[2] & y[1] & ~y[0]); 
+    assign S_negx = ( y[2] &  y[1] & ~y[0]) | ( y[2] & ~y[1] &  y[0]); 
+    assign S_x    = (~y[2] & ~y[1] &  y[0]) | (~y[2] &  y[1] & ~y[0]); 
     assign S_neg2x= ( y[2] & ~y[1] & ~y[0]); 
     assign S_2x   = (~y[2] &  y[1] &  y[0]); 
     
@@ -24,7 +24,7 @@ module boothproduct #(
     assign P[0] = (S_negx & ~X[0]) | (S_neg2x & ~0) | (S_2x & 0) | (S_x & X[0]); // X[-1] = 0
     generate
         for (genvar i = 1 ; i < FACIEND_WIDTH; i = i + 1) begin
-            assign P[i] = (S_negx & ~X[i]) | (S_neg2x & ~X[i-1]) | (S_2x & X[i-1]) | (S_x & X[0]);
+            assign P[i] = (S_negx & ~X[i]) | (S_neg2x & ~X[i-1]) | (S_2x & X[i-1]) | (S_x & X[i]);
         end
     endgenerate 
     /* get carry */
