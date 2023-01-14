@@ -11,6 +11,12 @@ module multiplier (
     input  [31:0] Y_i,
     output [63:0] res_o
 );
+    // for gtkwave
+    initial begin
+    	$dumpfile("logs/vlt_dump.vcd");
+    	$dumpvars();
+    end
+
     /*======= deal with sign =======*/
     logic [67:0] faciend_X;
     logic [33:0] factor_Y;

@@ -1,5 +1,5 @@
 /*
-2023-1-13 v1： xrb完成
+2023-1-13 v1: xrb完成
 */
 
 module fadder (
