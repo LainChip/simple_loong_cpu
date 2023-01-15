@@ -28,7 +28,7 @@ module csr(
     input   logic   [1:0]           excp_trigger_i,     //输入：发生异常的流水级
     input   logic   [1:0][31:0]     bad_va_i,           //输入：地址相关例外出错的虚地址
     input   logic   [1:0][31:0]     instr_pc_i,         //输入：指令pc
-    input   logic   [1:0]           do_ertn_i,          //输入：两条流水线的例外返回
+    
     output  logic   [1:0]           do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
     //todo：tlb related exceptions
@@ -41,13 +41,16 @@ module csr(
     //todo: tlb related addr translate
 
 );
+
 logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
 logic                   csr_write_en_i;     //输入：csr写使能
-logic   [13:0]          wr_addr_i;         //输入：写csr寄存器编号
+logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号
+logic                   do_ertn_i;          //输入：例外返回
 
 assigin rd_addr_i = instr_i[`_INSTR_CSR_NUM];
 assigin wr_addr_i = instr_i[`_INSTR_CSR_NUM];
 assigin csr_write_en_i = decode_info_i.csr_write_en;
+assigin do_ertn_i = decode_info_i.do_ertn;
 
 logic [31:0]    reg_crmd;
 logic [31:0]    reg_prmd;
