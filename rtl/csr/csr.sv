@@ -23,11 +23,11 @@ module csr(
     input   logic   [8:0]           interrupt_i,        //输入：中断信号
 
     //for exception
-    input   logic   [1:0][5:0]      ecode_i,            //输入：两条流水线的例外一级码
-    input   logic   [1:0][8:0]      esubcode_i,         //输入：两条流水线的例外二级码
+    input   logic   [5:0]           ecode_i,            //输入：两条流水线的例外一级码
+    input   logic   [8:0]           esubcode_i,         //输入：两条流水线的例外二级码
     input   logic   [1:0]           excp_trigger_i,     //输入：发生异常的流水级
-    input   logic   [1:0][31:0]     bad_va_i,           //输入：地址相关例外出错的虚地址
-    input   logic   [1:0][31:0]     instr_pc_i,         //输入：指令pc
+    input   logic   [31:0]          bad_va_i,           //输入：地址相关例外出错的虚地址
+    input   logic   [31:0]          instr_pc_i,         //输入：指令pc
     
     output  logic   [1:0]           do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
@@ -485,7 +485,7 @@ logic do_interrupt;
 assigin do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
 
 always_comb begin
-    do_redirect_o       = 2'b00;
+    do_redirect_o       = 1'b0;
     target_era          = reg_era;
     ecode_selcted       = reg_estat[`_ESTAT_ECODE];
     esubcode_selected   = reg_estat[`_ESTAT_ESUBCODE];
@@ -496,15 +496,10 @@ always_comb begin
     // redirect_addr_o
     if(do_interrupt) begin
         redirect_addr_o = interrupt_handler;
-    end else if (excp_trigger_i[1] )begin
+    end else if (excp_trigger_i)begin
         //todo: tlb exception
         redirect_addr_o = exception_handler;
-    end else if (do_ertn_i[1]) begin
-        redirect_addr_o = reg_era;
-    end else if (excp_trigger_i[0]) begin
-        //todo: tlb exception
-        redirect_addr_o = exception_handler;
-    end else if (do_ertn_i[0]) begin
+    end else if (do_ertn_i) begin
         redirect_addr_o = reg_era;
     end else begin
         redirect_addr_o = exception_handler;
@@ -521,51 +516,31 @@ always_comb begin
     if(do_interrupt) begin
         ecode_selcted = 0;
         esubcode_selected = 0;
-        target_era = instr_pc_i[1];
-        do_redirect_o = 2'b11;
-    end else if (excp_trigger_i[1])begin
-        ecode_selcted = ecode_i[1];
-        esubcode_selected = esubcode_i[1];
-        target_era = instr_pc_i[1];
-        do_redirect_o = 2'b11;
-        if (   ecode_i[1] == `_ECODE_ADEF 
-            || ecode_i[1] == `_ECODE_ADEM
-            || ecode_i[1] == `_ECODE_ALE
-            || ecode_i[1] == `_ECODE_PIL
-            || ecode_i[1] == `_ECODE_PIS
-            || ecode_i[1] == `_ECODE_PIF
-            || ecode_i[1] == `_ECODE_PME
-            || ecode_i[1] == `_ECODE_PPI  
+        target_era = instr_pc_i;
+        do_redirect_o = 1'b1;
+    end else if (excp_trigger_i)begin
+        ecode_selcted = ecode_i;
+        esubcode_selected = esubcode_i;
+        target_era = instr_pc_i;
+        do_redirect_o = 1'b1;
+        if (   ecode_i == `_ECODE_ADEF 
+            || ecode_i == `_ECODE_ADEM
+            || ecode_i == `_ECODE_ALE
+            || ecode_i == `_ECODE_PIL
+            || ecode_i == `_ECODE_PIS
+            || ecode_i == `_ECODE_PIF
+            || ecode_i == `_ECODE_PME
+            || ecode_i == `_ECODE_PPI  
         //todo: tlbrefill
         ) begin
             va_error = 1'b1;
-            bad_va_selected = bad_va_i[1];
+            bad_va_selected = bad_va_i;
         end      
-    end else if (do_ertn_i[1]) begin
-        do_redirect_o = 2'b11;
-    end else if (excp_trigger_i[0]) begin
-        ecode_selcted = ecode_i[0];
-        esubcode_selected = esubcode_i[0];
-        target_era = instr_pc_i[0];
-        do_redirect_o = 2'b01;
-        if (   ecode_i[0] == `_ECODE_ADEF 
-            || ecode_i[0] == `_ECODE_ADEM
-            || ecode_i[0] == `_ECODE_ALE
-            || ecode_i[0] == `_ECODE_PIL
-            || ecode_i[0] == `_ECODE_PIS
-            || ecode_i[0] == `_ECODE_PIF
-            || ecode_i[0] == `_ECODE_PME
-            || ecode_i[0] == `_ECODE_PPI  
-        //todo: tlbrefill
-        ) begin
-            va_error = 1'b1;
-            bad_va_selected = bad_va_i[0];
-        end
-    end else if (do_ertn_i[0]) begin
-        do_redirect_o = 2'b01;
+    end else if (do_ertn_i) begin
+        do_redirect_o = 1'b1;
     end 
     else begin
-        do_redirect_o = 2'b00;
+        do_redirect_o = 1'b0;
     end
 
 end
