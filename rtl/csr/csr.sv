@@ -1,7 +1,9 @@
 `include "common.svh"
+`include "decoder.svh"
 `include "csr.svh"
 
-`ifdef __CSR_VER_1
+
+//`ifdef __CSR_VER_1
 
 module csr(
     input           clk,
@@ -35,22 +37,30 @@ module csr(
 
     // timer
     output  logic  [63:0]  timer_data_o,                //输出：定时器值
-    output  logic  [31:0]  tid_o,                       //输出：定时器id
+    output  logic  [31:0]  tid_o                       //输出：定时器id
 
     //todo: llbit
     //todo: tlb related addr translate
 
 );
 
+initial begin
+    	$dumpfile("logs/vlt_dump.vcd");
+    	$dumpvars();
+end
+
+
 logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
 logic                   csr_write_en_i;     //输入：csr写使能
 logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号
 logic                   do_ertn_i;          //输入：例外返回
 
-assigin rd_addr_i = instr_i[`_INSTR_CSR_NUM];
-assigin wr_addr_i = instr_i[`_INSTR_CSR_NUM];
-assigin csr_write_en_i = decode_info_i.csr_write_en;
-assigin do_ertn_i = decode_info_i.do_ertn;
+always_comb begin
+    rd_addr_i = instr_i[`_INSTR_CSR_NUM];
+    wr_addr_i = instr_i[`_INSTR_CSR_NUM];
+    csr_write_en_i = decode_info_i.m2.csr_write_en;
+    do_ertn_i = decode_info_i.m2.do_ertn;
+end
 
 logic [31:0]    reg_crmd;
 logic [31:0]    reg_prmd;
@@ -316,7 +326,7 @@ always_comb begin
     wr_data_euen       = (wen_euen       & ~(|do_redirect_o)) ? wr_data : reg_euen ;//todo
     wr_data_ectl       = (wen_ectl       & ~(|do_redirect_o)) ? wr_data : reg_ectl ;
     wr_data_estat      = (wen_estat      & ~(|do_redirect_o)) ? 
-                        { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, wr_data[1:0]}; : 
+                        { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, wr_data[1:0]} : 
                         { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, reg_estat[1:0]};
     wr_data_era        = (wen_era        & ~(|do_redirect_o)) ? wr_data : target_era ;//todo
     
@@ -454,8 +464,8 @@ always_ff @(posedge clk) begin
         reg_prmd[31:3] <= 29'b0;
     end
     else if ((|do_redirect_o)) begin
-        reg_prmd[`_PRMD_PPLV] <= reg_crmd[`_PRMD_PLV];
-        reg_prmd[ `_PRMD_PIE] <= reg_crmd[`_PRMD_IE ];
+        reg_prmd[`_PRMD_PPLV] <= reg_crmd[`_CRMD_PLV];
+        reg_prmd[ `_PRMD_PIE] <= reg_crmd[`_CRMD_IE ];
     end
     else if (wen_prmd) begin
         reg_prmd[`_PRMD_PPLV] <= wr_data[`_PRMD_PPLV];
@@ -482,9 +492,10 @@ logic [31:0]    exception_handler;
 logic [31:0]    interrupt_handler;
 logic [31:0]    tlbrefill_handler;//todo
 logic do_interrupt;
-assigin do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
+
 
 always_comb begin
+    do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
     do_redirect_o       = 1'b0;
     target_era          = reg_era;
     ecode_selcted       = reg_estat[`_ESTAT_ECODE];
@@ -549,4 +560,4 @@ end
 
 endmodule : csr
 
-`endif
+//`endif
