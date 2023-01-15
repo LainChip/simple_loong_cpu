@@ -35,11 +35,11 @@ module pht #(
         .WRITE_MODE ( "write_first" )
     ) u_sdpram (
         .clk                     ( clk     ),
-        .reset                   ( reset   ),
+        .reset                   ( ~rst_n   ),
         .en                      ( 1'b1    ),
         .we                      ( we_i    ),
-        .rindex                  ( rindex_i ),
-        .windex                  ( windex_i ),
+        .raddr                  ( rindex_i ),
+        .waddr                  ( windex_i ),
         .wdata                   ( wdata   ),
         .rdata                   ( phr_o   )
     );

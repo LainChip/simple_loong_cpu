@@ -32,7 +32,7 @@ module btb #(
     ==============================================================
 */
     function logic[14:0] mktag(logic[31:2] pc);
-        return pc[31:18] ^ pc[16:3];
+        return pc[31:17] ^ pc[17:3];
     endfunction
 
     localparam BUFFER_SIZE = 1 << ADDR_WIDTH;
@@ -61,9 +61,9 @@ module btb #(
         .DATA_WIDTH (ENTRY_WIDTH)
     ) way0 (
         .clk    (clk),
-        .reset  (reset),
+        .reset  (~rst_n),
         .en     (1'b1),
-        .update_i     (update_i),
+        .we     (update_i),
         .raddr  (index_r),
         .waddr  (index_w),
         .wdata  ({1'b1, wpc_i[2], tag_w, bta_i, Br_type_i}),
@@ -76,7 +76,7 @@ module btb #(
     logic [ADDR_WIDTH - 1:0] pre_index;
 
     always @(posedge clk ) begin
-        if (reset) begin
+        if (~rst_n) begin
             pre_pc <= 0;
         end else begin
             pre_pc <= rpc_i;
@@ -90,7 +90,7 @@ module btb #(
     wire hit = valid & tag == pre_tag;
     assign miss_o = ~hit;
     assign fsc_o = fsc;
-    assign bta_o = valid & tag == pre_tag ? bta : {pre_pc[31:3] + 1, 1'b0};
+    assign bta_o = valid & tag == pre_tag ? bta : {pre_pc[31:3] + 29'd1, 1'b0};
     assign Br_type_o = valid & tag == pre_tag ? Br_type : `_PC_RELATIVE;
 
 endmodule : btb

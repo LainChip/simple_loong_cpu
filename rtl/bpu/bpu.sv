@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-14 11:40:01
+// Revise : 2023-01-15 09:10:26
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -20,6 +20,11 @@ module bpu (
 	output reg [31:0] pc_o,
 	output stall_o
 );
+
+	initial begin
+    	$dumpfile("logs/vlt_dump.vcd");
+    	$dumpvars();
+	end
 
 	reg [31:2] pc;
 	reg bpu_state;
@@ -42,7 +47,7 @@ module bpu (
 
 	always_ff @(posedge clk or negedge rst_n) begin : proc_pc
 		if(~rst_n) begin
-			pc <= 32'h1c00_0000;
+			pc <= 30'h0700_0000; // 32'h1c00_0000
 		end else if (update_i.flush) begin
 			pc <= update_i.br_target;
 		end else if (stall_i) begin
@@ -111,7 +116,7 @@ module bpu (
 	// taken = btb_br_type != `_PC_RELATIVE | lphr == `_STRONGLY_TAKEN | lphr == `_WEAKLY_TAKEN
 	wire taken = |btb_br_type | lphr[1];
 	assign ppc = btb_br_type == `_RETURN ? ras_target :
-				 taken ? btb_bta : {pc[31:3] + 1, 1'b0};
+				 taken ? btb_bta : {pc[31:3] + 29'd1, 1'b0};
 
 	assign predict_o.fsc = btb_fsc;
 	assign predict_o.npc = npc;
@@ -119,3 +124,5 @@ module bpu (
 	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];
 
 endmodule : bpu
+
+
