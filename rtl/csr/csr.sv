@@ -1,7 +1,9 @@
 `include "common.svh"
+`include "decoder.svh"
 `include "csr.svh"
 
-`ifdef __CSR_VER_1
+
+//`ifdef __CSR_VER_1
 
 module csr(
     input           clk,
@@ -23,11 +25,11 @@ module csr(
     input   logic   [8:0]           interrupt_i,        //输入：中断信号
 
     //for exception
-    input   logic   [1:0][5:0]      ecode_i,            //输入：两条流水线的例外一级码
-    input   logic   [1:0][8:0]      esubcode_i,         //输入：两条流水线的例外二级码
+    input   logic   [5:0]           ecode_i,            //输入：两条流水线的例外一级码
+    input   logic   [8:0]           esubcode_i,         //输入：两条流水线的例外二级码
     input   logic   [1:0]           excp_trigger_i,     //输入：发生异常的流水级
-    input   logic   [1:0][31:0]     bad_va_i,           //输入：地址相关例外出错的虚地址
-    input   logic   [1:0][31:0]     instr_pc_i,         //输入：指令pc
+    input   logic   [31:0]          bad_va_i,           //输入：地址相关例外出错的虚地址
+    input   logic   [31:0]          instr_pc_i,         //输入：指令pc
     
     output  logic   [1:0]           do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
@@ -35,22 +37,30 @@ module csr(
 
     // timer
     output  logic  [63:0]  timer_data_o,                //输出：定时器值
-    output  logic  [31:0]  tid_o,                       //输出：定时器id
+    output  logic  [31:0]  tid_o                       //输出：定时器id
 
     //todo: llbit
     //todo: tlb related addr translate
 
 );
 
+initial begin
+    	$dumpfile("logs/vlt_dump.vcd");
+    	$dumpvars();
+end
+
+
 logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
 logic                   csr_write_en_i;     //输入：csr写使能
 logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号
 logic                   do_ertn_i;          //输入：例外返回
 
-assigin rd_addr_i = instr_i[`_INSTR_CSR_NUM];
-assigin wr_addr_i = instr_i[`_INSTR_CSR_NUM];
-assigin csr_write_en_i = decode_info_i.csr_write_en;
-assigin do_ertn_i = decode_info_i.do_ertn;
+always_comb begin
+    rd_addr_i = instr_i[`_INSTR_CSR_NUM];
+    wr_addr_i = instr_i[`_INSTR_CSR_NUM];
+    csr_write_en_i = decode_info_i.m2.csr_write_en;
+    do_ertn_i = decode_info_i.m2.do_ertn;
+end
 
 logic [31:0]    reg_crmd;
 logic [31:0]    reg_prmd;
@@ -316,7 +326,7 @@ always_comb begin
     wr_data_euen       = (wen_euen       & ~(|do_redirect_o)) ? wr_data : reg_euen ;//todo
     wr_data_ectl       = (wen_ectl       & ~(|do_redirect_o)) ? wr_data : reg_ectl ;
     wr_data_estat      = (wen_estat      & ~(|do_redirect_o)) ? 
-                        { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, wr_data[1:0]}; : 
+                        { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, wr_data[1:0]} : 
                         { 1'd0, esubcode_selected, ecode_selcted, 1'b0, ipi_interrupt, timer_interrupt ,1'b0, hard_interrupt, reg_estat[1:0]};
     wr_data_era        = (wen_era        & ~(|do_redirect_o)) ? wr_data : target_era ;//todo
     
@@ -454,8 +464,8 @@ always_ff @(posedge clk) begin
         reg_prmd[31:3] <= 29'b0;
     end
     else if ((|do_redirect_o)) begin
-        reg_prmd[`_PRMD_PPLV] <= reg_crmd[`_PRMD_PLV];
-        reg_prmd[ `_PRMD_PIE] <= reg_crmd[`_PRMD_IE ];
+        reg_prmd[`_PRMD_PPLV] <= reg_crmd[`_CRMD_PLV];
+        reg_prmd[ `_PRMD_PIE] <= reg_crmd[`_CRMD_IE ];
     end
     else if (wen_prmd) begin
         reg_prmd[`_PRMD_PPLV] <= wr_data[`_PRMD_PPLV];
@@ -482,10 +492,11 @@ logic [31:0]    exception_handler;
 logic [31:0]    interrupt_handler;
 logic [31:0]    tlbrefill_handler;//todo
 logic do_interrupt;
-assigin do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
+
 
 always_comb begin
-    do_redirect_o       = 2'b00;
+    do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
+    do_redirect_o       = 1'b0;
     target_era          = reg_era;
     ecode_selcted       = reg_estat[`_ESTAT_ECODE];
     esubcode_selected   = reg_estat[`_ESTAT_ESUBCODE];
@@ -496,15 +507,10 @@ always_comb begin
     // redirect_addr_o
     if(do_interrupt) begin
         redirect_addr_o = interrupt_handler;
-    end else if (excp_trigger_i[1] )begin
+    end else if (excp_trigger_i)begin
         //todo: tlb exception
         redirect_addr_o = exception_handler;
-    end else if (do_ertn_i[1]) begin
-        redirect_addr_o = reg_era;
-    end else if (excp_trigger_i[0]) begin
-        //todo: tlb exception
-        redirect_addr_o = exception_handler;
-    end else if (do_ertn_i[0]) begin
+    end else if (do_ertn_i) begin
         redirect_addr_o = reg_era;
     end else begin
         redirect_addr_o = exception_handler;
@@ -521,51 +527,31 @@ always_comb begin
     if(do_interrupt) begin
         ecode_selcted = 0;
         esubcode_selected = 0;
-        target_era = instr_pc_i[1];
-        do_redirect_o = 2'b11;
-    end else if (excp_trigger_i[1])begin
-        ecode_selcted = ecode_i[1];
-        esubcode_selected = esubcode_i[1];
-        target_era = instr_pc_i[1];
-        do_redirect_o = 2'b11;
-        if (   ecode_i[1] == `_ECODE_ADEF 
-            || ecode_i[1] == `_ECODE_ADEM
-            || ecode_i[1] == `_ECODE_ALE
-            || ecode_i[1] == `_ECODE_PIL
-            || ecode_i[1] == `_ECODE_PIS
-            || ecode_i[1] == `_ECODE_PIF
-            || ecode_i[1] == `_ECODE_PME
-            || ecode_i[1] == `_ECODE_PPI  
+        target_era = instr_pc_i;
+        do_redirect_o = 1'b1;
+    end else if (excp_trigger_i)begin
+        ecode_selcted = ecode_i;
+        esubcode_selected = esubcode_i;
+        target_era = instr_pc_i;
+        do_redirect_o = 1'b1;
+        if (   ecode_i == `_ECODE_ADEF 
+            || ecode_i == `_ECODE_ADEM
+            || ecode_i == `_ECODE_ALE
+            || ecode_i == `_ECODE_PIL
+            || ecode_i == `_ECODE_PIS
+            || ecode_i == `_ECODE_PIF
+            || ecode_i == `_ECODE_PME
+            || ecode_i == `_ECODE_PPI  
         //todo: tlbrefill
         ) begin
             va_error = 1'b1;
-            bad_va_selected = bad_va_i[1];
+            bad_va_selected = bad_va_i;
         end      
-    end else if (do_ertn_i[1]) begin
-        do_redirect_o = 2'b11;
-    end else if (excp_trigger_i[0]) begin
-        ecode_selcted = ecode_i[0];
-        esubcode_selected = esubcode_i[0];
-        target_era = instr_pc_i[0];
-        do_redirect_o = 2'b01;
-        if (   ecode_i[0] == `_ECODE_ADEF 
-            || ecode_i[0] == `_ECODE_ADEM
-            || ecode_i[0] == `_ECODE_ALE
-            || ecode_i[0] == `_ECODE_PIL
-            || ecode_i[0] == `_ECODE_PIS
-            || ecode_i[0] == `_ECODE_PIF
-            || ecode_i[0] == `_ECODE_PME
-            || ecode_i[0] == `_ECODE_PPI  
-        //todo: tlbrefill
-        ) begin
-            va_error = 1'b1;
-            bad_va_selected = bad_va_i[0];
-        end
-    end else if (do_ertn_i[0]) begin
-        do_redirect_o = 2'b01;
+    end else if (do_ertn_i) begin
+        do_redirect_o = 1'b1;
     end 
     else begin
-        do_redirect_o = 2'b00;
+        do_redirect_o = 1'b0;
     end
 
 end
@@ -574,4 +560,4 @@ end
 
 endmodule : csr
 
-`endif
+//`endif
