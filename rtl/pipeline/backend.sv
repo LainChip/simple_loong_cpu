@@ -29,10 +29,35 @@ module backend(
 
 );
 
+	// 信号定义
+	// 后端暂停和清零向量
+	logic [1:0][2:0] stall_vec, clr_vec;
+	// 前端清零向量
+	logic clr_frontend;
+
+	// 发射向量
+	logic [1:0] issue;
+	logic revert;
+
 	// ISSUE 部分，对指令进行发射
 	// Issue module, judge whether we can issue or not
+	issue issue_module(
+		.inst_i(inst_i),
+		.inst_valid_i(inst_valid_i),
+		.stall_vec_i(stall_vec),			// 0 for ex, 1 for m1, 2 for m2
+		.clr_vec_i(clr_vec),				// 0 for ex, 1 for m1, 2 for m2
+		.clr_frontend_i(clr_frontend),
+
+		.issue_o(issue), // 2'b00, 2'b01, 2'b11 三种情况，指令必须顺序发射.
+		.revert_o(revert),         // send inst[0] to pipe[1], inst[1] to pipe[0]. otherwise, inst[0] to pipe[0], inst[1] to pipe[1]
+		.stall_i(stall_vec[0][0] | stall_vec[0][1]) // 当 EX暂停时，不可以发射
+	);
+
+	// 生成前端使用的 issue_num 信号
+	assign issue_num_o = {issue[1],issue[0] & ~issue[1]};
 
 	// Register Files module, get the operation num
+
 
 	/*
 		Pipeline Registers here.
