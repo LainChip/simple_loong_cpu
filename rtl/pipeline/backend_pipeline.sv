@@ -219,9 +219,11 @@ module backend_pipeline #(
 	    //todo: llbit
 	    //todo: tlb related addr translate
 		);
+		assign m2_clr_req_o = '0;
 	end else begin
 		assign m2_lsu_read = '0;
 		assign m2_csr_read = '0;
+		assign m2_clr_req_o = '0;
 	end
 	assign m1_data_flow_forwarding.result = m1_data_flow_raw.result;
 	assign m2_data_flow_forwarding.result = (m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_ALU || 

@@ -193,4 +193,35 @@ module backend(
     .bpu_feedback_o(/*NOT CONNECT*/)
 	);
 
+	// 暂停及清零控制器
+	always_comb begin
+		// 对于暂停的控制，如果某一流水线级请求暂停，则此流水线级 以及之前的所有流水线级 都需要暂停
+		// 两条流水线同时进行暂停控制
+		for(integer level = 0; level < 3; level += 1) begin //ex m1 m2
+			stall_vec[0][level] = '0;
+			stall_vec[1][level] = '0;
+			for(integer level_req = level; level_req < 3; level_req += 1) begin
+				stall_vec[0][level] |= stall_req[0][level_req] | stall_req[1][level_req];
+				stall_vec[1][level] |= stall_req[0][level_req] | stall_req[1][level_req];
+			end
+		end
+	end
+	always_comb begin
+		// 对于清零的控制，稍显麻烦。
+		// 如果某一流水线级别请求清零，则此流水线之前的所有流水线级都需要清零。
+		// 按照设计，目前只有第一条管线可以触发清零操作，
+		// 对于revert的流水线级发生清零，pipe 1管线的指令执行先于pipe 0，则两条指令需要同时清零
+		// 否之，只需要清零pipe 0管线的指令即可。
+		for(integer level = 0; level < 3; level += 1) begin //ex m1 m2
+			clr_vec[0][level] = '0;
+			clr_vec[1][level] = '0;
+			for(integer level_req = level + 1; level_req < 3; level_req += 1) begin
+				clr_vec[0][level] |= clr_req[0][level_req];
+				clr_vec[1][level] |= clr_req[0][level_req];
+			end
+			clr_vec[0][level] |= clr_req[0][level];
+			clr_vec[1][level] |= clr_req[0][level] & revert_vector[level];
+		end
+	end
+
 endmodule
