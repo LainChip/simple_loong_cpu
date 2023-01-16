@@ -38,8 +38,7 @@ VERILATOR_FLAGS += -cc --exe
 # Optimize
 VERILATOR_FLAGS += -x-assign fast
 # Warn abount lint issues; may not want this on less solid designs
-# VERILATOR_FLAGS += -Wall
-VERILATOR_FLAGS += -Wno-fatal
+VERILATOR_FLAGS += -Wall
 # Make waveforms
 VERILATOR_FLAGS += --trace --trace-structs
 # Check SystemVerilog assertions
@@ -54,10 +53,10 @@ VERILATOR_FLAGS += --coverage
 VERILATOR_FLAGS += -I.. -I../decoder
 
 # Disable warning of UNUSEDSIGNAL
-# VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL
+VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL
 
 # Input files for Verilator
-VERILATOR_INPUT = -f input.vc alu_tester.sv alu_tb.cpp
+VERILATOR_INPUT = -f input.vc divider.sv divider_tb.cpp
 
 ######################################################################
 default: run
@@ -83,7 +82,7 @@ run:
 	@echo "-- RUN ---------------------"
 	@rm -rf logs
 	@mkdir -p logs
-	obj_dir/Valu_tester +trace
+	obj_dir/Vdivider +trace
 
 	@echo
 	@echo "-- COVERAGE ----------------"
