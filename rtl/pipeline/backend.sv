@@ -234,24 +234,42 @@ ctrl_flow_t [1:0]wb_ctrl_flow;
 data_flow_t [1:0]wb_data_flow;
 assign wb_ctrl_flow = {pipeline_1.wb_ctrl_flow,pipeline_0.wb_ctrl_flow};
 assign wb_data_flow = {pipeline_1.wb_data_flow,pipeline_0.wb_data_flow};
-// 	DifftestInstrCommit DifftestInstrCommit(
-//     .clock              (clk           ),
-//     .coreid             ('0),
-//     .index              (wb_ctrl_flow.revert),
-//     .valid              (wb_ctrl_flow.valid),
-//     .pc                 (         ),
-//     .instr              (       ),
-//     .skip               (0              ),
-//     .is_TLBFILL         (cmt_tlbfill_en ),
-//     .TLBFILL_index      (cmt_rand_index ),
-//     .is_CNTinst         (cmt_cnt_inst   ),
-//     .timer_64_value     (cmt_timer_64   ),
-//     .wen                (cmt_wen        ),
-//     .wdest              (cmt_wdest      ),
-//     .wdata              (cmt_wdata      ),
-//     .csr_rstat          (cmt_csr_rstat_en),
-//     .csr_data           (cmt_csr_data   )
-// );
+DifftestInstrCommit DifftestInstrCommit_0(
+    .clock              (clk           ),
+    .coreid             ('0),
+    .index              (wb_ctrl_flow[0].revert),
+    .valid              (wb_ctrl_flow[0].decode_info.wb.debug_valid),
+    .pc                 (wb_data_flow[0].pc),
+    .instr              (wb_ctrl_flow[0].decode_info.wb.debug_inst),
+    .skip               (0),
+    .is_TLBFILL         ('0/*TODO*/),
+    .TLBFILL_index      ('0/*TODO*/),
+    .is_CNTinst         ('0/*TODO*/),
+    .timer_64_value     ('0/*TODO*/),
+    .wen                (wb_ctrl_flow[0].w_reg != '0),
+    .wdest              (wb_ctrl_flow[0].w_reg),
+    .wdata              (wb_data_flow[0].result),
+    .csr_rstat          ('0/*TODO*/),
+    .csr_data           ('0/*TODO*/)
+);
+DifftestInstrCommit DifftestInstrCommit_1(
+    .clock              (clk           ),
+    .coreid             ('0),
+    .index              (~wb_ctrl_flow[0].revert),
+    .valid              (wb_ctrl_flow[1].decode_info.wb.debug_valid),
+    .pc                 (wb_data_flow[1].pc),
+    .instr              (wb_ctrl_flow[1].decode_info.wb.debug_inst),
+    .skip               (0),
+    .is_TLBFILL         ('0/*TODO*/),
+    .TLBFILL_index      ('0/*TODO*/),
+    .is_CNTinst         ('0/*TODO*/),
+    .timer_64_value     ('0/*TODO*/),
+    .wen                (wb_ctrl_flow[1].w_reg != '0),
+    .wdest              (wb_ctrl_flow[1].w_reg),
+    .wdata              (wb_data_flow[1].result),
+    .csr_rstat          ('0/*TODO*/),
+    .csr_data           ('0/*TODO*/)
+);
 
 // DifftestExcpEvent DifftestExcpEvent(
 //     .clock              (aclk           ),
@@ -325,42 +343,42 @@ assign wb_data_flow = {pipeline_1.wb_data_flow,pipeline_0.wb_data_flow};
 //     .dmw1               (csr_dmw1_diff_0    )
 // );
 
-// DifftestGRegState DifftestGRegState(
-//     .clock              (aclk       ),
-//     .coreid             (0          ),
-//     .gpr_0              (0          ),
-//     .gpr_1              (regs[1]    ),
-//     .gpr_2              (regs[2]    ),
-//     .gpr_3              (regs[3]    ),
-//     .gpr_4              (regs[4]    ),
-//     .gpr_5              (regs[5]    ),
-//     .gpr_6              (regs[6]    ),
-//     .gpr_7              (regs[7]    ),
-//     .gpr_8              (regs[8]    ),
-//     .gpr_9              (regs[9]    ),
-//     .gpr_10             (regs[10]   ),
-//     .gpr_11             (regs[11]   ),
-//     .gpr_12             (regs[12]   ),
-//     .gpr_13             (regs[13]   ),
-//     .gpr_14             (regs[14]   ),
-//     .gpr_15             (regs[15]   ),
-//     .gpr_16             (regs[16]   ),
-//     .gpr_17             (regs[17]   ),
-//     .gpr_18             (regs[18]   ),
-//     .gpr_19             (regs[19]   ),
-//     .gpr_20             (regs[20]   ),
-//     .gpr_21             (regs[21]   ),
-//     .gpr_22             (regs[22]   ),
-//     .gpr_23             (regs[23]   ),
-//     .gpr_24             (regs[24]   ),
-//     .gpr_25             (regs[25]   ),
-//     .gpr_26             (regs[26]   ),
-//     .gpr_27             (regs[27]   ),
-//     .gpr_28             (regs[28]   ),
-//     .gpr_29             (regs[29]   ),
-//     .gpr_30             (regs[30]   ),
-//     .gpr_31             (regs[31]   )
-// );
+DifftestGRegState DifftestGRegState(
+    .clock              (aclk       ),
+    .coreid             (0          ),
+    .gpr_0              (reg_file_module.regs_update[0]),
+    .gpr_1              (reg_file_module.regs_update[1]),
+    .gpr_2              (reg_file_module.regs_update[2]),
+    .gpr_3              (reg_file_module.regs_update[3]),
+    .gpr_4              (reg_file_module.regs_update[4]),
+    .gpr_5              (reg_file_module.regs_update[5]),
+    .gpr_6              (reg_file_module.regs_update[6]),
+    .gpr_7              (reg_file_module.regs_update[7]),
+    .gpr_8              (reg_file_module.regs_update[8]),
+    .gpr_9              (reg_file_module.regs_update[9]),
+    .gpr_10             (reg_file_module.regs_update[10]),
+    .gpr_11             (reg_file_module.regs_update[11]),
+    .gpr_12             (reg_file_module.regs_update[12]),
+    .gpr_13             (reg_file_module.regs_update[13]),
+    .gpr_14             (reg_file_module.regs_update[14]),
+    .gpr_15             (reg_file_module.regs_update[15]),
+    .gpr_16             (reg_file_module.regs_update[16]),
+    .gpr_17             (reg_file_module.regs_update[17]),
+    .gpr_18             (reg_file_module.regs_update[18]),
+    .gpr_19             (reg_file_module.regs_update[19]),
+    .gpr_20             (reg_file_module.regs_update[20]),
+    .gpr_21             (reg_file_module.regs_update[21]),
+    .gpr_22             (reg_file_module.regs_update[22]),
+    .gpr_23             (reg_file_module.regs_update[23]),
+    .gpr_24             (reg_file_module.regs_update[24]),
+    .gpr_25             (reg_file_module.regs_update[25]),
+    .gpr_26             (reg_file_module.regs_update[26]),
+    .gpr_27             (reg_file_module.regs_update[27]),
+    .gpr_28             (reg_file_module.regs_update[28]),
+    .gpr_29             (reg_file_module.regs_update[29]),
+    .gpr_30             (reg_file_module.regs_update[30]),
+    .gpr_31             (reg_file_module.regs_update[31])
+);
 `endif
 
 endmodule

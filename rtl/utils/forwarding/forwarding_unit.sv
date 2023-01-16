@@ -14,7 +14,7 @@ module forwarding_unit#(
 	input [PIPE_NUM - 1 : 0][SOURCE_NUM - 1: 0][DATA_WIDTH - 1 : 0] data_vec_i,
 	input [DATA_WIDTH - 1 : 0] old_data_i,
 
-	output [DATA_WIDTH - 1 : 0] new_data_o
+	output logic[DATA_WIDTH - 1 : 0] new_data_o
 );
 	
 	logic [SOURCE_NUM : 0][DATA_WIDTH - 1 : 0] data_src;

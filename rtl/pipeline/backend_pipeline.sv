@@ -62,7 +62,41 @@ module backend_pipeline #(
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data;
 
 	// 数据转发
-
+	for (genvar reg_id = 0; reg_id < 2; reg_id += 1) begin
+		forwarding_unit#(
+			.DATA_WIDTH(32),
+			.SOURCE_NUM(3),
+			.PIPE_NUM(2)
+		)ex_forwarding(
+			.pipe_sel_i(ex_ctrl_flow.forwarding_info[reg_id].forwarding_pipe_sel),
+			.sel_vec_i(ex_ctrl_flow.forwarding_info[reg_id].ex_forward_source),
+			.data_vec_i({forwarding_src_i[1][2],forwarding_src_i[1][1],forwarding_src_i[1][0],forwarding_src_i[0][2],forwarding_src_i[0][1],forwarding_src_i[0][0]}),
+			.old_data_i(ex_data_flow_raw.reg_data[reg_id]),
+			.new_data_o(ex_data_flow_forwarding.reg_data[reg_id])
+		);
+		forwarding_unit#(
+			.DATA_WIDTH(32),
+			.SOURCE_NUM(2),
+			.PIPE_NUM(2)
+		)m1_forwarding(
+			.pipe_sel_i(m1_ctrl_flow.forwarding_info[reg_id].forwarding_pipe_sel),
+			.sel_vec_i(m1_ctrl_flow.forwarding_info[reg_id].ex_forward_source),
+			.data_vec_i({forwarding_src_i[1][2],forwarding_src_i[1][1],forwarding_src_i[0][2],forwarding_src_i[0][1]}),
+			.old_data_i(m1_data_flow_raw.reg_data[reg_id]),
+			.new_data_o(m1_data_flow_forwarding.reg_data[reg_id])
+		);
+		forwarding_unit#(
+			.DATA_WIDTH(32),
+			.SOURCE_NUM(1),
+			.PIPE_NUM(2)
+		)m2_forwarding(
+			.pipe_sel_i(m2_ctrl_flow.forwarding_info[reg_id].forwarding_pipe_sel),
+			.sel_vec_i(m2_ctrl_flow.forwarding_info[reg_id].ex_forward_source),
+			.data_vec_i({forwarding_src_i[1][2],forwarding_src_i[0][2]}),
+			.old_data_i(m2_data_flow_raw.reg_data[reg_id]),
+			.new_data_o(m2_data_flow_forwarding.reg_data[reg_id])
+		);
+	end
 	// 控制寄存器
 	always_ff @(posedge clk) begin
 		if(~rst_n) begin
