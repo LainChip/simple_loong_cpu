@@ -183,4 +183,12 @@ module icache #(
 		end
 	end
 
+	// 输出有效逻辑
+	assign valid_o = valid_stage_2 & {FETCH_SIZE{~busy_o}};
+
+	// 其余伴随输出
+	assign attached_o = attached_stage_2;
+	assign ppc_o = pc_stage_2;
+	assign vpc_o = pc_stage_2;
+
 endmodule

@@ -17,6 +17,9 @@ module lsu (
 	input logic[1:0][31:0] w_data_i,  // M2 STAGE
 	output logic[1:0][31:0] r_data_o,
 
+	output logic[1:0][31:0] vaddr_o,
+	output logic[1:0][31:0] paddr_o,
+
 	// 连接内存总线
 	output cache_bus_req_t bus_req_o,
 	input cache_bus_resp_t bus_resp_i,
