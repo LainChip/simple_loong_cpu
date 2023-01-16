@@ -3,54 +3,85 @@
 `include "types.svh"
 
 module reg_file #(
-    parameter int write_port_num = 2,
-    parameter int read_port_num = 4,
-    parameter int group = 1,
+    parameter int DATA_WIDTH = 32,
+    parameter int REG_FILE_SIZE = 32,
+    parameter int REG_CONST_ZERO_SIZE = 1,
+    parameter int REG_READ_PORT = 4,
+    parameter int REG_WRITE_PORT = 2,
+    parameter bit INNER_FORWARDING = 1,
 
-    parameter int reg_fileSize = 32,
-    parameter int always_zero = 1,
-    parameter int ptr_size = $clog2(reg_fileSize * group),
-    parameter type ptr_t = logic [ptr_size - 1 : 0],  //HighestBit used To Hint Rename
-    parameter int wptr_size = $clog2(reg_fileSize),
-    parameter type wptr_t = logic [wptr_size - 1 : 0]
+    // DO NOT MODIFY
+    parameter type dtype = logic [DATA_WIDTH-1:0],
+    parameter type ptr_t = logic [$clog2(REG_FILE_SIZE) - 1 : 0] 
 ) (
     input clk,   // Clock
     input rst_n, // Asynchronous reset active low
 
-    input logic [write_port_num * group - 1 : 0] we,
-    input uint32_t [write_port_num * group - 1 : 0] w_data,
-    output uint32_t [read_port_num - 1 : 0] r_data,
+    // READ PORT
+    input  ptr_t [REG_READ_PORT - 1 : 0] r_ptr_i,
+    output dtype [REG_READ_PORT - 1 : 0] r_data_o,
 
-    input wptr_t [write_port_num * group - 1 : 0] w_addr,
-    input ptr_t  [         read_port_num - 1 : 0] r_addr
+    // WRITE PORT
+    input  ptr_t [REG_WRITE_PORT - 1 : 0] w_ptr_i,
+    input  dtype [REG_WRITE_PORT - 1 : 0] w_data_i
 );
 
-  uint32_t [group * reg_fileSize - 1 : 0] reg_file, reg_file_new;
+    // 寄存器堆
+    dtype [REG_FILE_SIZE - 1 : 0] regs,regs_update;
 
-  always_comb //Port 0,1 for early Write, but 2,3 for delayed Write; Port 1 is superior than Port 0;
-	begin
-    reg_file_new = reg_file;
-    for (int group_id = 0; group_id < group; group_id++)
-      for (int i = always_zero; i < reg_fileSize; i++) begin
-        for (int j = 0; j < write_port_num; j++) begin
-          if (we[j+(group_id*write_port_num)] & (i == w_addr[j+(group_id*write_port_num)])) begin
-            reg_file_new[i+(group_id*reg_fileSize)] = w_data[j+(group_id*write_port_num)];
+    // 读出逻辑
+    generate
+      for(genvar i = 0 ; i < READ_PORT ; i+=1) begin
+        if(INNER_FORWARDING) begin
+          logic forwarding_enable;
+          dtype forwarding_data;
+          always_comb begin
+            forwarding_enable = '0;
+            forwarding_data = '0;
+            for(integer j = 0 ; j < REG_WRITE_PORT ; j+=1) begin
+              if(w_ptr_i[j] == r_ptr_i[i]) begin
+                forwarding_enable |= 1'b1;
+                forwarding_data   |= w_data_i[j];
+              end
+            end
           end
+          assign r_data_o[i] = forwarding_enable ? forwarding_data : regs[r_ptr_i];
+        end else begin
+          assign r_data_o[i] = regs[r_ptr_i];           // 无内部转发
         end
       end
-  end
+    endgenerate
 
-  always_ff @(posedge clk) begin : proc_reg_file
-    if (~rst_n) begin
-      reg_file <= 0;  // A global reset is need for avoid 'x' in simulations.
-    end else begin
-      reg_file <= reg_file_new;
+    // 更新逻辑
+    generate
+      for(genvar i = 0 ; i < REG_FILE_SIZE; i+=1) begin
+        if(i < REG_CONST_ZERO_SIZE) begin
+          regs_update[i] = '0;
+        end else begin
+          logic we;
+          dtype wdata;
+          always_comb begin
+            we = '0;
+            wdata = '0;
+            for(integer j = 0 ; j < REG_WRITE_PORT ; j+=1) begin
+              if(w_ptr_i[j] == i[$clog2(REG_FILE_SIZE) - 1 : 0]) begin
+                we |= 1'b1;
+                wdata |= w_data_i[j];
+              end
+            end
+          end
+          assign regs_update[i] = we ? wdata : regs[i];
+        end
+      end
+    endgenerate
+
+    always_ff @(posedge clk) begin
+      // if(~rst_n) begin
+      //   regs <= '0;
+      // end else
+      begin
+        regs <= regs_update;
+      end
     end
-  end
-
-  // No Internal forwarding. all write should be pass by by-pass network
-  for (genvar i = 0; i < read_port_num; i++) begin
-    assign r_data[i] = reg_file[r_addr[i]];
-  end
 
 endmodule : reg_file
