@@ -10,7 +10,7 @@ class decoder_parser:
         self.signal_package_list = set()
         self.signal_package_list.add('general')
         # format for signal_list's tuple: signal_parent, signal_length,signal_default_value,signal_invalid_value
-        self.signal_list = {'inst25_0':('general',26,'inst[25:0]','inst[25:0]')}
+        self.signal_list = {'inst25_0':('general',26,'inst_i[25:0]','inst_i[25:0]')}
         self.inst_list = {}
 
     def debug_print(self):
@@ -116,7 +116,7 @@ class decoder_parser:
         inst_list_dict_order.sort(key=cmp_to_key(self.dict_order_cmp))
         str_builder += self.gen_blank(depth) + "always_comb begin\n"
         depth += 1
-        str_builder += self.gen_blank(depth) + "casex(inst)\n"
+        str_builder += self.gen_blank(depth) + "casex(inst_i)\n"
         depth += 1
         opcode_len = 0
         while len(inst_list_dict_order) != 0 and opcode_len != 32:

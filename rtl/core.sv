@@ -1,11 +1,14 @@
 `include "common.svh"
+`include "decoder.svh"
 `include "pipeline.svh"
+`include "lsu_types.svh"
+`include "bpu.svh"
 
 module core(
     input clk,
     input rst_n,
     input [7:0] int_i,
-    AXI_BUS.Slave mem_bus
+    AXI_BUS.Master mem_bus
 );
 
 	inst_t 		     [1:0]inst;
@@ -13,8 +16,8 @@ module core(
 	logic  		     [1:0]issue_num;
 	logic  		     backend_stall;
 	bpu_update_t     bpu_feedback;
-	priv_req_i   	 priv_req;
-	priv_resp_o      priv_resp;
+	priv_req_t   	 priv_req;
+	priv_resp_t      priv_resp;
 	cache_bus_req_t	 ibus_req , dbus_req;
 	cache_bus_resp_t ibus_resp, dbus_resp;
 

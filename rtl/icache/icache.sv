@@ -124,7 +124,7 @@ module icache #(
 		fsm_state_next = fsm_state;
 		case(fsm_state)
 			STATE_IDLE:begin
-				if(mem_req_stage_2.mem_valid) begin
+				if(busy_o) begin
 					fsm_state_next = STATE_ADDR;
 				end
 			end

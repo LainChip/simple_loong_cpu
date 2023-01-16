@@ -1,6 +1,8 @@
 `include "common.svh"
 `include "decoder.svh"
 `include "pipeline.svh"
+`include "lsu_types.svh"
+`include "bpu.svh"
 
 module frontend(
 	input clk,
@@ -107,7 +109,7 @@ module frontend(
         .stall_o(bpu_stall)
     );
 
-    assign bpu_pc_valid = {~frontend_clr , ~frontend_clr & ~bpu_pc[2]};
+    assign bpu_pc_valid = {~frontend_clr , ~frontend_clr & ~bpu_vpc[2]};
 
     // 暂停以及清零控制逻辑
     assign frontend_clr = bpu_feedback_i.flush;

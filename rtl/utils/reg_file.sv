@@ -31,7 +31,7 @@ module reg_file #(
 
     // 读出逻辑
     generate
-      for(genvar i = 0 ; i < READ_PORT ; i+=1) begin
+      for(genvar i = 0 ; i < REG_READ_PORT ; i+=1) begin
         if(INNER_FORWARDING) begin
           logic forwarding_enable;
           dtype forwarding_data;

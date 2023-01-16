@@ -21,6 +21,18 @@
         "_USE_M2": "1'b1"
     },
     "signal" :{
+        "debug_inst": {
+            "length": 32,
+            "stage": "wb",
+            "default_value": "inst_i",
+            "invalid_value": "inst_i"
+        },
+        "debug_valid": {
+            "length": 1,
+            "stage": "wb",
+            "default_value": "1'b1",
+            "invalid_value": "1'b1"
+        },
         "wb_sel": {
             "length": 2,
             "stage": "wb",

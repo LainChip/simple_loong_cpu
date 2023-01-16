@@ -1,6 +1,8 @@
 `include "common.svh"
 `include "decoder.svh"
 `include "pipeline.svh"
+`include "lsu_types.svh"
+`include "bpu.svh"
 
 module backend_pipeline #(
 	parameter bit MAIN_PIPE = 1'b1
@@ -48,7 +50,8 @@ module backend_pipeline #(
 	*/
 	ctrl_flow_t ex_ctrl_flow,m1_ctrl_flow,m2_ctrl_flow,wb_ctrl_flow;
 	data_flow_t ex_data_flow_raw,ex_data_flow_forwarding,
-			    m1_data_flow_raw,m2_data_flow_forwarding,
+			    m1_data_flow_raw,m1_data_flow_forwarding,
+				m2_data_flow_raw,m2_data_flow_forwarding,
 			    wb_data_flow;
 	logic [31:0] alu_result;
 	logic [31:0] bpf_result;
@@ -157,7 +160,7 @@ module backend_pipeline #(
 			.update_o(bpu_feedback_o),
 			.target_o(/*NOT CONNECT*/)
 		);
-		assign ex_clr_req_o = update_o.flush;
+		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_forwarding.pc + 32'd4;
 	end else begin
 		assign ex_clr_req_o = 0;
@@ -194,7 +197,7 @@ module backend_pipeline #(
 	    .clk,
 	    .rst_n,
 	    .decode_info_i(m2_ctrl_flow.decode_info),     //输入：解码信息
-	    .stall_i(stall_vec[2]),           //输入：流水线暂停
+	    .stall_i(stall_vec_i[2]),           //输入：流水线暂停
 	    .instr_i(m2_ctrl_flow.decode_info.general.inst25_0),           //输入：指令后26位
 	    //for read
 	    .rd_data_o(m2_csr_read),         //输出：读数据

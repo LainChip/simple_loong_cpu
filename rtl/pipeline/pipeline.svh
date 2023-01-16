@@ -4,6 +4,10 @@
 `include "decoder.svh"
 `include "bpu.svh"
 
+// TODO
+typedef logic priv_resp_t;
+typedef logic priv_req_t;
+
 // 由issue逻辑产生的转发信号组
 typedef struct packed{
 	logic forwarding_pipe_sel;		// 为0时，选择pipe 0 作为转发源， 否之选择pipe 1 作为转发源头
