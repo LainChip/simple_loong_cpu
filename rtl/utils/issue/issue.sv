@@ -12,6 +12,7 @@ module issue(
 
 		output logic  [1:0] issue_o, // 2'b00, 2'b01, 2'b11 三种情况，指令必须顺序发射.
 		output logic revert_o,         // send inst[0] to pipe[1], inst[1] to pipe[0]. otherwise, inst[0] to pipe[0], inst[1] to pipe[1]
+		output forwarding_info_t [1:0][1:0]forwarding_info_o,
 		input  logic stall_i,
 		input  logic clr_frontend_i
 	);
@@ -22,7 +23,7 @@ module issue(
 		logic [2:0] forwarding_ready; // 0 for ex, 1 for m1, 2 for m2, shifted to right (2 -> 1 -> 0)
 	} scoreboard_info_t;
 
-	function forwarding_info_t (
+	function forwarding_info_t get_forwarding_info(
 		input scoreboard_info_t scoreboard_entry
 	);
 		forwarding_info_t ret;
@@ -218,6 +219,13 @@ module issue(
 
 	assign issue_o = {issue_second_inst, issue_first_inst};
 	assign revert_o = (issue_second_inst & inst_i[1].is.pipe_one_inst) | (issue_first_inst & inst_i[0].is.pipe_two_inst);
+
+	// 处理两条指令的forwarding 控制信息
+	for(genvar i = 0 ; i < 2 ; i+=1) begin
+		for(genvar j = 0 ; j < 2 ; j+=1) begin
+			assign forwarding_info_o[i][j] = get_forwarding_info(scoreboard_entry[inst_i[i].register_info.r_reg[j]])；
+		end
+	end
 
 	// 计分板更新
 	generate

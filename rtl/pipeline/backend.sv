@@ -1,5 +1,6 @@
 `include "common.svh"
 `include "decoder.svh"
+`include "pipeline.svh"
 
 module backend(
 	input clk,
@@ -16,7 +17,7 @@ module backend(
 
 	// BPU 输入（随指令走）
 	// input bpu_predict_t [1:0] bpu_predict_i,
-	// output bpu_update_t bpu_feedback_o,
+	output bpu_update_t bpu_feedback_o,
 
     // 特权控制信号
     input priv_resp_t priv_resp_i,
@@ -39,6 +40,17 @@ module backend(
 	logic [1:0] issue;
 	logic revert;
 
+	// 发射控制流及发射数据流
+	ctrl_flow_t[1:0] ctrl_flow;
+	data_flow_t[1:0] data_flow;
+
+	// 寄存器控制信号
+	forwarding_info_t[1:0][1:0] forwarding_info;
+	logic [1:0][4:0]  reg_w_addr;
+	logic [1:0][31:0] reg_w_data;
+	logic [1:0][1:0][4:0]  reg_r_addr; // reversed
+	logic [1:0][1:0][31:0] reg_r_data; // reversed
+
 	// ISSUE 部分，对指令进行发射
 	// Issue module, judge whether we can issue or not
 	issue issue_module(
@@ -50,6 +62,8 @@ module backend(
 
 		.issue_o(issue), // 2'b00, 2'b01, 2'b11 三种情况，指令必须顺序发射.
 		.revert_o(revert),         // send inst[0] to pipe[1], inst[1] to pipe[0]. otherwise, inst[0] to pipe[0], inst[1] to pipe[1]
+		.forwarding_info_o(forwarding_info)
+
 		.stall_i(stall_vec[0][0] | stall_vec[0][1]) // 当 EX暂停时，不可以发射
 	);
 
@@ -57,28 +71,41 @@ module backend(
 	assign issue_num_o = {issue[1],issue[0] & ~issue[1]};
 
 	// Register Files module, get the operation num
+	reg_file #(
+		.DATA_WIDTH          (32)，
+		.REG_FILE_SIZE       (32),
+		.REG_CONST_ZERO_SIZE (1),
+		.REG_READ_PORT		 (4),
+		.REG_WRITE_PORT      (2),
+		.INNER_FORWARDING	 (1'b1)
+	) reg_file_module(
+		.clk     (clk),
+		.rst_n   (rst_n),
+		.w_ptr_i (reg_w_addr),
+		.w_data_i(reg_w_data),
 
+		.r_ptr_i (reg_r_addr),
+		.r_data_o(reg_r_data)
+	);
 
-	/*
-		Pipeline Registers here.
-	*/
+	// 准备即将发射的指令和数据流
+	// 控制流部分，也处理读寄存器地址 reg_r_addr
+	for(genvar pipe_id = 0 ; pipe_id < 2; pipe_id += 1) begin
+		inst_t inst_sel = inst_i[revert ^ pipe_id];
+		forwarding_info_t[1:0] forwarding_info_sel = forwarding_info[revert ^ pipe_id];
+		always_comb begin
+			ctrl_flow[pipe_id].decode_info = inst_sel.decode_info;
+			ctrl_flow[pipe_id].bpu_predict = inst_sel.bpu_predict;
+			ctrl_flow[pipe_id].w_reg = inst_sel.register_info.w_reg;
+			ctrl_flow[pipe_id].forwarding_info = forwarding_info_sel;
+			reg_r_addr[pipe_id] = inst_sel.register_info.r_reg;
+			data_flow[pipe_id].pc = inst_sel.pc;
+			data_flow[pipe_id].reg_data = reg_r_data[pipe_id];
+			data_flow[pipe_id].result = '0;
+		end
+	end
 
-	// Excute 部分，对计算和跳转指令进行执行，对访存地址进行计算并完成第一阶段TLB比较 
-	// ALU here
-
-	// BPF here
-
-	// AGU here
-
-	// Mem 1 部分，准备读取Tag和Data的地址，进行TLB第二阶段比较。 （转发源）
-	// Mem connection here
-
-	// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
-	// Mem connection here
-
-	// CSR connection here
-
-	// WB部分，选择写回源进行写回。（转发源）
-
+	// 生成两个不对称的pipe
+	// TODO
 
 endmodule
