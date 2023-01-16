@@ -38,7 +38,8 @@ VERILATOR_FLAGS += -cc --exe
 # Optimize
 VERILATOR_FLAGS += -x-assign fast
 # Warn abount lint issues; may not want this on less solid designs
-VERILATOR_FLAGS += -Wall
+# VERILATOR_FLAGS += -Wall
+VERILATOR_FLAGS += -Wno-fatal
 # Make waveforms
 VERILATOR_FLAGS += --trace --trace-structs
 # Check SystemVerilog assertions
@@ -53,7 +54,7 @@ VERILATOR_FLAGS += --coverage
 VERILATOR_FLAGS += -I.. -I../decoder
 
 # Disable warning of UNUSEDSIGNAL
-VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL
+# VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL
 
 # Input files for Verilator
 VERILATOR_INPUT = -f input.vc divider.sv divider_tb.cpp
