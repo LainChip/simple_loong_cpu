@@ -28,6 +28,7 @@ typedef struct packed {
 
 // 控制流，目前未进行精简。 对于管线二，可以精简M1 M2部分。
 typedef struct packed {
+	logic revert;
 	decode_info_t decode_info;
 	forwarding_info_t [1:0] forwarding_info;
 	bpu_predict_t bpu_predict;

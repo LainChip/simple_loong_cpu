@@ -98,6 +98,7 @@ module backend(
 			ctrl_flow[pipe_id].bpu_predict = inst_sel.bpu_predict;
 			ctrl_flow[pipe_id].w_reg = inst_sel.register_info.w_reg;
 			ctrl_flow[pipe_id].forwarding_info = forwarding_info_sel;
+			ctrl_flow[pipe_id].revert = revert;
 			reg_r_addr[pipe_id] = inst_sel.register_info.r_reg;
 			data_flow[pipe_id].pc = inst_sel.pc;
 			data_flow[pipe_id].reg_data = reg_r_data[pipe_id];
