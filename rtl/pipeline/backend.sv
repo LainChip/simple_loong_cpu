@@ -24,15 +24,16 @@ module backend(
     output priv_req_t priv_req_o,
 
 	// 访存总线
-    output cache_bus_req_t req_o,       // cache的访问请求
-    input cache_bus_resp_t resp_i        // cache的访问应答
+    output cache_bus_req_t bus_req_o,       // cache的访问请求
+    input cache_bus_resp_t bus_resp_i        // cache的访问应答
 
 
 );
 
 	// 信号定义
 	// 后端暂停和清零向量
-	logic [1:0][2:0] stall_vec, clr_vec;
+	logic [1:0][2:0] stall_vec, clr_vec, stall_req, clr_req;
+	logic [3:0] revert_vector;
 	// 前端清零向量
 	logic clr_frontend;
 
@@ -107,6 +108,89 @@ module backend(
 	end
 
 	// 生成两个不对称的pipe
-	// TODO
+
+	backend_pipeline #(
+	.MAIN_PIPE(1'b1)
+	) pipeline_0 (
+	.clk,    // Clock
+	.rst_n,  // Asynchronous reset active low
+
+	// 控制用暂停信号
+	.stall_vec_i(stall_vec[0]), // 0 for ex, 1 for m1, 2 for m2
+	.clr_vec_i(clr_vec[0]),   // 0 for ex, 1 for m1, 2 for m2
+
+	// 暂停请求
+	.ex_stall_req_o(stall_req[0][0]), // TODO
+	.m1_stall_req_o(stall_req[0][1]),
+	.m2_stall_req_o(stall_req[0][2]),
+
+	.revert_vector_o(revert_vector),
+	.ex_clr_req_o(clr_req[0][0]),
+	.m1_clr_req_o(clr_req[0][1]),
+	.m2_clr_req_o(clr_req[0][2]),
+
+	.revert_i(revert),
+	.issue_i((issue[0] & !revert) | (issue[1] & revert)),
+	.ctrl_flow_i(ctrl_flow[0]),
+	.data_flow_i(data_flow[0]),
+
+	// FORWARDING DATA SOURCE
+	.forwarding_src_i(forwarding_src),
+
+	// FORWARDING DATA OUTPUT
+	.forwarding_data_o(forwarding_src[0]),
+
+	.reg_w_addr_o(reg_w_addr[0]),
+	.reg_w_data_o(reg_w_data[0]),
+	
+	// FOR MAIN PIPE
+	.bus_req_o,         // cache的访问请求
+    .bus_resp_i,        // cache的访问应答
+    .priv_resp_i,
+    .priv_req_o,
+    .bpu_feedback_o
+	);
+
+	backend_pipeline #(
+	.MAIN_PIPE(1'b0)
+	) pipeline_1 (
+	.clk,    // Clock
+	.rst_n,  // Asynchronous reset active low
+
+	// 控制用暂停信号
+	.stall_vec_i(stall_vec[1]), // 0 for ex, 1 for m1, 2 for m2
+	.clr_vec_i(clr_vec[1]),   // 0 for ex, 1 for m1, 2 for m2
+
+	// 暂停请求
+	.ex_stall_req_o(stall_req[1][0]), // TODO
+	.m1_stall_req_o(stall_req[1][1]),
+	.m2_stall_req_o(stall_req[1][2]),
+
+	.revert_vector_o(/* revert vector */),
+	.ex_clr_req_o(clr_req[1][0]),
+	.m1_clr_req_o(clr_req[1][1]),
+	.m2_clr_req_o(clr_req[1][2]),
+
+	.revert_i(revert),
+	.issue_i((issue[1] & !revert) | (issue[0] & revert)),
+	.ctrl_flow_i(ctrl_flow[1]),
+	.data_flow_i(data_flow[1]),
+
+	// FORWARDING DATA SOURCE
+	.forwarding_src_i(forwarding_src),
+
+	// FORWARDING DATA OUTPUT
+	.forwarding_data_o(forwarding_src[1]),
+
+	.reg_w_addr_o(reg_w_addr[1]),
+	.reg_w_data_o(reg_w_data[1]),
+	
+	// FOR MAIN PIPE
+	.bus_req_o(/*NOT CONNECT*/),       // cache的访问请求
+    .bus_resp_i(/*NOT CONNECT*/),        // cache的访问应答
+    .priv_resp_i(/*NOT CONNECT*/),
+    .priv_req_o(/*NOT CONNECT*/),
+    .bpu_feedback_o(/*NOT CONNECT*/)
+	);
 
 endmodule

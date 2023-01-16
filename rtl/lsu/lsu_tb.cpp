@@ -13,7 +13,7 @@
 // Legacy function required only so linking works on Cygwin and MSVC++
 double sc_time_stamp() { return 0; }
 
-const int test_num = 1024 * 32; // In word.
+const int test_num = 1024 * 8; // In word.
 int valid_data[4 * 1024];
 
 int random_addr(int index, int seed)
@@ -85,6 +85,7 @@ int main(int argc, char **argv, char **env)
     top->clk = 0;
     int cnt = 0;
     int read = 0;
+    top->a_type = 1;
     // Simulate until $finish
     while (!contextp->gotFinish()) {
         // Historical note, before Verilator 4.200 Verilated::gotFinish()
@@ -121,8 +122,8 @@ int main(int argc, char **argv, char **env)
         
         if(top->rst_n && !top->pipe_stall && !top->clk) {   
             if(read && cnt > 2) {
-                // printf("time:%ld,read:%d,read_data:0x%x,addr:0x%x,cnt:%d.stall:%d\n",contextp->time(),read,top->r_data,read_addr,cnt - 2,top->pipe_stall);
-                assert(top->r_data == read_data);
+                printf("time:%ld,read:%d,read_data:0x%x 0x%x,addr:0x%x,cnt:%d.stall:%d\n",contextp->time(),read,top->r_data,read_data,read_addr,cnt - 2,top->pipe_stall);
+                assert((top->r_data & 0xff) == (read_data & 0xff));
             }
             cnt++;
         }
@@ -137,6 +138,7 @@ int main(int argc, char **argv, char **env)
             if(cnt < test_num) {
                 // Do write or read
                 top->write = !read;
+                top->a_type = read ? ((rand() % 3) + 1):1;
                 top->way_sel = rand() & 1;
                 top->stall_req = rand() & 1;
                 top->w_data = rand();

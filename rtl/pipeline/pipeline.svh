@@ -24,6 +24,7 @@ typedef struct packed {
 	register_info_t register_info;
 	bpu_predict_t bpu_predict;
 	logic[31:0] pc;
+	logic valid;
 } inst_t;
 
 // 控制流，目前未进行精简。 对于管线二，可以精简M1 M2部分。

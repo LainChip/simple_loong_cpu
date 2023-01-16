@@ -11,6 +11,7 @@ module lsu_test_plantform (
 	input stall_req,
 	input [31:0]w_data,
 	input [31:0]addr,
+	input [1:0] a_type,
 
 	output [31:0]r_data,
 	output pipe_stall
@@ -41,7 +42,7 @@ module lsu_test_plantform (
 
 	always_comb begin
 		decode_info = '0;
-		decode_info[way_sel].m1.mem_type = `_MEM_TYPE_WORD;
+		decode_info[way_sel].m1.mem_type = a_type;
 		decode_info[way_sel].m1.mem_valid = 1'b1;
 		decode_info[way_sel].m1.mem_write = write;
 	end

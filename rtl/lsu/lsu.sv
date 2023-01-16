@@ -35,7 +35,7 @@ module lsu (
 	} inner_mem_req_t;
 
 	inner_mem_req_t mem_req_comb,mem_req_stage_1,mem_req_stage_2;
-	logic[31:0] r_data;
+	logic[31:0] r_data_handled,r_data;
 	logic[2:0] fsm_state,fsm_state_next;
 	logic transfer_done;
 	localparam STATE_IDLE = 3'b001;
@@ -118,7 +118,7 @@ module lsu (
 		bus_req_o.addr = mem_req_stage_2.mem_addr;
 
 		bus_req_o.w_data = w_data_i[mem_req_stage_2.mem_sel_1] << mem_req_stage_2.mem_addr[1:0];
-		case(mem_req_stage_2.mem_type)
+		case(mem_req_stage_2.mem_type[1:0])
 			`_MEM_TYPE_WORD: begin
 				bus_req_o.data_strobe = 4'b1111;
 			end
@@ -137,9 +137,38 @@ module lsu (
 	end
 
 	// 输出数据处理
+	always_comb begin
+		case(mem_req_stage_2.mem_type[1:0])
+			`_MEM_TYPE_WORD: begin
+				r_data_handled = bus_resp_i.r_data;
+			end
+			`_MEM_TYPE_HALF: begin
+				if(mem_req_stage_2.mem_addr[1])
+					r_data_handled = {{16{(bus_resp_i.r_data[31] & ~mem_req_stage_2.mem_type[2])}},bus_resp_i.r_data[31:16]};
+				else
+					r_data_handled = {{16{(bus_resp_i.r_data[15] & ~mem_req_stage_2.mem_type[2])}},bus_resp_i.r_data[15:0]};
+			end
+			`_MEM_TYPE_BYTE: begin
+				if(mem_req_stage_2.mem_addr[1])
+					if(mem_req_stage_2.mem_addr[0])
+						r_data_handled = {{24{(bus_resp_i.r_data[31] & ~mem_req_stage_2.mem_type[2])}},bus_resp_i.r_data[31:24]};
+					else
+						r_data_handled = {{24{(bus_resp_i.r_data[23] & ~mem_req_stage_2.mem_type[2])}},bus_resp_i.r_data[23:16]};
+				else
+					if(mem_req_stage_2.mem_addr[0])
+						r_data_handled = {{24{(bus_resp_i.r_data[15] & ~mem_req_stage_2.mem_type[2])}},bus_resp_i.r_data[15:8]};
+					else
+						r_data_handled = {{24{(bus_resp_i.r_data[7 ] & ~mem_req_stage_2.mem_type[2])}},bus_resp_i.r_data[7 :0]};
+			end
+			default: begin
+				bus_req_o.data_strobe = 4'b0000;
+			end
+		endcase
+	end
+
 	always_ff @(posedge clk) begin
 		if(transfer_done) begin
-			r_data <= bus_resp_i.r_data;
+			r_data <= r_data_handled;
 		end
 	end
 
