@@ -9,6 +9,11 @@
         "_REG_TYPE_RDCNTID": "3'd6",
         "_REG_TYPE_INVTLB": "3'd7",
 
+        "_REG_WB_ALU": "2'd0",
+        "_REG_WB_BPF": "2'd1",
+        "_REG_WB_LSU": "2'd2",
+        "_REG_WB_CSR": "2'd3",
+
         "_READY_EX": "1'b0",
         "_READY_M2": "1'b1",
 
@@ -16,6 +21,12 @@
         "_USE_M2": "1'b1"
     },
     "signal" :{
+        "wb_sel": {
+            "length": 2,
+            "stage": "wb",
+            "default_value": "`_REG_WB_ALU",
+            "invalid_value": "`_REG_WB_ALU"
+        },
         "pipe_one_inst": {
             "length": 1,
             "stage": "is",

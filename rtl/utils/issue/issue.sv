@@ -23,6 +23,19 @@ module issue(
 		logic [2:0] forwarding_ready; // 0 for ex, 1 for m1, 2 for m2, shifted to right (2 -> 1 -> 0)
 	} scoreboard_info_t;
 
+	/*
+	TIME WREG (reg1)INST_POST (reg1)FORWARDING_READY
+	 0   01	  ***             ***
+	 1   !=01 3'b001          3'b111 ADD.W
+	 2   **   3'b010          3'b011
+	 3   **   3'b100          3'b001
+	 4   **   3'b000          3'b000
+	 5   01   3'b001          3'b100 LD.W
+	 6   **   3'b010          3'b010
+	 7   **   3'b100          3'b001
+	 8   **   3'b000          3'b000
+
+	*/
 	function forwarding_info_t get_forwarding_info(
 		input scoreboard_info_t scoreboard_entry
 	);
@@ -204,7 +217,7 @@ module issue(
 	endfunction
 
 	// 计分板
-	scoreboard_entry[31:0] scoreboard;
+	scoreboard_info_t[31:0] scoreboard;
 
 	// 分别判断两条指令可否发射
 	logic issue_first_inst;
