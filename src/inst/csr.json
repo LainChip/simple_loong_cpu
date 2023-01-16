@@ -40,8 +40,8 @@
         "rdcntv_type":{
             "length":2,
             "stage":"wb",
-            "default_value":"`RDCNTV_TYPE_NONE",
-            "invalid_value":"`RDCNTV_TYPE_NONE"
+            "default_value":"`_RDCNTV_TYPE_NONE",
+            "invalid_value":"`_RDCNTV_TYPE_NONE"
         },
         "do_rdcntid":{
             "length":1,
@@ -173,13 +173,13 @@
         },
         "rdcntvl.w": {
             "opcode": "0000000000000000011000",
-            "rdcntv_type":"`RDCNTV_TYPE_LOW",
+            "rdcntv_type":"`_RDCNTV_TYPE_LOW",
             "reg_type":"`_REG_TYPE_RW",
             "ready_time":"`_READY_M2"
         },
         "rdcntvh.w": {
             "opcode": "0000000000000000011001",
-            "rdcntv_type":"`RDCNTV_TYPE_HIGH",
+            "rdcntv_type":"`_RDCNTV_TYPE_HIGH",
             "reg_type":"`_REG_TYPE_RW",
             "ready_time":"`_READY_M2"
         },

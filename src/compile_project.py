@@ -1,6 +1,6 @@
 import os
 # try_chiplab_home = os.getenv('CHIPLAB_HOME')
-target_path = "../dist/"
+target_path = "~/chip/chiplab/IP/myCPU/"
 sv_file_list = ['./inst/decoder.sv','./inst/decoder.svh']
 os.system("cd inst/ && python gen_decoder.py")
 for root, dirs, files in os.walk('../rtl'):

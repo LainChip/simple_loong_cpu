@@ -37,12 +37,11 @@ module backend_pipeline #(
 	output logic[31:0] reg_w_data_o,
 	
 	// FOR MAIN PIPE
-	output cache_bus_req_t bus_req_o,       // cache的访问请求
-    input cache_bus_resp_t bus_resp_i        // cache的访问应答
+	output cache_bus_req_t bus_req_o,         // cache的访问请求
+    input cache_bus_resp_t bus_resp_i,        // cache的访问应答
     input priv_resp_t priv_resp_i,
     output priv_req_t priv_req_o,
-    output bpu_update_t bpu_feedback_o,
-
+    output bpu_update_t bpu_feedback_o
 );
 	/*
 		流水线寄存器定义及管理，包括数据转发
@@ -177,7 +176,7 @@ module backend_pipeline #(
 		// Mem connection here
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
 		// Mem connection here
-		lsu lsu_ins(.clk,.rst_n,
+		lsu lsu_module(.clk,.rst_n,
 			.decode_info_i(m1_ctrl_flow.decode_info),
 			.vaddr_i({'0,m1_vaddr}),
 			.paddr_i({'0,m2_paddr}),
@@ -191,7 +190,7 @@ module backend_pipeline #(
 			.busy_o(m2_stall_req_o)
 		);
 		// CSR connection here
-		module csr(
+		csr csr_module(
 	    .clk,
 	    .rst_n,
 	    .decode_info_i(m2_ctrl_flow.decode_info),     //输入：解码信息

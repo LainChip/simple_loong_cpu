@@ -63,8 +63,7 @@ module backend(
 
 		.issue_o(issue), // 2'b00, 2'b01, 2'b11 三种情况，指令必须顺序发射.
 		.revert_o(revert),         // send inst[0] to pipe[1], inst[1] to pipe[0]. otherwise, inst[0] to pipe[0], inst[1] to pipe[1]
-		.forwarding_info_o(forwarding_info)
-
+		.forwarding_info_o(forwarding_info),
 		.stall_i(stall_vec[0][0] | stall_vec[0][1]) // 当 EX暂停时，不可以发射
 	);
 
@@ -73,7 +72,7 @@ module backend(
 
 	// Register Files module, get the operation num
 	reg_file #(
-		.DATA_WIDTH          (32)，
+		.DATA_WIDTH          (32),
 		.REG_FILE_SIZE       (32),
 		.REG_CONST_ZERO_SIZE (1),
 		.REG_READ_PORT		 (4),

@@ -60,19 +60,18 @@ module issue(
 		input scoreboard_info_t [31:0] scoreboard,
 		input inst_t inst
 	);
+		bit ret;
 		scoreboard_info_t [1:0] scoreboard_entry;
 		scoreboard_entry[0] = scoreboard[inst.register_info.r_reg[0]];
 		scoreboard_entry[1] = scoreboard[inst.register_info.r_reg[1]];
-		logic [1:0] use_time; // `_USE_EX for use in ex, `_USE_M2 for use in m2
-		use_time = inst.is.use_time;
-		logic ret;
 		ret = '0;
 		for(integer i = 0 ; i < 2; i += 1) begin
-			if(use_time[i] == `_USE_EX)
+			if(inst.is.use_time[i] == `_USE_EX) begin
 				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (scoreboard_entry[i].forwarding_ready[0]));
-			end else /*if(use_time[i] == `_USE_M2)*/begin
+			end else /*if(inst.is.use_time[i] == `_USE_M2)*/begin
 				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (scoreboard_entry[i].forwarding_ready));
 			end
+		end
 		return ret;
 	endfunction
 
@@ -114,18 +113,18 @@ module issue(
 	// 暂停向量优先级高于清零向量，以避免意外的 跳转/异常
 	// 成功发射与暂停互斥，不可能同时发生
 	// 成功发射与清零可以同时发射，但成功发射优先。
-	function scoreboard_entry scoreboard_update(
+	function scoreboard_info_t scoreboard_update(
 		input inst_t [1:0] inst,
 		input logic  [1:0] issue,
 		input logic [1:0][2:0] stall_vec,			// 0 for ex, 1 for m1, 2 for m2
 		input logic [1:0][2:0] clr_vec,				// 0 for ex, 1 for m1, 2 for m2
-		input scoreboard_entry old_scoreboard_entry,
+		input scoreboard_info_t old_scoreboard_entry,
 		input integer entry_id
 	);
+		scoreboard_info_t ret;
 		if(entry_id == 0) begin
 			return '0;
 		end
-		scoreboard_entry ret;
 		// 正常更新逻辑 优先级最低
 		ret.pipe_sel = old_scoreboard_entry.pipe_sel;
 		ret.inst_post = {old_scoreboard_entry.inst_pos[1:0],1'b0};
@@ -146,7 +145,7 @@ module issue(
 			if((inst[i].register_info.w_reg == entry_id) && issue[i]) begin
 				ret.pipe_sel = i;
 				ret.inst_pos = 3'b001;
-				ret.forwarding_ready = {1'b1,ret.is.ready_time == `_READY_EX,ret.is.ready_time == `_READY_};
+				ret.forwarding_ready = {1'b1,ret.is.ready_time == `_READY_EX,ret.is.ready_time == `_READY_EX};
 			end
 		end
 		return ret;
@@ -172,7 +171,7 @@ module issue(
 	// 处理两条指令的forwarding 控制信息
 	for(genvar i = 0 ; i < 2 ; i+=1) begin
 		for(genvar j = 0 ; j < 2 ; j+=1) begin
-			assign forwarding_info_o[i][j] = get_forwarding_info(scoreboard_entry[inst_i[i].register_info.r_reg[j]])；
+			assign forwarding_info_o[i][j] = get_forwarding_info(scoreboard_entry[inst_i[i].register_info.r_reg[j]]);
 		end
 	end
 

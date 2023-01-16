@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-`include "types.svh"
+`include "common.svh"
 
 module reg_file #(
     parameter int DATA_WIDTH = 32,
@@ -56,7 +56,7 @@ module reg_file #(
     generate
       for(genvar i = 0 ; i < REG_FILE_SIZE; i+=1) begin
         if(i < REG_CONST_ZERO_SIZE) begin
-          regs_update[i] = '0;
+          assign regs_update[i] = '0;
         end else begin
           logic we;
           dtype wdata;

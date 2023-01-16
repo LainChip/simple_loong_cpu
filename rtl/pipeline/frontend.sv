@@ -97,7 +97,7 @@ module frontend(
     logic [1:0] fifo_write_num;
 
     // NPC / BPU 模块
-    npc(
+    npc npc_module(
         .clk,
         .rst_n,
         .stall_i(frontend_stall),

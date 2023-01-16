@@ -8,9 +8,10 @@
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
 
+`include "common.svh"
 `include "bpu.svh"
 
-`ifndef __NPC_VER_1
+`ifdef __NPC_VER_1
 
 module npc (
 	input clk,    // Clock

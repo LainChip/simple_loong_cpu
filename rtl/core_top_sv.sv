@@ -66,50 +66,50 @@ module core_top_sv(
 		.AXI_DATA_WIDTH(32)
     ) mem_bus;
 
-    assign mem_bus.Master.aw_ready = awready;
-    assign mem_bus.Master.w_ready = wready;
-    assign mem_bus.Master.b_id = bid;
-    assign mem_bus.Master.b_resp = bresp;
-    assign mem_bus.Master.b.user = '0;
-    assign mem_bus.Master.b_valid = bvalid;
-    assign mem_bus.Master.ar_ready = arready;
-    assign mem_bus.Master.r_id = rid;
-    assign mem_bus.Master.r_data = rdata;
-    assign mem_bus.Master.r_resp = rresp;
-    assign mem_bus.Master.r_last = rlast;
-    assign mem_bus.Master.r_user = '0;
-    assign mem_bus.Master.r_valid = rvalid;
+    assign mem_bus.Slave.aw_ready = awready;
+    assign mem_bus.Slave.w_ready = wready;
+    assign mem_bus.Slave.b_id = bid;
+    assign mem_bus.Slave.b_resp = bresp;
+    assign mem_bus.Slave.b_user = '0;
+    assign mem_bus.Slave.b_valid = bvalid;
+    assign mem_bus.Slave.ar_ready = arready;
+    assign mem_bus.Slave.r_id = rid;
+    assign mem_bus.Slave.r_data = rdata;
+    assign mem_bus.Slave.r_resp = rresp;
+    assign mem_bus.Slave.r_last = rlast;
+    assign mem_bus.Slave.r_user = '0;
+    assign mem_bus.Slave.r_valid = rvalid;
 
-    assign awid = mem_bus.Master.aw_id;
-    assign awaddr = mem_bus.Master.aw_addr;
-    assign awlen = mem_bus.Master.aw_len;
-    assign awsize = mem_bus.Master.aw_size;
-    assign awburst = mem_bus.Master.aw_burst;
-    assign awlock = mem_bus.Master.aw_lock;
-    assign awcache = mem_bus.Master.aw_cache;
-    assign awprot = mem_bus.Master.aw_prot;
-    assign awvalid = mem_bus.Master.aw_valid;
-    assign wdata = mem_bus.Master.w_data;
-    assign wstrb = mem_bus.Master.w_strb;
-    assign wlast = mem_bus.Master.w_last;
-    assign wvalid = mem_bus.Master.w_valid;
-    assign bready = mem_bus.Master.b_ready;
-    assign arid = mem_bus.Master.ar_id;
-    assign araddr = mem_bus.Master.ar_addr;
-    assign arlen = mem_bus.Master.ar_len;
-    assign arsize = mem_bus.Master.ar_size;
-    assign arlock = mem_bus.Master.ar_lock;
-    assign arcache = mem_bus.Master.ar_cache;
-    assign arprot = mem_bus.Master.ar_prot;
-    assign arvalid = mem_bus.Master.ar_valid;
-    assign rready = mem_bus.Master.r_ready;
+    assign awid = mem_bus.Slave.aw_id;
+    assign awaddr = mem_bus.Slave.aw_addr;
+    assign awlen = mem_bus.Slave.aw_len;
+    assign awsize = mem_bus.Slave.aw_size;
+    assign awburst = mem_bus.Slave.aw_burst;
+    assign awlock = mem_bus.Slave.aw_lock;
+    assign awcache = mem_bus.Slave.aw_cache;
+    assign awprot = mem_bus.Slave.aw_prot;
+    assign awvalid = mem_bus.Slave.aw_valid;
+    assign wdata = mem_bus.Slave.w_data;
+    assign wstrb = mem_bus.Slave.w_strb;
+    assign wlast = mem_bus.Slave.w_last;
+    assign wvalid = mem_bus.Slave.w_valid;
+    assign bready = mem_bus.Slave.b_ready;
+    assign arid = mem_bus.Slave.ar_id;
+    assign araddr = mem_bus.Slave.ar_addr;
+    assign arlen = mem_bus.Slave.ar_len;
+    assign arsize = mem_bus.Slave.ar_size;
+    assign arlock = mem_bus.Slave.ar_lock;
+    assign arcache = mem_bus.Slave.ar_cache;
+    assign arprot = mem_bus.Slave.ar_prot;
+    assign arvalid = mem_bus.Slave.ar_valid;
+    assign rready = mem_bus.Slave.r_ready;
 
     logic rst_n;
     always_ff @(posedge aclk) begin
        rst_n <= aresetn;
     end
 
-    cpu_core core(
+    core core(
       .clk(aclk),
       .rst_n(rst_n),
       .int_i(intrpt),

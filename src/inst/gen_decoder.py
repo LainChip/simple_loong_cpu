@@ -5,7 +5,7 @@ import types
 import re
 
 class decoder_parser:
-    def __init__(self) -> None:
+    def __init__(self):
         self.const_list = []
         self.signal_package_list = set()
         self.signal_package_list.add('general')
@@ -19,17 +19,17 @@ class decoder_parser:
         print(self.signal_list)
         print(self.inst_list)
 
-    def parse_const(self,const_info:dict):
+    def parse_const(self,const_info ):
         for pair in const_info:
             self.const_list.append((pair,const_info[pair]))
 
-    def parse_signal(self,signal_info:dict):
+    def parse_signal(self,signal_info ):
         for signal_name in signal_info:
             sub_dict = signal_info[signal_name]
             self.signal_package_list.add(sub_dict['stage'])
             self.signal_list[signal_name] = (sub_dict['stage'],sub_dict['length'],sub_dict['default_value'],sub_dict['invalid_value'])
 
-    def parse_inst_list(self,inst_info:dict):
+    def parse_inst_list(self,inst_info ):
         for inst_name in inst_info:
             self.inst_list[inst_name] = inst_info[inst_name]
             text = inst_info[inst_name]['opcode']
@@ -38,7 +38,7 @@ class decoder_parser:
                 text = text.replace(s,int(s[1:-1]) * 'x')
             inst_info[inst_name]['opcode'] = text
 
-    def parse_single_file(self,file_info:dict):
+    def parse_single_file(self,file_info ):
         if file_info.get('const') is not None:
             self.parse_const(file_info['const'])
         if file_info.get('signal') is not None:
@@ -94,12 +94,12 @@ class decoder_parser:
         str_builder += "`endif\n"
         return str_builder
 
-    def gen_blank(self,times:int):
+    def gen_blank(self,times ):
         return '    ' * times
 
     def dict_order_cmp(self,a,b):
-        str_a : str = self.inst_list[a]['opcode']
-        str_b : str= self.inst_list[b]['opcode']
+        str_a = self.inst_list[a]['opcode']
+        str_b = self.inst_list[b]['opcode']
         if len(str_a) != len(str_b):
             return (len(str_a) - len(str_b))
         str_a_std = str_a.replace('x','0')
@@ -108,7 +108,7 @@ class decoder_parser:
 
     def gen_sv_module(self):
         str_builder = "`include \"common.svh\"\n`include \"decoder.svh\"\n\n"
-        str_builder += "module(\n    input logic[31:0] inst_i,\n    output decode_info_t decode_info_o,\n    output logic[31:0][7:0] inst_string_o\n);\n\n"
+        str_builder += "module decoder(\n    input logic[31:0] inst_i,\n    output decode_info_t decode_info_o,\n    output logic[31:0][7:0] inst_string_o\n);\n\n"
         
         # main combine logic
         depth = 1
