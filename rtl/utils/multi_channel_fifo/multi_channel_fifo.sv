@@ -24,10 +24,10 @@ module multi_channel_fifo #(
 	output dtype [READ_PORT - 1 : 0] read_data_o
 );
 
-	initial begin
-    	$dumpfile("logs/vlt_dump.vcd");
-    	$dumpvars();
-    end
+	// initial begin
+    // 	$dumpfile("logs/vlt_dump.vcd");
+    // 	$dumpvars();
+    // end
 
 	typedef logic [$clog2(BANK) - 1 : 0] ptr_t;
 	ptr_t [READ_PORT - 1 : 0] read_index;

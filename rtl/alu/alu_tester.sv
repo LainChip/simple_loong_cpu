@@ -17,6 +17,11 @@ module alu_tester (
     
     output [31:0] alu_res
 );
+    // // for gtkwave
+    // initial begin
+    // 	$dumpfile("logs/vlt_dump.vcd");
+    // 	$dumpvars();
+    // end
 
     decode_info_t decode_info = 0;
     inst25_0_t inst25_0;

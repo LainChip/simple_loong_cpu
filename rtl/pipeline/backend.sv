@@ -60,6 +60,8 @@ module backend(
 	// ISSUE 部分，对指令进行发射
 	// Issue module, judge whether we can issue or not
 	issue issue_module(
+		.clk(clk),
+		.rst_n(rst_n),
 		.inst_i(inst_i),
 		.inst_valid_i(inst_valid_i),
 		.stall_vec_i(stall_vec),			// 0 for ex, 1 for m1, 2 for m2
@@ -271,80 +273,80 @@ DifftestInstrCommit DifftestInstrCommit_1(
     .csr_data           ('0/*TODO*/)
 );
 
-// DifftestExcpEvent DifftestExcpEvent(
-//     .clock              (aclk           ),
-//     .coreid             (0              ),
-//     .excp_valid         (cmt_excp_flush ),
-//     .eret               (cmt_ertn       ),
-//     .intrNo             (csr_estat_diff_0[12:2]),
-//     .cause              (cmt_csr_ecode  ),
-//     .exceptionPC        (cmt_pc         ),
-//     .exceptionInst      (cmt_inst       )
-// );
+DifftestExcpEvent DifftestExcpEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .excp_valid         ('0/*TODO*/),
+    .eret               ('0/*TODO*/),
+    .intrNo             ('0/*TODO*/),
+    .cause              ('0/*TODO*/),
+    .exceptionPC        ('0/*TODO*/),
+    .exceptionInst      ('0/*TODO*/)
+);
 
-// DifftestTrapEvent DifftestTrapEvent(
-//     .clock              (aclk           ),
-//     .coreid             (0              ),
-//     .valid              (trap           ),
-//     .code               (trap_code      ),
-//     .pc                 (cmt_pc         ),
-//     .cycleCnt           (cycleCnt       ),
-//     .instrCnt           (instrCnt       )
-// );
+DifftestTrapEvent DifftestTrapEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .valid              ('0/*TODO*/),
+    .code               ('0/*TODO*/),
+    .pc                 ('0/*TODO*/),
+    .cycleCnt           ('0/*TODO*/),
+    .instrCnt           ('0/*TODO*/)
+);
 
-// DifftestStoreEvent DifftestStoreEvent(
-//     .clock              (aclk           ),
-//     .coreid             (0              ),
-//     .index              (0              ),
-//     .valid              (cmt_inst_st_en ),
-//     .storePAddr         (cmt_st_paddr   ),
-//     .storeVAddr         (cmt_st_vaddr   ),
-//     .storeData          (cmt_st_data    )
-// );
+DifftestStoreEvent DifftestStoreEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (0              ),
+    .valid              ('0/*TODO*/),
+    .storePAddr         ('0/*TODO*/),
+    .storeVAddr         ('0/*TODO*/),
+    .storeData          ('0/*TODO*/)
+);
 
-// DifftestLoadEvent DifftestLoadEvent(
-//     .clock              (aclk           ),
-//     .coreid             (0              ),
-//     .index              (0              ),
-//     .valid              (cmt_inst_ld_en ),
-//     .paddr              (cmt_ld_paddr   ),
-//     .vaddr              (cmt_ld_vaddr   )
-// );
+DifftestLoadEvent DifftestLoadEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (0              ),
+    .valid              ('0/*TODO*/),
+    .paddr              ('0/*TODO*/),
+    .vaddr              ('0/*TODO*/)
+);
 
-// DifftestCSRRegState DifftestCSRRegState(
-//     .clock              (aclk               ),
-//     .coreid             (0                  ),
-//     .crmd               (csr_crmd_diff_0    ),
-//     .prmd               (csr_prmd_diff_0    ),
-//     .euen               (0                  ),
-//     .ecfg               (csr_ectl_diff_0    ),
-//     .estat              (csr_estat_diff_0   ),
-//     .era                (csr_era_diff_0     ),
-//     .badv               (csr_badv_diff_0    ),
-//     .eentry             (csr_eentry_diff_0  ),
-//     .tlbidx             (csr_tlbidx_diff_0  ),
-//     .tlbehi             (csr_tlbehi_diff_0  ),
-//     .tlbelo0            (csr_tlbelo0_diff_0 ),
-//     .tlbelo1            (csr_tlbelo1_diff_0 ),
-//     .asid               (csr_asid_diff_0    ),
-//     .pgdl               (csr_pgdl_diff_0    ),
-//     .pgdh               (csr_pgdh_diff_0    ),
-//     .save0              (csr_save0_diff_0   ),
-//     .save1              (csr_save1_diff_0   ),
-//     .save2              (csr_save2_diff_0   ),
-//     .save3              (csr_save3_diff_0   ),
-//     .tid                (csr_tid_diff_0     ),
-//     .tcfg               (csr_tcfg_diff_0    ),
-//     .tval               (csr_tval_diff_0    ),
-//     .ticlr              (csr_ticlr_diff_0   ),
-//     .llbctl             (csr_llbctl_diff_0  ),
-//     .tlbrentry          (csr_tlbrentry_diff_0),
-//     .dmw0               (csr_dmw0_diff_0    ),
-//     .dmw1               (csr_dmw1_diff_0    )
-// );
+DifftestCSRRegState DifftestCSRRegState(
+    .clock              (clk               ),
+    .coreid             (0                  ),
+    .crmd               ('0/*TODO*/),
+    .prmd               ('0/*TODO*/),
+    .euen               (0                  ),
+    .ecfg               ('0/*TODO*/),
+    .estat              ('0/*TODO*/),
+    .era                ('0/*TODO*/),
+    .badv               ('0/*TODO*/),
+    .eentry             ('0/*TODO*/),
+    .tlbidx             ('0/*TODO*/),
+    .tlbehi             ('0/*TODO*/),
+    .tlbelo0            ('0/*TODO*/),
+    .tlbelo1            ('0/*TODO*/),
+    .asid               ('0/*TODO*/),
+    .pgdl               ('0/*TODO*/),
+    .pgdh               ('0/*TODO*/),
+    .save0              ('0/*TODO*/),
+    .save1              ('0/*TODO*/),
+    .save2              ('0/*TODO*/),
+    .save3              ('0/*TODO*/),
+    .tid                ('0/*TODO*/),
+    .tcfg               ('0/*TODO*/),
+    .tval               ('0/*TODO*/),
+    .ticlr              ('0/*TODO*/),
+    .llbctl             ('0/*TODO*/),
+    .tlbrentry          ('0/*TODO*/),
+    .dmw0               ('0/*TODO*/),
+    .dmw1               ('0/*TODO*/)
+);
 
 DifftestGRegState DifftestGRegState(
-    .clock              (aclk       ),
+    .clock              (clk       ),
     .coreid             (0          ),
     .gpr_0              (reg_file_module.regs_update[0]),
     .gpr_1              (reg_file_module.regs_update[1]),

@@ -44,10 +44,10 @@ module csr(
 
 );
 
-initial begin
-    	$dumpfile("logs/vlt_dump.vcd");
-    	$dumpvars();
-end
+// initial begin
+//     	$dumpfile("logs/vlt_dump.vcd");
+//     	$dumpvars();
+// end
 
 
 logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
@@ -133,7 +133,7 @@ parameter int ADDR_BRK              = 256;
 parameter int ADDR_DISABLE_CACHE    = 257;
 
 //Read
-logic read_reg_result;
+logic [31:0] read_reg_result;
 assign rd_data_o = read_reg_result;
 
 always_comb begin

@@ -22,10 +22,10 @@ module bpu (
 	output stall_o
 );
 
-	initial begin
-    	$dumpfile("logs/vlt_dump.vcd");
-    	$dumpvars();
-	end
+	// initial begin
+    // 	$dumpfile("logs/vlt_dump.vcd");
+    // 	$dumpvars();
+	// end
 
 	reg [31:2] pc;
 	reg bpu_state;

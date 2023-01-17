@@ -1,4 +1,4 @@
-`timescale 1ns/1ps
+// `timescale 1ns/1ps
 `ifndef _COMMON_HEADER
 `define _COMMON_HEADER
 

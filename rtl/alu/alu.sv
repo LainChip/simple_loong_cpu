@@ -13,11 +13,6 @@ module alu (
     input   [31:0] pc_i,
     output  [31:0] alu_res_o
 );
-    // for gtkwave
-    initial begin
-    	$dumpfile("logs/vlt_dump.vcd");
-    	$dumpvars();
-    end
 
     alu_type_t alu_type;
     opd_type_t opd_type;

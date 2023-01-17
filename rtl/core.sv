@@ -31,8 +31,8 @@ module core(
 
     // frontend
     frontend frontend(
-	.clk,
-	.rst_n,
+	.clk(clk),
+	.rst_n(rst_n),
 
 	// 指令输出
 	.inst_o(inst),
@@ -54,8 +54,8 @@ module core(
 
     // backend
     backend backend(
-	.clk,
-	.rst_n,
+	.clk(clk),
+	.rst_n(rst_n),
 
 	// 指令输入
 	.inst_i(inst),

@@ -12,10 +12,10 @@ module multiplier (
     output [63:0] res_o
 );
     // for gtkwave
-    initial begin
-    	$dumpfile("logs/vlt_dump.vcd");
-    	$dumpvars();
-    end
+    // initial begin
+    // 	$dumpfile("logs/vlt_dump.vcd");
+    // 	$dumpvars();
+    // end
 
     /*======= deal with sign =======*/
     logic [67:0] faciend_X;
