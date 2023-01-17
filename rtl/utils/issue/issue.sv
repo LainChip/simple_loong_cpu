@@ -8,7 +8,7 @@ module issue(
 		input logic clk,
 		input logic rst_n,
 		input inst_t [1:0] inst_i,
-		input  logic  [1:0] inst_valid_i,
+		input logic  [1:0] inst_valid_i,
 		input logic [1:0][2:0] stall_vec_i,			// 0 for ex, 1 for m1, 2 for m2
 		input logic [1:0][2:0] clr_vec_i,				// 0 for ex, 1 for m1, 2 for m2
 
@@ -158,14 +158,14 @@ module issue(
 
 	// 分别判断两条指令可否发射
 	logic issue_first_inst;
-	assign issue_first_inst = (~raw_conflict(scoreboard, inst_i[0])) 
-	& stall_i & clr_frontend_i;
+	assign issue_first_inst = ~raw_conflict(scoreboard, inst_i[0])
+	& ~stall_i & ~clr_frontend_i;
 	logic issue_second_inst;
 	assign issue_second_inst = issue_first_inst 
 	& (~raw_conflict(scoreboard, inst_i[1])) 
 	& (~second_inst_data_conflict(inst_i[0], inst_i[1]))
 	& (~second_inst_control_conflict(inst_i[0], inst_i[1]))
-	& stall_i & clr_frontend_i;
+	& ~stall_i & ~clr_frontend_i;
 
 	assign issue_o = {issue_second_inst, issue_first_inst};
 	assign revert_o = (issue_second_inst & inst_i[1].decode_info.is.pipe_one_inst) | (issue_first_inst & inst_i[0].decode_info.is.pipe_two_inst);

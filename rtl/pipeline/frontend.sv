@@ -158,7 +158,7 @@ module frontend(
 
     // FIFO 模块
     multi_channel_fifo #(
-        .DATA_WIDTH(32),
+        .DATA_WIDTH($bits(inst_t)),
         .DEPTH(8),
         .BANK(4),
         .WRITE_PORT(2),
