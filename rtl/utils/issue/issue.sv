@@ -158,10 +158,10 @@ module issue(
 
 	// 分别判断两条指令可否发射
 	logic issue_first_inst;
-	assign issue_first_inst = ~raw_conflict(scoreboard, inst_i[0])
+	assign issue_first_inst = inst_valid_i[0] & ~raw_conflict(scoreboard, inst_i[0])
 	& ~stall_i & ~clr_frontend_i;
 	logic issue_second_inst;
-	assign issue_second_inst = issue_first_inst 
+	assign issue_second_inst = issue_first_inst & inst_valid_i[1]
 	& (~raw_conflict(scoreboard, inst_i[1])) 
 	& (~second_inst_data_conflict(inst_i[0], inst_i[1]))
 	& (~second_inst_control_conflict(inst_i[0], inst_i[1]))

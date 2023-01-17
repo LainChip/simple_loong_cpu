@@ -98,7 +98,8 @@ module backend(
 	// 准备即将发射的指令和数据流
 	// 控制流部分，也处理读寄存器地址 reg_r_addr
 	for(genvar pipe_id = 0 ; pipe_id < 2; pipe_id += 1) begin
-		inst_t inst_sel = inst_i[revert ^ pipe_id];
+		inst_t inst_sel;
+		assign inst_sel = inst_i[revert ^ pipe_id[0]];
 		forwarding_info_t[1:0] forwarding_info_sel = forwarding_info[revert ^ pipe_id];
 		always_comb begin
 			ctrl_flow[pipe_id].decode_info = inst_sel.decode_info;
