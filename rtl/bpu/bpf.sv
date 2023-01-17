@@ -61,7 +61,7 @@ module bpf (
 	end
 
 	// bpu update info
-	assign update_o.flush = predict_i.npc != target_o[31:2];
+	assign update_o.flush = (predict_i.npc != target_o[31:2]) & decode_i.wb.debug_valid;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	assign update_o.br_target = target_o[31:2];

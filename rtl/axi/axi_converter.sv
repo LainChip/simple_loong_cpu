@@ -180,6 +180,8 @@ module axi_converter#(
 		axi_bus_if.w_strb = sel_data_r.data_strobe;
 		axi_bus_if.w_valid = sel_data_ready;
 		axi_bus_if.w_last = sel_data_ready;
+
+		axi_bus_if.r_ready = fsm_state[2] & (~sel_req_r.write);
 	end
 
 endmodule
