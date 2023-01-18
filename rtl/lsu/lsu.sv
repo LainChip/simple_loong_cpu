@@ -10,6 +10,7 @@ module lsu (
 	
 	// 控制信号
 	input decode_info_t [1:0] decode_info_i,
+	input logic request_valid_i,
 	
 	// 流水线数据输入输出
 	input logic[1:0][31:0] vaddr_i,
@@ -53,8 +54,8 @@ module lsu (
 	always_comb begin
 		mem_req_comb.mem_addr = '0;
 		{mem_req_comb.mem_type,mem_req_comb.mem_write,mem_req_comb.mem_valid} =
-		{decode_info_i[0].m1.mem_type,decode_info_i[0].m1.mem_write,decode_info_i[0].m1.mem_valid} | 
-		{decode_info_i[1].m1.mem_type,decode_info_i[1].m1.mem_write,decode_info_i[1].m1.mem_valid};
+		{decode_info_i[0].m1.mem_type,decode_info_i[0].m1.mem_write,decode_info_i[0].m1.mem_valid & request_valid_i} | 
+		{decode_info_i[1].m1.mem_type,decode_info_i[1].m1.mem_write,decode_info_i[1].m1.mem_valid & request_valid_i};
 		if(decode_info_i[1].m1.mem_valid) begin
 			mem_req_comb.mem_addr = vaddr_i[1];
 		end else begin

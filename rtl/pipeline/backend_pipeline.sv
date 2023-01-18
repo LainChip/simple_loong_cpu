@@ -56,7 +56,7 @@ module backend_pipeline #(
 	logic [31:0] alu_result;
 	logic [31:0] bpf_result;
 	logic [31:0] ex_vaddr;
-	logic [31:0] m1_vaddr;
+	logic [31:0] m1_paddr;
 	logic [31:0] m2_paddr;
 
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data;
@@ -154,8 +154,8 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~stall_vec_i[1]) begin
 			m1_data_flow_raw <= ex_data_flow_forwarding;
-			m1_vaddr <= ex_vaddr;
-			m2_paddr <= m1_vaddr;
+			m1_paddr <= ex_vaddr;
+			m2_paddr <= m1_paddr;
 		end else begin
 			m1_data_flow_raw <= m1_data_flow_forwarding;
 		end
@@ -214,9 +214,10 @@ module backend_pipeline #(
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
 		// Mem connection here
 		lsu lsu_module(.clk,.rst_n,
-			.decode_info_i(m1_ctrl_flow.decode_info),
-			.vaddr_i({'0,m1_vaddr}),
-			.paddr_i({'0,m2_paddr}),
+			.decode_info_i(ex_ctrl_flow.decode_info),
+			.request_valid_i(~stall_vec_i[0]),
+			.vaddr_i({'0,ex_vaddr}),
+			.paddr_i({'0,m1_paddr}),
 			.w_data_i({32'd0,m2_data_flow_forwarding.reg_data[0]}),
 			.r_data_o({m2_useless_data,m2_lsu_read}),
 
