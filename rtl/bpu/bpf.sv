@@ -15,9 +15,12 @@
 module bpf (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
+	input csr_flush_i,
+	input stall_i,
 	input [31:0] pc_i,
 	input [31:0] rj_i,
 	input [31:0] rd_i,
+	input [31:0] csr_target_i,
 	input decode_info_t decode_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
@@ -64,10 +67,17 @@ module bpf (
 	assign pc_link_o = pc_i + 4;
 
 	// bpu update info
+<<<<<<< HEAD
 	assign update_o.flush = (predict_i.npc != target[31:2]) & decode_i.wb.debug_valid;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	assign update_o.br_target = target[31:2];
+=======
+	assign update_o.flush = (!stall_i & (predict_i.npc != target[31:2]) & decode_i.wb.debug_valid) | csr_flush_i;
+	assign update_o.br_taken = taken;
+	assign update_o.pc = pc_i[31:2];
+	assign update_o.br_target = csr_flush_i ? csr_target_i[31:0] : target[31:2];
+>>>>>>> development
 
 	assign update_o.btb_update = update_o.flush;
 	always_comb begin : proc_br_type
