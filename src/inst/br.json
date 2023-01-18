@@ -44,7 +44,8 @@
             "branch_type": "`_BRANCH_INDIRECT",
             "reg_type": "`_REG_TYPE_RW",
             "ready_time": "`_READY_EX",
-            "use_time": "`_USE_EX"
+            "use_time": "`_USE_EX",
+            "wb_sel": "`_REG_WB_BPF"
         },
         "b": {
             "opcode": "010100",
@@ -56,7 +57,8 @@
             "branch_type": "`_BRANCH_IMMEDIATE",
             "reg_type": "`_REG_TYPE_BL",
             "ready_time": "`_READY_EX",
-            "branch_link": 1
+            "branch_link": 1,
+            "wb_sel": "`_REG_WB_BPF"
         },
         "beq": {
             "opcode": "010110",
