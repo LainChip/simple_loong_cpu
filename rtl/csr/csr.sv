@@ -27,17 +27,19 @@ module csr(
     //for exception
     input   logic   [5:0]           ecode_i,            //输入：两条流水线的例外一级码
     input   logic   [8:0]           esubcode_i,         //输入：两条流水线的例外二级码
-    input   logic   [1:0]           excp_trigger_i,     //输入：发生异常的流水级
+    input   logic                   excp_trigger_i,     //输入：是否发生异常
     input   logic   [31:0]          bad_va_i,           //输入：地址相关例外出错的虚地址
     input   logic   [31:0]          instr_pc_i,         //输入：指令pc
     
-    output  logic   [1:0]           do_redirect_o,      //输出：是否发生跳转
+    output  logic                   do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
+
+    input   logic                   excp_tlbrefill_i,   //输入： tlbrefill异常
     //todo：tlb related exceptions
 
     // timer
     output  logic  [63:0]  timer_data_o,                //输出：定时器值
-    output  logic  [31:0]  tid_o                       //输出：定时器id
+    output  logic  [31:0]  tid_o                        //输出：定时器id
 
     //todo: llbit
     //todo: tlb related addr translate
@@ -95,6 +97,9 @@ logic [31:0]    reg_dmw0;
 logic [31:0]    reg_dmw1;
 logic [31:0]    reg_brk;
 logic [31:0]    reg_disable_cache;
+
+logic [63:0]    reg_timer_64;
+
 
 
 parameter int ADDR_CRMD             = 0;
@@ -415,7 +420,7 @@ always_ff @(posedge clk) begin
         reg_tid         <= (wr_data_tid & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tid & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_tcfg        <= (wr_data_tcfg & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tcfg & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);//change with n?
         reg_tval        <= (wr_data_tval & 32'b0000_0000_0000_0000_0000_0000_0000_0000) | (reg_tval & ~32'b0000_0000_0000_0000_0000_0000_0000_0000);
-        reg_cntc        <= (wr_data_cntc & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_cntc & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);//todo
+        reg_cntc        <= (wr_data_cntc & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_cntc & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_ticlr       <= (wr_data_ticlr & 32'b0000_0000_0000_0000_0000_0000_0000_0000) | (reg_ticlr & ~32'b0000_0000_0000_0000_0000_0000_0000_0000); // w1 to read about timer
         reg_llbctl      <= (wr_data_llbctl & 32'b0000_0000_0000_0000_0000_0000_0000_0100) | (reg_llbctl & ~32'b0000_0000_0000_0000_0000_0000_0000_0100);//w1 to read about llbit
         reg_tlbrentry   <= (wr_data_tlbrentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_tlbrentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
@@ -485,6 +490,20 @@ always_ff @(posedge clk) begin
     else if (va_error) begin
         reg_badv <= bad_va_selected;
     end
+end
+
+//timer_64
+always_ff @(posedge clk) begin
+    if(~rst_n)begin
+        reg_timer_64 <= 64'd0;
+    end else begin
+        reg_timer_64 <= reg_timer_64 + 64'b1;
+    end
+end
+
+always_comb begin
+    tid_o = reg_tid;
+    timer_data_o = reg_timer_64 + {{32{reg_cntc[31]}}, reg_cntc};
 end
 
 //Exception handling
