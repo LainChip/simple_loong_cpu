@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-15 09:10:26
+// Revise : 2023-01-18 14:46:43
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -18,7 +18,8 @@ module bpu (
 	input stall_i,
 	input bpu_update_t update_i,
 	output bpu_predict_t predict_o,
-	output reg [31:0] pc_o,
+	output [31:0] pc_o,
+	output [1:0] pc_valid_o,
 	output stall_o
 );
 
@@ -59,6 +60,7 @@ module bpu (
 	end
 
 	assign npc = bpu_state == BPU_REFILL ? pc : ppc;
+	assign pc_o = {pc, 2'b00};
 
 	// ====================== BTB ======================
 	wire btb_miss;
@@ -118,6 +120,9 @@ module bpu (
 	wire taken = |btb_br_type | lphr[1];
 	assign ppc = btb_br_type == `_RETURN ? ras_target :
 				 taken ? btb_bta : {pc[31:3] + 29'd1, 1'b0};
+
+	assign pc_valid_o[0] = ~pc[2]; // pc是4字对齐的
+	assign pc_valid_o[1] = ~taken & ~btb_fsc; // 预测第一条不跳转
 
 	assign predict_o.fsc = btb_fsc;
 	assign predict_o.npc = npc;
