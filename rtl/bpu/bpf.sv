@@ -27,6 +27,7 @@ module bpf (
 	output [31:0] pc_link_o
 );
 
+	logic taken;
 	wire [25:0] offs_i = decode_i.general.inst25_0; 
 	wire [4:0] rj_index_i = decode_i.general.inst25_0[9:5];
 	wire [4:0] rd_index_i = decode_i.general.inst25_0[4:0];
@@ -39,10 +40,10 @@ module bpf (
 
 	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE ? pc_i + (offs_26) :
 					     branch_type_i == `_BRANCH_INDIRECT  ? rj_i + (offs_16) :
-					     branch_type_i == `_BRANCH_CONDITION ? pc_i + (offs_16) :
+					     ((branch_type_i == `_BRANCH_CONDITION) && taken) ? pc_i + (offs_16) :
 								   						       pc_i + 4;
+	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
 	
-	logic taken;
 	always_comb begin : proc_taken
 		if (branch_type_i == `_BRANCH_CONDITION) begin
 			case (cmp_type_i)
@@ -67,7 +68,7 @@ module bpf (
 	assign pc_link_o = pc_i + 4;
 
 	// bpu update info
-	assign update_o.flush = (~stall_i & (predict_i.npc != target[31:2]) & decode_i.wb.valid) | csr_flush_i;
+	assign update_o.flush = (~stall_i & (predict_npc != target[31:0]) & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : target[31:2];
