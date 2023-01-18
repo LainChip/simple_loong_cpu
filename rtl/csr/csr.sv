@@ -31,7 +31,7 @@ module csr(
     input   logic   [31:0]          bad_va_i,           //输入：地址相关例外出错的虚地址
     input   logic   [31:0]          instr_pc_i,         //输入：指令pc
     
-    output  logic   [1:0]           do_redirect_o,      //输出：是否发生跳转
+    output  logic                   do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
 
     input   logic                   excp_tlbrefill_i,   //输入： tlbrefill异常
