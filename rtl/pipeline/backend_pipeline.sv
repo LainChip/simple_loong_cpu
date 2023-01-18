@@ -135,7 +135,7 @@ module backend_pipeline #(
 		if(~rst_n) begin
 			wb_ctrl_flow <= '0;
 		end else begin
-			if(clr_vec_i[2]) begin
+			if(clr_vec_i[2] | stall_vec_i[2]) begin
 				wb_ctrl_flow <= '0;
 			end else begin
 				wb_ctrl_flow <= m2_ctrl_flow;
