@@ -45,174 +45,203 @@
         "add.w": {
             "opcode": "00000000000100000",
             "alu_type": "`_ALU_TYPE_ADD",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "sub.w": {
             "opcode": "00000000000100010",
             "alu_type": "`_ALU_TYPE_SUB",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "slt": {
             "opcode": "00000000000100100",
             "alu_type": "`_ALU_TYPE_SLT",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         }, 
         "sltu": {
             "opcode": "00000000000100101",
             "alu_type": "`_ALU_TYPE_SLT",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 1
         }, 
         "nor": {
             "opcode": "00000000000101000",
             "alu_type": "`_ALU_TYPE_NOR",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "and": {
             "opcode": "00000000000101001",
             "alu_type": "`_ALU_TYPE_AND",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "or": {
             "opcode": "00000000000101010",
             "alu_type": "`_ALU_TYPE_OR",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "xor": {
             "opcode": "00000000000101011",
             "alu_type": "`_ALU_TYPE_XOR",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "sll.w": {
             "opcode": "00000000000101110",
             "alu_type": "`_ALU_TYPE_SL",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "srl.w": {
             "opcode": "00000000000101111",
             "alu_type": "`_ALU_TYPE_SR",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 1
         },
         "sra.w": {
             "opcode": "00000000000110000",
             "alu_type": "`_ALU_TYPE_SR",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "mul.w": {
             "opcode": "00000000000111000",
             "alu_type": "`_ALU_TYPE_MUL",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "mulh.w": {
             "opcode": "00000000000111001",
             "alu_type": "`_ALU_TYPE_MULH",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "mulh.wu": {
             "opcode": "00000000000111010",
             "alu_type": "`_ALU_TYPE_MULH",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 1
         },
         "div.w": {
             "opcode": "00000000001000000",
             "alu_type": "`_ALU_TYPE_DIV",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "mod.w": {
             "opcode": "00000000001000001",
             "alu_type": "`_ALU_TYPE_MOD",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 0
         },
         "div.wu": {
             "opcode": "00000000001000010",
             "alu_type": "`_ALU_TYPE_DIV",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 1
         },
         "mod.wu": {
             "opcode": "00000000001000011",
             "alu_type": "`_ALU_TYPE_MOD",
+            "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
             "opd_unsigned": 1
         },
         "slli.w": {
             "opcode": "00000000010000001",
             "alu_type": "`_ALU_TYPE_SL",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U5",
             "opd_unsigned": 0
         },
         "srli.w": {
             "opcode": "00000000010001001",
             "alu_type": "`_ALU_TYPE_SR",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U5",
             "opd_unsigned": 1
         },
         "srai.w": {
             "opcode": "00000000010010001",
             "alu_type": "`_ALU_TYPE_SR",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U5",
             "opd_unsigned": 0
         },
         "slti": {
             "opcode": "0000001000",
             "alu_type": "`_ALU_TYPE_SLT",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_S12",
             "opd_unsigned": 0
         },
         "sltui": {
             "opcode": "0000001001",
             "alu_type": "`_ALU_TYPE_SLT",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_S12",
             "opd_unsigned": 1
         },
         "addi.w": {
             "opcode": "0000001010",
             "alu_type": "`_ALU_TYPE_ADD",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_S12",
             "opd_unsigned": 0
         },
         "andi": {
             "opcode": "0000001101",
             "alu_type": "`_ALU_TYPE_AND",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U12",
             "opd_unsigned": 0
         },
         "ori": {
             "opcode": "0000001110",
             "alu_type": "`_ALU_TYPE_OR",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U12",
             "opd_unsigned": 0
         },
         "xori": {
             "opcode": "0000001111",
             "alu_type": "`_ALU_TYPE_XOR",
+            "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U12",
             "opd_unsigned": 0
         },
         "lu12i.w": {
             "opcode": "0001010",
             "alu_type": "`_ALU_TYPE_LUI",
+            "reg_type": "`_REG_TYPE_W",
             "opd_type": "`_OPD_IMM_S20",
             "opd_unsigned": 0
         },
         "pcaddu12i": {
             "opcode": "0001110",
             "alu_type": "`_ALU_TYPE_ADD",
+            "reg_type": "`_REG_TYPE_W",
             "opd_type": "`_OPD_IMM_S20",
             "opd_unsigned": 0
         }     

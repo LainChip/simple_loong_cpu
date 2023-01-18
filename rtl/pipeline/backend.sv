@@ -227,7 +227,7 @@ module backend(
 				clr_vec[1][level] |= clr_req[0][level_req];
 			end
 			clr_vec[0][level] |= clr_req[0][level];
-			clr_vec[1][level] |= clr_req[0][level] & revert_vector[level];
+			clr_vec[1][level] |= clr_req[0][level] & ~revert_vector[level];
 		end
 	end
 

@@ -31,6 +31,11 @@ module frontend(
     );
         register_info_t ret;
         case(decode_info.is.reg_type)
+            `_REG_TYPE_I:begin
+                ret.r_reg[0] = '0;
+                ret.r_reg[1] = '0;
+                ret.w_reg = '0;
+            end
             `_REG_TYPE_RW:begin
                 ret.r_reg[0] = '0;
                 ret.r_reg[1] = decode_info.general.inst25_0[9:5];
@@ -41,30 +46,20 @@ module frontend(
                 ret.r_reg[1] = decode_info.general.inst25_0[9:5];
                 ret.w_reg = decode_info.general.inst25_0[4:0];
             end
-            // `_REG_TYPE_IRW:begin // 废弃的类型
-            //  ret.r_reg[0] = '0;
-            //  ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-            //  ret.w_reg = decode_info.general.inst25_0[4:0];
-            // end
-            // `_REG_TYPE_IW:begin // 废弃的类型
-            //  ret.r_reg[0] = '0;
-            //  ret.r_reg[1] = '0;
-            //  ret.w_reg = '0;
-            // end
-            `_REG_TYPE_I:begin
-                ret.r_reg[0] = '0;
-                ret.r_reg[1] = '0;
+            `_REG_TYPE_W:begin
+                ret.r_reg[0] = decode_info.general.inst25_0[14:10];
+                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
+                ret.w_reg = decode_info.general.inst25_0[4:0];
+            end
+            `_REG_TYPE_RR:begin
+                ret.r_reg[0] = decode_info.general.inst25_0[4:0];
+                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
                 ret.w_reg = '0;
             end
             `_REG_TYPE_BL:begin
                 ret.r_reg[0] = '0;
                 ret.r_reg[1] = '0;
                 ret.w_reg = 5'd1;
-            end
-            `_REG_TYPE_RR:begin
-                ret.r_reg[0] = decode_info.general.inst25_0[4:0];
-                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-                ret.w_reg = '0;
             end
             `_REG_TYPE_CSRXCHG:begin
                 ret.r_reg[0] = decode_info.general.inst25_0[4:0];
@@ -76,20 +71,21 @@ module frontend(
                 ret.r_reg[1] = '0;
                 ret.w_reg = decode_info.general.inst25_0[9:5];
             end
-            // `_REG_TYPE_R:begin
-            //  ret.r_reg[0] = '0;
-            //  ret.r_reg[1] = '0;
-            //  ret.w_reg = '0;
-            // end
+            `_REG_TYPE_INVTLB:begin
+                ret.r_reg[0] = decode_info.general.inst25_0[14:10];
+                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
+                ret.w_reg = '0;
+            end
             default:begin
                 ret.r_reg[0] = '0;
                 ret.r_reg[1] = '0;
                 ret.w_reg = '0;
             end
         endcase
+        return ret;
     endfunction
 
-    bpu_predict_t bpu_predict,fifo_predict;
+    bpu_predict_t[1:0] bpu_predict,fifo_predict;
     decode_info_t [1:0]fifo_decode_info;
     logic [31:0] bpu_vpc,bpu_ppc,fifo_vpc;
     logic [1:0] bpu_pc_valid, fifo_pc_valid;
@@ -117,7 +113,7 @@ module frontend(
     // I CACHE 模块
     icache #(
         .FETCH_SIZE(2),
-        .ATTACHED_INFO_WIDTH($bits(bpu_predict_t))
+        .ATTACHED_INFO_WIDTH(2 * $bits(bpu_predict_t))
     ) icache_module(
         .clk,    // Clock
         .rst_n,  // Asynchronous reset active low
@@ -144,12 +140,12 @@ module frontend(
     // INST 结构体组装模块
     always_comb begin
         fifo_write_num = {fifo_pc_valid[0] & fifo_pc_valid[1], fifo_pc_valid[0] ^ fifo_pc_valid[1]};
-        fifo_inst[0].bpu_predict = fifo_predict;
+        fifo_inst[0].bpu_predict = fifo_pc_valid[0] ? fifo_predict[0] : fifo_predict[1];
         fifo_inst[0].decode_info = fifo_pc_valid[0] ? fifo_decode_info[0] : fifo_decode_info[1];
         fifo_inst[0].pc = fifo_pc_valid[0] ? fifo_vpc : {fifo_vpc[31:3],3'b100};
         fifo_inst[0].valid = |fifo_pc_valid;
         fifo_inst[0].register_info = fifo_pc_valid[0] ? get_register_info(fifo_decode_info[0]) : get_register_info(fifo_decode_info[1]) ;
-        fifo_inst[1].bpu_predict = fifo_predict;
+        fifo_inst[1].bpu_predict = fifo_predict[1];
         fifo_inst[1].decode_info = fifo_decode_info[1];
         fifo_inst[1].pc = {fifo_vpc[31:3],3'b100};
         fifo_inst[1].valid = fifo_pc_valid[0] & fifo_pc_valid[1];

@@ -1,13 +1,14 @@
 {
     "const" :{
-        "_REG_TYPE_I": "3'd0",
-        "_REG_TYPE_RW": "3'd1",
-        "_REG_TYPE_RRW": "3'd2",
-        "_REG_TYPE_RR": "3'd3",
-        "_REG_TYPE_BL": "3'd4",
-        "_REG_TYPE_CSRXCHG": "3'd5",
-        "_REG_TYPE_RDCNTID": "3'd6",
-        "_REG_TYPE_INVTLB": "3'd7",
+        "_REG_TYPE_I": "4'd0",
+        "_REG_TYPE_RW": "4'd1",
+        "_REG_TYPE_RRW": "4'd2",
+        "_REG_TYPE_W": "4'd3",
+        "_REG_TYPE_RR": "4'd4",
+        "_REG_TYPE_BL": "4'd5",
+        "_REG_TYPE_CSRXCHG": "4'd6",
+        "_REG_TYPE_RDCNTID": "4'd7",
+        "_REG_TYPE_INVTLB": "4'd8",
 
         "_REG_WB_ALU": "2'd0",
         "_REG_WB_BPF": "2'd1",
@@ -64,10 +65,10 @@
             "invalid_value": "{`_USE_EX,`_USE_EX}"
         },
         "reg_type": {
-            "length": 3,
+            "length": 4,
             "stage": "is",
-            "default_value": "`_REG_TYPE_RR",
-            "invalid_value": "`_REG_TYPE_RR"
+            "default_value": "`_REG_TYPE_I",
+            "invalid_value": "4'b1111"
         }
     }
 }

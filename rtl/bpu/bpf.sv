@@ -34,12 +34,12 @@ module bpf (
 	assign cmp_type_i = decode_i.ex.cmp_type;
 	branch_type_t branch_type_i = decode_i.ex.branch_type;
 	
-	wire [31:0] offs_26 = {{6{offs_i[25]}}, offs_i};
-	wire [31:0] offs_16 = {{16{offs_i[25]}}, offs_i[25:10]};
+	wire [31:0] offs_26 = {{4{offs_i[9]}},offs_i[9:0], offs_i[25:10], 2'b00};
+	wire [31:0] offs_16 = {{14{offs_i[25]}}, offs_i[25:10], 2'b00};
 
-	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE ? pc_i + (offs_26 << 2) :
-					     branch_type_i == `_BRANCH_INDIRECT  ? rj_i + (offs_16 << 2) :
-					     branch_type_i == `_BRANCH_CONDITION ? pc_i + (offs_16 << 2) :
+	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE ? pc_i + (offs_26) :
+					     branch_type_i == `_BRANCH_INDIRECT  ? rj_i + (offs_16) :
+					     branch_type_i == `_BRANCH_CONDITION ? pc_i + (offs_16) :
 								   						       pc_i + 4;
 	
 	logic taken;
