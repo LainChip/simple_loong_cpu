@@ -10,7 +10,7 @@
 // -----------------------------------------------------------------------------
 
 `include "bpu.svh"
-`include "../decoder/decoder.svh"
+`include "decoder.svh"
 
 module bpf (
 	input clk,    // Clock

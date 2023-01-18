@@ -27,7 +27,7 @@
             "default_value": "inst_i",
             "invalid_value": "inst_i"
         },
-        "debug_valid": {
+        "valid": {
             "length": 1,
             "stage": "wb",
             "default_value": "1'b1",

@@ -148,12 +148,12 @@ module frontend(
         fifo_inst[0].decode_info = fifo_pc_valid[0] ? fifo_decode_info[0] : fifo_decode_info[1];
         fifo_inst[0].pc = fifo_pc_valid[0] ? fifo_vpc : {fifo_vpc[31:3],3'b100};
         fifo_inst[0].valid = |fifo_pc_valid;
-        fifo_inst[0].register_info = get_register_info(fifo_inst[0].decode_info);
+        fifo_inst[0].register_info = fifo_pc_valid[0] ? get_register_info(fifo_decode_info[0]) : get_register_info(fifo_decode_info[1]) ;
         fifo_inst[1].bpu_predict = fifo_predict;
         fifo_inst[1].decode_info = fifo_decode_info[1];
         fifo_inst[1].pc = {fifo_vpc[31:3],3'b100};
         fifo_inst[1].valid = fifo_pc_valid[0] & fifo_pc_valid[1];
-        fifo_inst[1].register_info = get_register_info(fifo_inst[1].decode_info);
+        fifo_inst[1].register_info = get_register_info(fifo_decode_info[1]);
     end
 
     // FIFO 模块
