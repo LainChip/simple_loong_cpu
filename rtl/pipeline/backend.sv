@@ -76,6 +76,7 @@ module backend(
 
 	// 生成前端使用的 issue_num 信号
 	assign issue_num_o = {issue[1],issue[0] & ~issue[1]};
+	assign clr_frontend = |clr_vec;
 
 	// Register Files module, get the operation num
 	reg_file #(
