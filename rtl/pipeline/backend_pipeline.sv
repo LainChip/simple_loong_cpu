@@ -192,7 +192,7 @@ module backend_pipeline #(
 			.decode_i(ex_ctrl_flow.decode_info),
 			.predict_i(ex_ctrl_flow.bpu_predict),
 			.update_o(bpu_feedback_o),
-			.pc_link_o(/*NOT CONNECT*/)
+			.target_o(/*NOT CONNECT*/)
 		);
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_forwarding.pc + 32'd4;
