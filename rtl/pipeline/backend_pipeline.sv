@@ -33,7 +33,7 @@ module backend_pipeline #(
 	input logic[1:0][2:0][31:0] forwarding_src_i,
 
 	// FORWARDING DATA OUTPUT
-	output logic[2:0] forwarding_data_o,
+	output logic[2:0][31:0] forwarding_data_o,
 
 	output logic[4:0]  reg_w_addr_o,
 	output logic[31:0] reg_w_data_o,
@@ -274,5 +274,8 @@ module backend_pipeline #(
 
 	// revert 信号生成
 	assign revert_vector_o = {wb_ctrl_flow.revert,m2_ctrl_flow.revert,m1_ctrl_flow.revert,ex_ctrl_flow.revert};
+
+	// 转发信号源生成
+	assign forwarding_data_o = {wb_data_flow.result,m2_data_flow_raw.result,m1_data_flow_raw.result};
 
 endmodule : backend_pipeline
