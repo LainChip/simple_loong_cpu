@@ -175,7 +175,7 @@ module backend_pipeline #(
 	// ALU here
 	alu alu_module(
     .decode_info_i(ex_ctrl_flow.decode_info),
-    .reg_fetch_i(ex_data_flow_forwarding.reg_data),
+    .reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
     .pc_i(ex_data_flow_forwarding.pc),
     .alu_res_o(alu_result)
 	);

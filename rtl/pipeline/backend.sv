@@ -226,7 +226,7 @@ module backend(
 				clr_vec[0][level] |= clr_req[0][level_req];
 				clr_vec[1][level] |= clr_req[0][level_req];
 			end
-			clr_vec[0][level] |= clr_req[0][level];
+			clr_vec[0][level] |= (level == 0) ? '0 : clr_req[0][level];
 			clr_vec[1][level] |= clr_req[0][level] & ~revert_vector[level];
 		end
 	end
@@ -240,7 +240,7 @@ assign wb_data_flow = {pipeline_1.wb_data_flow,pipeline_0.wb_data_flow};
 DifftestInstrCommit DifftestInstrCommit_0(
     .clock              (clk           ),
     .coreid             ('0),
-    .index              (wb_ctrl_flow[0].revert),
+    .index              (wb_ctrl_flow[0].revert ? 1:0),
     .valid              (wb_ctrl_flow[0].decode_info.wb.valid),
     .pc                 (wb_data_flow[0].pc),
     .instr              (wb_ctrl_flow[0].decode_info.wb.debug_inst),
@@ -258,7 +258,7 @@ DifftestInstrCommit DifftestInstrCommit_0(
 DifftestInstrCommit DifftestInstrCommit_1(
     .clock              (clk           ),
     .coreid             ('0),
-    .index              (~wb_ctrl_flow[0].revert),
+    .index              (wb_ctrl_flow[0].revert ? 0:1),
     .valid              (wb_ctrl_flow[1].decode_info.wb.valid),
     .pc                 (wb_data_flow[1].pc),
     .instr              (wb_ctrl_flow[1].decode_info.wb.debug_inst),
