@@ -47,6 +47,8 @@
             "alu_type": "`_ALU_TYPE_ADD",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "use_time": "{`_USE_EX,`_USE_EX}",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "sub.w": {
@@ -54,6 +56,7 @@
             "alu_type": "`_ALU_TYPE_SUB",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "slt": {
@@ -61,6 +64,7 @@
             "alu_type": "`_ALU_TYPE_SLT",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         }, 
         "sltu": {
@@ -68,6 +72,7 @@
             "alu_type": "`_ALU_TYPE_SLT",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 1
         }, 
         "nor": {
@@ -75,6 +80,7 @@
             "alu_type": "`_ALU_TYPE_NOR",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "and": {
@@ -82,6 +88,7 @@
             "alu_type": "`_ALU_TYPE_AND",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "or": {
@@ -89,6 +96,7 @@
             "alu_type": "`_ALU_TYPE_OR",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "xor": {
@@ -96,6 +104,7 @@
             "alu_type": "`_ALU_TYPE_XOR",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "sll.w": {
@@ -103,6 +112,7 @@
             "alu_type": "`_ALU_TYPE_SL",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "srl.w": {
@@ -110,6 +120,7 @@
             "alu_type": "`_ALU_TYPE_SR",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 1
         },
         "sra.w": {
@@ -117,6 +128,7 @@
             "alu_type": "`_ALU_TYPE_SR",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "mul.w": {
@@ -124,6 +136,7 @@
             "alu_type": "`_ALU_TYPE_MUL",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "mulh.w": {
@@ -131,6 +144,7 @@
             "alu_type": "`_ALU_TYPE_MULH",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "mulh.wu": {
@@ -138,6 +152,7 @@
             "alu_type": "`_ALU_TYPE_MULH",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 1
         },
         "div.w": {
@@ -145,6 +160,7 @@
             "alu_type": "`_ALU_TYPE_DIV",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "mod.w": {
@@ -152,6 +168,7 @@
             "alu_type": "`_ALU_TYPE_MOD",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "div.wu": {
@@ -159,6 +176,7 @@
             "alu_type": "`_ALU_TYPE_DIV",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 1
         },
         "mod.wu": {
@@ -166,6 +184,7 @@
             "alu_type": "`_ALU_TYPE_MOD",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 1
         },
         "slli.w": {
@@ -173,6 +192,7 @@
             "alu_type": "`_ALU_TYPE_SL",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U5",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "srli.w": {
@@ -180,6 +200,7 @@
             "alu_type": "`_ALU_TYPE_SR",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U5",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 1
         },
         "srai.w": {
@@ -187,6 +208,7 @@
             "alu_type": "`_ALU_TYPE_SR",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U5",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "slti": {
@@ -194,6 +216,7 @@
             "alu_type": "`_ALU_TYPE_SLT",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_S12",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "sltui": {
@@ -201,6 +224,7 @@
             "alu_type": "`_ALU_TYPE_SLT",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_S12",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 1
         },
         "addi.w": {
@@ -208,6 +232,7 @@
             "alu_type": "`_ALU_TYPE_ADD",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_S12",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "andi": {
@@ -215,6 +240,7 @@
             "alu_type": "`_ALU_TYPE_AND",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U12",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "ori": {
@@ -222,6 +248,7 @@
             "alu_type": "`_ALU_TYPE_OR",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U12",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "xori": {
@@ -229,6 +256,7 @@
             "alu_type": "`_ALU_TYPE_XOR",
             "reg_type": "`_REG_TYPE_RW",
             "opd_type": "`_OPD_IMM_U12",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "lu12i.w": {
@@ -236,6 +264,7 @@
             "alu_type": "`_ALU_TYPE_LUI",
             "reg_type": "`_REG_TYPE_W",
             "opd_type": "`_OPD_IMM_S20",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         },
         "pcaddu12i": {
@@ -243,6 +272,7 @@
             "alu_type": "`_ALU_TYPE_ADD",
             "reg_type": "`_REG_TYPE_W",
             "opd_type": "`_OPD_IMM_S20",
+            "ready_time": "`_READY_EX",
             "opd_unsigned": 0
         }     
     }
