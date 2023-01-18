@@ -182,6 +182,7 @@ module axi_converter#(
 		axi_bus_if.w_last = sel_data_ready;
 
 		axi_bus_if.r_ready = fsm_state[2] & (~sel_req_r.write);
+		axi_bus_if.b_ready = fsm_state[3] & (sel_req_r.write);
 	end
 
 endmodule
