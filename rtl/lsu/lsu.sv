@@ -121,13 +121,13 @@ module lsu (
 		bus_req_o.cached = '0;
 		bus_req_o.addr = mem_req_stage_2.mem_addr;
 
-		bus_req_o.w_data = w_data_i[mem_req_stage_2.mem_sel_1] << mem_req_stage_2.mem_addr[1:0];
+		bus_req_o.w_data = w_data_i[mem_req_stage_2.mem_sel_1] << {mem_req_stage_2.mem_addr[1:0],3'b000};
 		case(mem_req_stage_2.mem_type[1:0])
 			`_MEM_TYPE_WORD: begin
 				bus_req_o.data_strobe = 4'b1111;
 			end
 			`_MEM_TYPE_HALF: begin
-				bus_req_o.data_strobe = (4'b0011 << mem_req_stage_2.mem_addr[1]);
+				bus_req_o.data_strobe = (4'b0011 << {mem_req_stage_2.mem_addr[1],1'b0});
 			end
 			`_MEM_TYPE_BYTE: begin
 				bus_req_o.data_strobe = (4'b0001 << mem_req_stage_2.mem_addr[1:0]);
