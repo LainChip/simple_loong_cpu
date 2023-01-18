@@ -82,9 +82,9 @@ module bpf (
 		end
 	end
 
-	assign update_o.bht_update = 1'b1;
+	assign update_o.bht_update = branch_type_i != `_BRANCH_INVALID;
 
-	assign update_o.lpht_update = 1'b1;
+	assign update_o.lpht_update = branch_type_i != `_BRANCH_INVALID;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
 	
