@@ -116,7 +116,7 @@ class decoder_parser:
         inst_list_dict_order.sort(key=cmp_to_key(self.dict_order_cmp))
         str_builder += self.gen_blank(depth) + "always_comb begin\n"
         depth += 1
-        str_builder += self.gen_blank(depth) + "casex(inst_i)\n"
+        str_builder += self.gen_blank(depth) + "casez(inst_i)\n"
         depth += 1
         opcode_len = 0
         while len(inst_list_dict_order) != 0 and opcode_len != 32:
@@ -126,7 +126,7 @@ class decoder_parser:
             while len(inst_list_dict_order) != 0 and len(self.inst_list[inst_list_dict_order[0]]['opcode']) == opcode_len:
                 inst = inst_list_dict_order[0]
                 inst_list_dict_order.remove(inst)
-                str_builder += self.gen_blank(depth) + "32'b" + self.inst_list[inst]['opcode'] + (32 - opcode_len) * 'x' + ': begin\n'
+                str_builder += self.gen_blank(depth) + "32'b" + self.inst_list[inst]['opcode'].replace('x','?') + (32 - opcode_len) * '?' + ': begin\n'
                 depth += 1
                 for signal in self.signal_list:
                     signal_value = ''

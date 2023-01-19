@@ -16,6 +16,8 @@ module lsu (
 	input logic[1:0][31:0] vaddr_i,
 	input logic[1:0][31:0] paddr_i, // M2 STAGE
 	input logic[1:0][31:0] w_data_i,  // M2 STAGE
+	input logic request_clr_m2_i,
+	input logic request_clr_m1_i,
 	output logic[1:0][31:0] r_data_o,
 
 	output logic[1:0][31:0] vaddr_o,
@@ -67,6 +69,12 @@ module lsu (
 		if(~rst_n) begin
 			mem_req_stage_1 <= '0;
 			mem_req_stage_2 <= '0;
+		end else if(request_clr_m1_i) begin
+			mem_req_stage_1 <= '0;
+			mem_req_stage_2 <= '0;
+		end else if(request_clr_m2_i) begin
+			mem_req_stage_1 <= '0;
+			mem_req_stage_2 <= '0;
 		end else if(transfer_done) begin 
 			mem_req_stage_2.mem_valid <= '0;
 		end else if(~busy_o & ~stall_i) begin
@@ -85,7 +93,7 @@ module lsu (
 		fsm_state_next = fsm_state;
 		case(fsm_state)
 			STATE_IDLE:begin
-				if(mem_req_stage_2.mem_valid) begin
+				if(mem_req_stage_2.mem_valid & ~request_clr_m2_i) begin
 					fsm_state_next = STATE_ADDR;
 				end
 			end

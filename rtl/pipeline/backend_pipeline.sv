@@ -110,6 +110,23 @@ module backend_pipeline #(
 			end else begin
 				ex_ctrl_flow <= '0;
 			end
+		end else begin
+			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
+			for(integer i = 0 ; i < 2 ; i += 1) begin
+				if(~stall_vec_i[1] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[0]) begin
+					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[1:0],1'b0};
+					ex_ctrl_flow.forwarding_info[i].m1_forward_source <= {ex_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
+					ex_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				end else if(~stall_vec_i[2] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[1]) begin
+					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[1:0],1'b0};
+					ex_ctrl_flow.forwarding_info[i].m1_forward_source <= {ex_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
+					ex_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				end else if(ex_ctrl_flow.forwarding_info[i].ex_forward_source[2]) begin
+					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[1:0],1'b0};
+					ex_ctrl_flow.forwarding_info[i].m1_forward_source <= {ex_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
+					ex_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				end
+			end
 		end
 	end
 	always_ff @(posedge clk) begin
@@ -121,6 +138,17 @@ module backend_pipeline #(
 			end else begin
 				m1_ctrl_flow <= ex_ctrl_flow;
 			end
+		end else begin
+			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
+			for(integer i = 0 ; i < 2 ; i += 1) begin
+				if(~stall_vec_i[2] & m1_ctrl_flow.forwarding_info[i].m1_forward_source[0]) begin
+					m1_ctrl_flow.forwarding_info[i].m1_forward_source <= {m1_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
+					m1_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				end else if(m1_ctrl_flow.forwarding_info[i].m1_forward_source[1]) begin
+					m1_ctrl_flow.forwarding_info[i].m1_forward_source <= {m1_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
+					m1_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				end
+			end
 		end
 	end
 	always_ff @(posedge clk) begin
@@ -131,6 +159,11 @@ module backend_pipeline #(
 				m2_ctrl_flow <= '0;
 			end else begin
 				m2_ctrl_flow <= m1_ctrl_flow;
+			end
+		end else begin
+			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
+			for(integer i = 0 ; i < 2 ; i += 1) begin
+				m2_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
 			end
 		end
 	end
@@ -225,6 +258,8 @@ module backend_pipeline #(
 			.vaddr_i({'0,ex_vaddr}),
 			.paddr_i({'0,m1_paddr}),
 			.w_data_i({32'd0,m2_data_flow_forwarding.reg_data[0]}),
+			.request_clr_m2_i(clr_vec_i[2]),
+			.request_clr_m1_i(clr_vec_i[1]),
 			.r_data_o({m2_useless_data,m2_lsu_read}),
 
 			.bus_req_o(bus_req_o),
@@ -277,7 +312,7 @@ module backend_pipeline #(
 			.bad_va_o(bad_va)
 		);
 		assign m2_clr_req_o = m2_csr_jump_req & ~stall_vec_i[2];
-		assign m2_clr_exclude_self_o = m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL;
+		assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) || (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
 	end else begin
 		assign m2_lsu_read = '0;
 		assign m2_csr_read = '0;
