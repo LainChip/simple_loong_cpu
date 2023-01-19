@@ -83,7 +83,7 @@ module backend_pipeline #(
 			.PIPE_NUM(2)
 		)m1_forwarding(
 			.pipe_sel_i(m1_ctrl_flow.forwarding_info[reg_id].forwarding_pipe_sel),
-			.sel_vec_i(m1_ctrl_flow.forwarding_info[reg_id].ex_forward_source),
+			.sel_vec_i(m1_ctrl_flow.forwarding_info[reg_id].m1_forward_source),
 			.data_vec_i({forwarding_src_i[1][2],forwarding_src_i[1][1],forwarding_src_i[0][2],forwarding_src_i[0][1]}),
 			.old_data_i(m1_data_flow_raw.reg_data[reg_id]),
 			.new_data_o(m1_data_flow_forwarding.reg_data[reg_id])
@@ -94,7 +94,7 @@ module backend_pipeline #(
 			.PIPE_NUM(2)
 		)m2_forwarding(
 			.pipe_sel_i(m2_ctrl_flow.forwarding_info[reg_id].forwarding_pipe_sel),
-			.sel_vec_i(m2_ctrl_flow.forwarding_info[reg_id].ex_forward_source),
+			.sel_vec_i(m2_ctrl_flow.forwarding_info[reg_id].m2_forward_source),
 			.data_vec_i({forwarding_src_i[1][2],forwarding_src_i[0][2]}),
 			.old_data_i(m2_data_flow_raw.reg_data[reg_id]),
 			.new_data_o(m2_data_flow_forwarding.reg_data[reg_id])
@@ -113,18 +113,10 @@ module backend_pipeline #(
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
 			for(integer i = 0 ; i < 2 ; i += 1) begin
-				if(~stall_vec_i[1] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[0]) begin
-					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[1:0],1'b0};
-					ex_ctrl_flow.forwarding_info[i].m1_forward_source <= {ex_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
-					ex_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
-				end else if(~stall_vec_i[2] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[1]) begin
-					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[1:0],1'b0};
-					ex_ctrl_flow.forwarding_info[i].m1_forward_source <= {ex_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
-					ex_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
-				end else if(ex_ctrl_flow.forwarding_info[i].ex_forward_source[2]) begin
-					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[1:0],1'b0};
-					ex_ctrl_flow.forwarding_info[i].m1_forward_source <= {ex_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
-					ex_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				if((~stall_vec_i[1] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[1]) | (~stall_vec_i[2] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[2]) | (ex_ctrl_flow.forwarding_info[i].ex_forward_source[3])) begin
+					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[2:1],1'b0, ~|ex_ctrl_flow.forwarding_info[i].ex_forward_source[2:1]};
+					ex_ctrl_flow.forwarding_info[i].m1_forward_source <= {ex_ctrl_flow.forwarding_info[i].m1_forward_source[1],1'b0,~ex_ctrl_flow.forwarding_info[i].m1_forward_source[1]};
+					ex_ctrl_flow.forwarding_info[i].m2_forward_source <= 2'b01;
 				end
 			end
 		end
@@ -141,12 +133,9 @@ module backend_pipeline #(
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
 			for(integer i = 0 ; i < 2 ; i += 1) begin
-				if(~stall_vec_i[2] & m1_ctrl_flow.forwarding_info[i].m1_forward_source[0]) begin
-					m1_ctrl_flow.forwarding_info[i].m1_forward_source <= {m1_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
-					m1_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
-				end else if(m1_ctrl_flow.forwarding_info[i].m1_forward_source[1]) begin
-					m1_ctrl_flow.forwarding_info[i].m1_forward_source <= {m1_ctrl_flow.forwarding_info[i].m1_forward_source[0],1'b0};
-					m1_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				if((~stall_vec_i[2] & m1_ctrl_flow.forwarding_info[i].m1_forward_source[1]) | (m1_ctrl_flow.forwarding_info[i].m1_forward_source[2])) begin
+					m1_ctrl_flow.forwarding_info[i].m1_forward_source <= {m1_ctrl_flow.forwarding_info[i].m1_forward_source[1],1'b0,~m1_ctrl_flow.forwarding_info[i].m1_forward_source[1]};
+					m1_ctrl_flow.forwarding_info[i].m2_forward_source <= 2'b01;
 				end
 			end
 		end
@@ -163,7 +152,9 @@ module backend_pipeline #(
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
 			for(integer i = 0 ; i < 2 ; i += 1) begin
-				m2_ctrl_flow.forwarding_info[i].m2_forward_source <= 1'b0;
+				if(m2_ctrl_flow.forwarding_info[i].m2_forward_source[1]) begin
+					m2_ctrl_flow.forwarding_info[i].m2_forward_source <= 2'b01;
+				end
 			end
 		end
 	end

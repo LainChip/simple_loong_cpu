@@ -421,7 +421,7 @@ always_ff @(posedge clk) begin
         
         
         reg_euen        <= (wr_data_euen & 32'b0000_0000_0000_0000_0000_0000_0000_0001) | (reg_euen & ~32'b0000_0000_0000_0000_0000_0000_0000_0111);
-        reg_ectl        <= (wr_data_ectl & 32'b0000_0000_0000_0000_0001_1011_1111_1111) | (reg_ectl & ~32'b0000_0000_0000_0000_0001_1011_1111_1111);
+        reg_ectl        <= (wr_data_ectl & 32'b0000_0000_0000_0000_0001_1111_1111_1111) | (reg_ectl & ~32'b0000_0000_0000_0000_0001_1111_1111_1111);
         //reg_estat       <= (wr_data_estat & 32'b0111_1111_1111_1111_0001_1011_1111_1111) | (reg_estat & ~32'b0111_1111_1111_1111_0001_1011_1111_1111);
         reg_era         <= (wr_data_era & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_era & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         
@@ -514,7 +514,7 @@ always_ff @(posedge clk) begin
         else if (wen_tcfg) begin
             timer_en <= wr_data[`_TCFG_EN];
         end
-        else if (timer_en && (reg_tval == 32'b0)) begin
+        else if (timer_en && (reg_tval == 32'd0)) begin
             reg_estat[11] <= 1'b1;
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
         end
@@ -547,7 +547,7 @@ end
 
 //tval
 always_ff @(posedge clk) begin
-    if(wen_tval) begin
+    if(wen_tcfg) begin
         reg_tval <= {wr_data[`_TCFG_INITVAL], 2'b0};
     end else if(timer_en) begin
         if(reg_tval != 32'd0)begin
