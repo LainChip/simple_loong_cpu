@@ -255,7 +255,7 @@ end
 
 //simple reg write
 logic [31:0] wr_data;
-assign wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : (wr_data_i & wr_mask_i);
+assign wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : ((wr_data_i & wr_mask_i) | (read_reg_result & ~wr_mask_i));
 logic write_en;
 
 assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i;
@@ -292,37 +292,37 @@ logic wen_ctag             = write_en & (wr_addr_i == ADDR_CTAG) ;
 logic wen_dmw0             = write_en & (wr_addr_i == ADDR_DMW1) ;
 logic wen_dmw1             = write_en & (wr_addr_i == ADDR_DMW1) ;
 
-logic wr_data_crmd        ;
-logic wr_data_prmd        ;
-logic wr_data_euen        ;
-logic wr_data_ectl        ;
-logic wr_data_estat       ;
-logic wr_data_era         ;
-logic wr_data_badv        ;
-logic wr_data_eentry      ;
-logic wr_data_tlbidx      ;
-logic wr_data_tlbehi      ;
-logic wr_data_tlbelo0     ;
-logic wr_data_tlbelo1     ;
-logic wr_data_asid        ;
-logic wr_data_pgdl        ;
-logic wr_data_pgdh        ;
-logic wr_data_pgd         ;
-logic wr_data_cpuid       ;
-logic wr_data_save0       ;
-logic wr_data_save1       ;
-logic wr_data_save2       ;
-logic wr_data_save3       ;
-logic wr_data_tid         ;
-logic wr_data_tcfg        ;
-logic wr_data_tval        ;
-logic wr_data_cntc        ;
-logic wr_data_ticlr       ;
-logic wr_data_llbctl      ;
-logic wr_data_tlbrentry   ;
-logic wr_data_ctag        ;
-logic wr_data_dmw0        ;
-logic wr_data_dmw1        ;
+logic[31:0] wr_data_crmd        ;
+logic[31:0] wr_data_prmd        ;
+logic[31:0] wr_data_euen        ;
+logic[31:0] wr_data_ectl        ;
+logic[31:0] wr_data_estat       ;
+logic[31:0] wr_data_era         ;
+logic[31:0] wr_data_badv        ;
+logic[31:0] wr_data_eentry      ;
+logic[31:0] wr_data_tlbidx      ;
+logic[31:0] wr_data_tlbehi      ;
+logic[31:0] wr_data_tlbelo0     ;
+logic[31:0] wr_data_tlbelo1     ;
+logic[31:0] wr_data_asid        ;
+logic[31:0] wr_data_pgdl        ;
+logic[31:0] wr_data_pgdh        ;
+logic[31:0] wr_data_pgd         ;
+logic[31:0] wr_data_cpuid       ;
+logic[31:0] wr_data_save0       ;
+logic[31:0] wr_data_save1       ;
+logic[31:0] wr_data_save2       ;
+logic[31:0] wr_data_save3       ;
+logic[31:0] wr_data_tid         ;
+logic[31:0] wr_data_tcfg        ;
+logic[31:0] wr_data_tval        ;
+logic[31:0] wr_data_cntc        ;
+logic[31:0] wr_data_ticlr       ;
+logic[31:0] wr_data_llbctl      ;
+logic[31:0] wr_data_tlbrentry   ;
+logic[31:0] wr_data_ctag        ;
+logic[31:0] wr_data_dmw0        ;
+logic[31:0] wr_data_dmw1        ;
 
 
 logic [5:0] ecode_selcted;

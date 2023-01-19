@@ -63,7 +63,7 @@ module frontend(
             end
             `_REG_TYPE_CSRXCHG:begin
                 ret.r_reg[0] = decode_info.general.inst25_0[4:0];
-                ret.r_reg[1] = '0;
+                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
                 ret.w_reg = decode_info.general.inst25_0[4:0];
             end
             `_REG_TYPE_RDCNTID:begin
