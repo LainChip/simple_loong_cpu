@@ -124,7 +124,7 @@ module axi_converter#(
 		end
 	end
 	always_ff @(posedge clk) begin : proc_sel_data_ready
-		if(~rst_n) begin
+		if(~rst_n | take) begin
 			sel_data_ready <= '0;
 		end else if(~sel_data_ready | axi_bus_if.w_ready) begin
 			sel_data_ready <= sel_data_comb.data_ok;
@@ -178,10 +178,11 @@ module axi_converter#(
 
 		axi_bus_if.w_data = sel_data_r.w_data;
 		axi_bus_if.w_strb = sel_data_r.data_strobe;
-		axi_bus_if.w_valid = sel_data_ready;
-		axi_bus_if.w_last = sel_data_ready;
+		axi_bus_if.w_valid = sel_data_ready & (sel_req_r.write);
+		axi_bus_if.w_last = sel_data_r.data_last;
 
-		axi_bus_if.r_ready = fsm_state[2] & (~sel_req_r.write);
+		axi_bus_if.r_ready = sel_data_ready & (~sel_req_r.write);
+		axi_bus_if.b_ready = fsm_state[3] & (sel_req_r.write);
 	end
 
 endmodule
