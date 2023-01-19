@@ -76,7 +76,7 @@ module backend(
 
 	// 生成前端使用的 issue_num 信号
 	assign issue_num_o = {issue[1],issue[0] & ~issue[1]};
-	assign clr_frontend = |clr_vec;
+	assign clr_frontend = bpu_feedback_o.flush;
 
 	// Register Files module, get the operation num
 	reg_file #(
@@ -313,38 +313,6 @@ DifftestLoadEvent DifftestLoadEvent(
     .valid              ('0/*TODO*/),
     .paddr              ('0/*TODO*/),
     .vaddr              ('0/*TODO*/)
-);
-
-DifftestCSRRegState DifftestCSRRegState(
-    .clock              (clk               ),
-    .coreid             (0                  ),
-    .crmd               ('0/*TODO*/),
-    .prmd               ('0/*TODO*/),
-    .euen               (0                  ),
-    .ecfg               ('0/*TODO*/),
-    .estat              ('0/*TODO*/),
-    .era                ('0/*TODO*/),
-    .badv               ('0/*TODO*/),
-    .eentry             ('0/*TODO*/),
-    .tlbidx             ('0/*TODO*/),
-    .tlbehi             ('0/*TODO*/),
-    .tlbelo0            ('0/*TODO*/),
-    .tlbelo1            ('0/*TODO*/),
-    .asid               ('0/*TODO*/),
-    .pgdl               ('0/*TODO*/),
-    .pgdh               ('0/*TODO*/),
-    .save0              ('0/*TODO*/),
-    .save1              ('0/*TODO*/),
-    .save2              ('0/*TODO*/),
-    .save3              ('0/*TODO*/),
-    .tid                ('0/*TODO*/),
-    .tcfg               ('0/*TODO*/),
-    .tval               ('0/*TODO*/),
-    .ticlr              ('0/*TODO*/),
-    .llbctl             ('0/*TODO*/),
-    .tlbrentry          ('0/*TODO*/),
-    .dmw0               ('0/*TODO*/),
-    .dmw1               ('0/*TODO*/)
 );
 
 DifftestGRegState DifftestGRegState(

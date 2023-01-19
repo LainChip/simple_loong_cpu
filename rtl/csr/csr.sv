@@ -254,10 +254,11 @@ always_comb begin
 end
 
 //simple reg write
-logic [31:0] wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : wr_data_i & wr_mask_i;
+logic [31:0] wr_data;
+assign wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : (wr_data_i & wr_mask_i);
 logic write_en;
 
-assign write_en = (~stall_i) & decode_info_i.m2.debug_valid & csr_write_en_i;
+assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i;
 
 logic wen_crmd             = write_en & (wr_addr_i == ADDR_CRMD) ;
 logic wen_prmd             = write_en & (wr_addr_i == ADDR_PRMD) ;
@@ -507,7 +508,7 @@ always_ff @(posedge clk) begin
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
         end
         reg_estat[10:2] <= interrupt_i;
-        if (excp_trigger_i & (~stall_i) & decode_info_i.m2.debug_valid) begin
+        if (excp_trigger_i & (~stall_i) & decode_info_i.wb.valid) begin
             reg_estat[`_ESTAT_ECODE] <= ecode_i;
             reg_estat[`_ESTAT_ESUBCODE] <= esubcode_i;
         end
@@ -535,7 +536,7 @@ end
 
 //tval
 always_ff @(posedge clk) begin
-    if(wen_ctfg) begin
+    if(wen_tval) begin
         reg_tval <= {wr_data[`_TCFG_INITVAL], 2'b0};
     end else if(timer_en) begin
         if(reg_tval != 32'd0)begin
@@ -602,7 +603,7 @@ always_comb begin
         esubcode_selected = 0;
         target_era = instr_pc_i;
         do_redirect_o = 1'b1;
-    end else if (excp_trigger_i & (~stall_i) & decode_info_i.m2.debug_valid)begin
+    end else if (excp_trigger_i & (~stall_i) & decode_info_i.wb.valid)begin
         ecode_selcted = ecode_i;
         esubcode_selected = esubcode_i;
         target_era = instr_pc_i;
@@ -620,7 +621,7 @@ always_comb begin
             va_error = 1'b1;
             bad_va_selected = bad_va_i;
         end      
-    end else if (do_ertn_i & (~stall_i) & decode_info_i.m2.debug_valid) begin
+    end else if (do_ertn_i & (~stall_i) & decode_info_i.wb.valid) begin
         do_redirect_o = 1'b1;
     end 
     else begin
@@ -629,7 +630,40 @@ always_comb begin
     
 end
 
+`ifdef _DIFFTEST_ENABLE
 
+DifftestCSRRegState DifftestCSRRegState(
+    .clock              (clk               ),
+    .coreid             (0                  ),
+    .crmd               (reg_crmd),
+    .prmd               (reg_prmd),
+    .euen               (reg_euen),
+    .ecfg               (reg_ectl),
+    .estat              (reg_estat),
+    .era                (reg_era),
+    .badv               (reg_badv),
+    .eentry             (reg_eentry),
+    .tlbidx             (reg_tlbidx),
+    .tlbehi             (reg_tlbehi),
+    .tlbelo0            (reg_tlbelo0),
+    .tlbelo1            (reg_tlbelo1),
+    .asid               (reg_asid),
+    .pgdl               (reg_pgdl),
+    .pgdh               (reg_pgdh),
+    .save0              (reg_save0),
+    .save1              (reg_save1),
+    .save2              (reg_save2),
+    .save3              (reg_save3),
+    .tid                (reg_tid),
+    .tcfg               (reg_tcfg),
+    .tval               (reg_tval),
+    .ticlr              (reg_ticlr),
+    .llbctl             (reg_llbctl),
+    .tlbrentry          (reg_tlbrentry),
+    .dmw0               (reg_dmw0),
+    .dmw1               (reg_dmw1)
+);
+`endif
 
 endmodule : csr
 

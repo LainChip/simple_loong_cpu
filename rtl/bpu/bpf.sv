@@ -73,7 +73,7 @@ module bpf (
 	assign update_o.pc = pc_i[31:2];
 	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : target[31:2];
 
-	assign update_o.btb_update = update_o.flush;
+	assign update_o.btb_update = (~stall_i & (predict_npc != target[31:0]) & decode_i.wb.valid) | csr_flush_i;
 	always_comb begin : proc_br_type
 		if ((branch_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || decode_i.ex.branch_link) begin
 			update_o.br_type = `_CALL;

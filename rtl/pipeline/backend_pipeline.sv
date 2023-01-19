@@ -59,7 +59,9 @@ module backend_pipeline #(
 	logic [31:0] m1_paddr;
 	logic [31:0] m2_paddr;
 
-	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data;
+	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data, m2_csr_jump_target;
+
+	logic m2_csr_jump_req;
 
 	// 数据转发
 	for (genvar reg_id = 0; reg_id < 2; reg_id += 1) begin
@@ -186,16 +188,19 @@ module backend_pipeline #(
 		bpf bpf_module(
 			.clk,    // Clock DONT NEED
 			.rst_n,  // Asynchronous reset active low
+			.csr_flush_i(m2_csr_jump_req),
+			.stall_i(stall_vec_i[0]),
 			.pc_i(ex_data_flow_forwarding.pc),
 			.rj_i(ex_data_flow_forwarding.reg_data[1]),
 			.rd_i(ex_data_flow_forwarding.reg_data[0]),
+			.csr_target_i(m2_csr_jump_target),
 			.decode_i(ex_ctrl_flow.decode_info),
 			.predict_i(ex_ctrl_flow.bpu_predict),
 			.update_o(bpu_feedback_o)
 
 		);
 		assign ex_clr_req_o = bpu_feedback_o.flush;
-		assign bpf_result = ex_data_flow_forwarding.pc + 32'd4;
+		assign bpf_result = ex_data_flow_raw.pc + 32'd4;
 	end else begin
 		assign ex_clr_req_o = 0;
 		assign bpf_result = 32'd0;
