@@ -2,16 +2,19 @@
 2023-1-18 v1: xrb完成
 */
 
+`include "common.svh"
+
 `ifdef __DIVIDER_VER_1
 
 module divider (
     input clk,
     input rst_n,
 
+    /* slave */
     input  div_valid,
     output div_ready,
-    output out_valid,
-    input  out_ready,
+    output res_valid,
+    input  res_ready,
 
     input  div_signed_i,
     input  [31:0] Z_i,
@@ -19,6 +22,7 @@ module divider (
     output [31:0] q_o, s_o
 );
     
+    /*======= deal with operands' sign =======*/
     logic [31:0] dividend_absZ, divisor_absD;
     logic opp_q, opp_s; // need opposite at last
     /* e.g.
@@ -34,9 +38,9 @@ module divider (
     assign dividend_absZ = (div_signed_i & Z_i[31]) ? ~Z_i + 1'b1 : Z_i;
     assign divisor_absD  = (div_signed_i & D_i[31]) ? ~D_i + 1'b1 : D_i;
     
+
+    /*======= auxiliary signals for divider =======*/
     logic [31:0] timer;
-    logic start;
-    assign start = div_ready & div_valid;   // handshake
 
     logic [63:0] abs_A64, abs_64B;
     assign abs_A64 = {32'b0, dividend_absZ};
@@ -48,11 +52,10 @@ module divider (
         assign partial_sub[i] = (tmpA << 2) - tmpB[i];
     end
 
-    /*======= divider fsm state =======*/
+    /*======= fsm's state of divider =======*/
     localparam S_DIV_IDLE = 0;
     localparam S_DIV_BUSY = 1;
-    localparam S_DIV_OVER = 2;
-    logic [1:0] div_status;
+    logic div_status;
 
     always_ff @(posedge clk) begin : div_fsm
         if (~rst_n) begin
@@ -65,25 +68,34 @@ module divider (
                     end
                 end 
                 S_DIV_BUSY: begin
-                    if (~timer[0]) begin
-                        div_status <= S_DIV_OVER;
+                    if (res_valid & res_ready) begin  
+                        // slave get result and master can receive 
+                        if (div_valid & div_ready) begin
+                            div_status <= S_DIV_BUSY;
+                        end else begin
+                            div_statuc <= S_DIV_IDLE;
+                        end
                     end
+                    /* otherwise, status will stall at S_DIV_BUSY.
+                     * As timer be zero, res_valid should remain high,
+                     * then div_ready remains low, so timer won't regresh.
+                     *   ==> waiting for res_ready from master */
                 end
-                S_DIV_OVER: begin
-                    if (out_ready & out_valid) begin
-                        div_status <= (div_valid & div_ready) ? S_DIV_BUSY : S_DIV_IDLE;
-                    end
-                end
-                default: 
+                default: ;
             endcase
         end
     end
 
+    /* handshake signals are all wires */
+    assign div_ready = (div_status == S_DIV_IDLE) | (res_valid & res_ready);
+    assign res_valid = (div_status == S_DIV_BUSY) & ~timer[0];
+
+    /*======= divide process, copy from tyh =======*/
     always_ff @(posedge clk) begin : div_process
         if (~rst_n) begin
             timer <= 0;
         end else begin
-            if (start) begin
+            if (div_valid & div_ready) begin
                 timer <= 32'hffff_ffff;
                 tmpA  <= abs_A64;
                 tmpB[0] <= abs_64B;
@@ -110,9 +122,6 @@ module divider (
 
     assign q_o = opp_q ? tmpA[63:32] : ~tmpA[63:32];
     assign s_o = opp_s ? tmpA[31: 0] : ~tmpA[31: 0];
-
-    assign div_ready = ~timer[1];
-    //assign out_ready = ~timer[0];    // TODO
 
 endmodule
 
