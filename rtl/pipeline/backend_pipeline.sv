@@ -23,6 +23,7 @@ module backend_pipeline #(
 	output logic ex_clr_req_o,
 	output logic m1_clr_req_o,
 	output logic m2_clr_req_o,
+	output logic m2_clr_exclude_self_o,
 
 	input logic revert_i,
 	input logic issue_i,
@@ -233,6 +234,10 @@ module backend_pipeline #(
 			.busy_o(m2_stall_req_o)
 		);
 		// CSR connection here
+		logic [5:0]  ecode;
+		logic [8:0]  esubcode;
+		logic        excp_trigger;
+		logic [31:0] bad_va;
 		csr csr_module(
 	    .clk,
 	    .rst_n,
@@ -247,13 +252,13 @@ module backend_pipeline #(
 	    //for interrupt
 	    .interrupt_i('0 /*TODO*/),        //输入：中断信号
 	    //for exception
-	    .ecode_i('0 /*TODO*/),            //输入：两条流水线的例外一级码
-	    .esubcode_i('0 /*TODO*/),         //输入：两条流水线的例外二级码
-	    .excp_trigger_i('0 /*TODO*/),     //输入：发生异常的流水级
-	    .bad_va_i('0 /*TODO*/),           //输入：地址相关例外出错的虚地址
+	    .ecode_i(ecode),            //输入：两条流水线的例外一级码
+	    .esubcode_i(esubcode),         //输入：两条流水线的例外二级码
+	    .excp_trigger_i(excp_trigger),     //输入：发生异常的流水级
+	    .bad_va_i(bad_va),           //输入：地址相关例外出错的虚地址
 	    .instr_pc_i(m2_data_flow_forwarding.pc),         //输入：指令pc
-	    .do_redirect_o(/*TODO NOT CONNECTED*/),      //输出：是否发生跳转
-	    .redirect_addr_o(/*TODO NOT CONNECTED*/),    //输出：返回或跳转的地址
+	    .do_redirect_o(m2_csr_jump_req),      //输出：是否发生跳转
+	    .redirect_addr_o(m2_csr_jump_target),    //输出：返回或跳转的地址
 	    //todo：tlb related exceptions
 	    // timer
 	    .timer_data_o(/*TODO NOT CONNECTED*/),                //输出：定时器值
@@ -261,11 +266,23 @@ module backend_pipeline #(
 	    //todo: llbit
 	    //todo: tlb related addr translate
 		);
-		assign m2_clr_req_o = '0;
+
+		// Exception defines here
+		excp_handler excp_handler_module(
+			.decode_info_i(m2_ctrl_flow.decode_info),
+			.vpc_i(m2_data_flow_forwarding.pc),
+			.ecode_o(ecode),
+			.esubcode_o(esubcode),
+			.excp_trigger_o(excp_trigger),
+			.bad_va_o(bad_va)
+		);
+		assign m2_clr_req_o = m2_csr_jump_req & ~stall_vec_i[2];
+		assign m2_clr_exclude_self_o = m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL;
 	end else begin
 		assign m2_lsu_read = '0;
 		assign m2_csr_read = '0;
 		assign m2_clr_req_o = '0;
+		assign m2_clr_exclude_self_o = '0;
 	end
 	assign m1_data_flow_forwarding.result = m1_data_flow_raw.result;
 	assign m1_data_flow_forwarding.pc = m1_data_flow_raw.pc;

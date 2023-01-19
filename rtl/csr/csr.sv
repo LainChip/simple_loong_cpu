@@ -380,7 +380,7 @@ always_ff @(posedge clk) begin
         reg_euen        <= 32'd0;
         reg_ectl        <= 32'd0;
         //reg_estat       <= 32'd0;
-        reg_era         <= 32'd0;
+        // reg_era         <= 32'd0;
         
         reg_eentry      <= 32'd0;
         reg_tlbidx      <= 32'd0;
@@ -412,7 +412,7 @@ always_ff @(posedge clk) begin
         reg_euen        <= (wr_data_euen & 32'b0000_0000_0000_0000_0000_0000_0000_0001) | (reg_euen & ~32'b0000_0000_0000_0000_0000_0000_0000_0111);
         reg_ectl        <= (wr_data_ectl & 32'b0000_0000_0000_0000_0001_1011_1111_1111) | (reg_ectl & ~32'b0000_0000_0000_0000_0001_1011_1111_1111);
         //reg_estat       <= (wr_data_estat & 32'b0111_1111_1111_1111_0001_1011_1111_1111) | (reg_estat & ~32'b0111_1111_1111_1111_0001_1011_1111_1111);
-        reg_era         <= (wr_data_era & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_era & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
+        // reg_era         <= (wr_data_era & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_era & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         
         reg_eentry      <= (wr_data_eentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_eentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
         reg_tlbidx      <= (wr_data_tlbidx & 32'b1011_1111_0000_0000_1111_1111_1111_1111) | (reg_tlbidx & ~32'b1011_1111_0000_0000_1111_1111_1111_1111);// tlb size define
@@ -442,6 +442,18 @@ always_ff @(posedge clk) begin
 end
 
 //difficult reg write
+
+//era
+always_ff @(posedge clk) begin
+    if(~rst_n) begin
+        reg_era <= '0;
+    end
+    else if(do_redirect_o) begin
+        reg_era <= instr_pc_i;
+    end else if(wen_crmd)begin
+        reg_era <= wr_data;
+    end
+end
 
 //crmd
 always_ff @(posedge clk) begin
