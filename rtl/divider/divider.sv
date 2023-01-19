@@ -21,6 +21,12 @@ module divider (
     input  [31:0] D_i,
     output [31:0] q_o, s_o
 );
+
+    // for gtkwave
+    initial begin
+    	$dumpfile("logs/vlt_dump.vcd");
+    	$dumpvars();
+    end
     
     /*======= deal with operands' sign =======*/
     logic [31:0] dividend_absZ, divisor_absD;
@@ -73,7 +79,7 @@ module divider (
                         if (div_valid & div_ready) begin
                             div_status <= S_DIV_BUSY;
                         end else begin
-                            div_statuc <= S_DIV_IDLE;
+                            div_status <= S_DIV_IDLE;
                         end
                     end
                     /* otherwise, status will stall at S_DIV_BUSY.
@@ -97,10 +103,10 @@ module divider (
         end else begin
             if (div_valid & div_ready) begin
                 timer <= 32'hffff_ffff;
-                tmpA  <= abs_A64;
-                tmpB[0] <= abs_64B;
-                tmpB[1] <= abs_64B << 1;
-                tmpB[2] <= abs_64B + abs_64B << 1;
+                tmpA  <= {3'b0, abs_A64};
+                tmpB[0] <= {3'b0, abs_64B};
+                tmpB[1] <= {3'b0, abs_64B} << 1;
+                tmpB[2] <= {3'b0, abs_64B} + {3'b0, abs_64B} << 1;
             end else if (timer[15] & tmpA[47:16] < tmpB[0][63:32]) begin
                 timer <= timer >> 16;
                 tmpA  <= tmpA << 16;
@@ -120,8 +126,8 @@ module divider (
         end
     end
 
-    assign q_o = opp_q ? tmpA[63:32] : ~tmpA[63:32];
-    assign s_o = opp_s ? tmpA[31: 0] : ~tmpA[31: 0];
+    assign q_o = opp_q ? ~tmpA[31: 0] + 1 : tmpA[31: 0];
+    assign s_o = opp_s ? ~tmpA[63:32] + 1 : tmpA[63:32];
 
 endmodule
 

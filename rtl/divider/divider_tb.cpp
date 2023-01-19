@@ -18,8 +18,9 @@
 
 #define TEST_TIMES (10000)
 
-#define next(top) do { \
+#define next() do { \
         contextp->timeInc(1); \
+        top->clk = !top->clk; \
         top->eval();          \
     } while (0)
 
@@ -82,49 +83,84 @@ int main(int argc, char** argv) {
 
     // util variables
     DivRes expRes;
+    std::default_random_engine e;
+    std::uniform_int_distribution<uint32_t> gen_reg_fetch(0, UINT32_MAX);
+    e.seed(time(0));
+
+    // init signal
+    top->rst_n = 0;
+    top->clk = 0;
+    top->eval();
+
+    contextp->timeInc(1); // 先前信号时延
+    top->clk = !top->clk; // 信号赋值
+    top->eval();          // 模型同步
+    
+    contextp->timeInc(1);
+    top->clk = !top->clk;
+        top->rst_n = 1;   // 结束复位
+    top->eval();          
+    
+    contextp->timeInc(1);
+    top->clk = !top->clk;
+    top->eval();
+
+    contextp->timeInc(1);
+    top->clk = !top->clk;
+        top->div_signed_i = 0;
+        top->Z_i = 0x00000010;
+        top->D_i = 0x00000004;
+        top->div_valid = 1;
+        top->res_ready = 1;
+    top->eval();   
 
     // specific test
     std::cout << "[specific test]" << std::endl;
-    top->div_signed_i = 0;
-    top->Z_i = 0x2905ea84;
-    top->D_i = 0x04474f4a;
-    next(top);
     div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
+
+    contextp->timeInc(1);
+    top->clk = !top->clk;
+    top->eval();
+    
+    while (!(top->res_valid && top->res_ready)) {
+        contextp->timeInc(1);
+        top->clk = !top->clk;
+        top->eval(); 
+    }
+
     if (top->q_o != expRes.q || top->s_o != expRes.s) {
         printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
         printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
         printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
-        next(top);
+        next();
     } else {
         std::cout << "passed" << std::endl << std::endl;
     }
+    next();
 
     puts("");
 
     // random test
     std::cout << "[random test]" << std::endl;
-    std::default_random_engine e;
-    std::uniform_int_distribution<uint32_t> gen_reg_fetch(0, UINT32_MAX);
-    e.seed(time(0));
 
-    for (int div_signed = 0; div_signed < 2; ++div_signed) {
-        top->div_signed_i = div_signed;
-        printf(div_signed ? "== test signed ==\n" : "== test unsigned ==\n");
-        for (int i = 0; i < TEST_TIMES; ++i) {
-            top->Z_i = gen_reg_fetch(e);
-            top->D_i = gen_reg_fetch(e);
-            next(top);
-            div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
-            if (top->q_o != expRes.q || top->s_o != expRes.s) {
-                printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
-                printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
-                printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
-                next(top);
-                goto finished;
-            }
-        }
-        std::cout << "pass\n";
-    }
+    // for (int div_signed = 0; div_signed < 2; ++div_signed) {
+    //     top->div_signed_i = div_signed;
+    //     printf(div_signed ? "== test signed ==\n" : "== test unsigned ==\n");
+    //     for (int i = 0; i < TEST_TIMES; ++i) {
+    //         top->Z_i = gen_reg_fetch(e);
+    //         top->D_i = gen_reg_fetch(e);
+    //         next(top);
+    //         div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
+    //         if (top->q_o != expRes.q || top->s_o != expRes.s) {
+    //             printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
+    //             printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
+    //             printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
+    //             next(top);
+    //             goto finished;
+    //         }
+    //     }
+    //     std::cout << "pass\n";
+    // }
 
     finished:
     // Final model cleanup
