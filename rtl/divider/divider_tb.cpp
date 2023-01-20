@@ -18,9 +18,14 @@
 
 #define TEST_TIMES (10000)
 
-#define next() do { \
+/* step() 
+ * - time walk a step, and then signal do something under statement control 
+ * 先前信号的时延 -> 时延后信号赋值(clk固定取反 + 自定义信号变化) -> 模型同步
+ */
+#define step(statements) do { \
         contextp->timeInc(1); \
         top->clk = !top->clk; \
+            {statements}      \
         top->eval();          \
     } while (0)
 
@@ -30,6 +35,7 @@ struct DivRes {
 };
 
 void div_expRes(uint32_t z, uint32_t d, bool isSigned, DivRes& res) {
+    if (d == 0) return;
     if (isSigned) {
         res.q = (int32_t)z / (int32_t)d;
         res.s = (int32_t)z % (int32_t)d;
@@ -37,6 +43,15 @@ void div_expRes(uint32_t z, uint32_t d, bool isSigned, DivRes& res) {
         res.q = z / d;
         res.s = z % d;
     }
+}
+
+bool is_equal(const std::unique_ptr<Vdivider>& top, const DivRes& exp) {
+    if (top->D_i == 0) {
+        return true;
+    }
+    if (top->q_o == exp.q && top->s_o == exp.s)
+        return true;
+    else return false;
 }
 
 // Legacy function required only so linking works on Cygwin and MSVC++
@@ -81,7 +96,7 @@ int main(int argc, char** argv) {
     // "TOP" will be the hierarchical name of the module.
     const std::unique_ptr<Vdivider> top{new Vdivider{contextp.get(), "TOP"}};
 
-    // util variables
+    // init util variables
     DivRes expRes;
     std::default_random_engine e;
     std::uniform_int_distribution<uint32_t> gen_reg_fetch(0, UINT32_MAX);
@@ -92,75 +107,103 @@ int main(int argc, char** argv) {
     top->clk = 0;
     top->eval();
 
-    contextp->timeInc(1); // 先前信号时延
-    top->clk = !top->clk; // 信号赋值
-    top->eval();          // 模型同步
-    
-    contextp->timeInc(1);
-    top->clk = !top->clk;
-        top->rst_n = 1;   // 结束复位
-    top->eval();          
-    
-    contextp->timeInc(1);
-    top->clk = !top->clk;
-    top->eval();
-
-    contextp->timeInc(1);
-    top->clk = !top->clk;
-        top->div_signed_i = 0;
-        top->Z_i = 0x00000010;
-        top->D_i = 0x00000004;
-        top->div_valid = 1;
-        top->res_ready = 1;
-    top->eval();   
-
+    step();
+    step({
+        top->rst_n = 1; // 结束复位
+    });
+    step();
+     
     // specific test
     std::cout << "[specific test]" << std::endl;
+    //// case: input self data
+    printf("== test selfdata ==\n");
+    step({
+        top->div_signed_i = 0;
+        top->Z_i = 0x00001234;
+        top->D_i = 0x00000000;
+        top->div_valid = 1;
+        top->res_ready = 1;
+    });
     div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
 
-    contextp->timeInc(1);
-    top->clk = !top->clk;
-    top->eval();
-    
+    step();
+    top->div_valid = 0;
     while (!(top->res_valid && top->res_ready)) {
-        contextp->timeInc(1);
-        top->clk = !top->clk;
-        top->eval(); 
+        step();
     }
 
-    if (top->q_o != expRes.q || top->s_o != expRes.s) {
+    if (!is_equal(top, expRes)) {
         printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
         printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
         printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
-        next();
+        step(); step();
+        goto finished;
     } else {
-        std::cout << "passed" << std::endl << std::endl;
+        std::cout << "passed" << std::endl;
     }
-    next();
+
+    //// cases: res_ready = 0 from master, cannot receive
+    printf("== test res_ready ==\n");
+    step(); step();
+    step({
+        top->div_signed_i = 1;
+        top->Z_i = gen_reg_fetch(e);
+        top->D_i = gen_reg_fetch(e);
+        top->div_valid = 1;
+    });
+    div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
+
+    step();
+    top->res_ready = 0; // master's res_ready not equipped
+    top->div_valid = 0; 
+    for (int i = 0; i < 16; ++i) {
+        step();
+    }
+    step({
+        top->res_ready = 1;
+    });
+    if (!is_equal(top, expRes)) {
+        printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
+        printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
+        printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
+        step(); step();
+        goto finished;
+    } else {
+        std::cout << "passed" << std::endl;
+    }
+
 
     puts("");
 
     // random test
     std::cout << "[random test]" << std::endl;
+    
+    for (int div_signed = 0; div_signed < 2; ++div_signed) {
+        top->div_signed_i = div_signed;
+        printf(div_signed ? "== test signed ==\n" : "== test unsigned ==\n");
+        for (int i = 0; i < TEST_TIMES; ++i) {
+            step({
+                top->Z_i = gen_reg_fetch(e);
+                top->D_i = gen_reg_fetch(e);
+                top->div_valid = 1;
+            });
+            div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
+            
+            step();
+            while (!(top->res_valid && top->res_ready)) {
+                step();
+            }
 
-    // for (int div_signed = 0; div_signed < 2; ++div_signed) {
-    //     top->div_signed_i = div_signed;
-    //     printf(div_signed ? "== test signed ==\n" : "== test unsigned ==\n");
-    //     for (int i = 0; i < TEST_TIMES; ++i) {
-    //         top->Z_i = gen_reg_fetch(e);
-    //         top->D_i = gen_reg_fetch(e);
-    //         next(top);
-    //         div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
-    //         if (top->q_o != expRes.q || top->s_o != expRes.s) {
-    //             printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
-    //             printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
-    //             printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
-    //             next(top);
-    //             goto finished;
-    //         }
-    //     }
-    //     std::cout << "pass\n";
-    // }
+            if (!is_equal(top, expRes)) {
+                printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
+                printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
+                printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
+                step();step();
+                goto finished;
+            }
+        }
+        std::cout << "pass\n";
+    }
 
     finished:
     // Final model cleanup

@@ -21,7 +21,7 @@ module divider (
     input  [31:0] D_i,
     output [31:0] q_o, s_o
 );
-
+    
     // for gtkwave
     initial begin
     	$dumpfile("logs/vlt_dump.vcd");
@@ -106,7 +106,8 @@ module divider (
                 tmpA  <= {3'b0, abs_A64};
                 tmpB[0] <= {3'b0, abs_64B};
                 tmpB[1] <= {3'b0, abs_64B} << 1;
-                tmpB[2] <= {3'b0, abs_64B} + {3'b0, abs_64B} << 1;
+                tmpB[2] <= {3'b0, abs_64B} + ({3'b0, abs_64B} << 1);
+                                    // priority: '+' higher than '<<'
             end else if (timer[15] & tmpA[47:16] < tmpB[0][63:32]) begin
                 timer <= timer >> 16;
                 tmpA  <= tmpA << 16;
