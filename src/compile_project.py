@@ -5,7 +5,7 @@ if try_chiplab_home != '':
     target_path = try_chiplab_home + '/IP/myCPU/'
 print("target_path: " + target_path)
 sv_file_list = ['./inst/decoder.sv','./inst/decoder.svh']
-os.system("cd inst/ && python gen_decoder.py")
+os.system("cd inst/ && python3 gen_decoder.py")
 for root, dirs, files in os.walk('../rtl'):
     for file in files:
         path = os.path.join(root, file)
