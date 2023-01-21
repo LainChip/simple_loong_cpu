@@ -1,0 +1,66 @@
+[*]
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Sat Jan 21 15:39:14 2023
+[*]
+[dumpfile] "/home/excalibur/Desktop/Loongarch/simple_loong_cpu/rtl/divider/logs/vlt_dump.vcd"
+[dumpfile_mtime] "Fri Jan 20 13:36:32 2023"
+[dumpfile_size] 47755218
+[savefile] "/home/excalibur/Desktop/Loongarch/simple_loong_cpu/rtl/divider/logs/divider_tb_wave.gtkw"
+[timestart] 28
+[size] 1856 862
+[pos] -1 -1
+*-1.909147 41 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[sst_width] 233
+[signals_width] 294
+[sst_expanded] 1
+[sst_vpaned_height] 235
+@28
+TOP.divider.clk
+TOP.divider.rst_n
+@200
+-
+-div_handshake
+@28
+TOP.divider.div_valid
+@29
+TOP.divider.div_ready
+@200
+-
+@28
+TOP.divider.div_status
+@200
+-
+-operands
+@22
+TOP.divider.Z_i[31:0]
+TOP.divider.D_i[31:0]
+TOP.divider.dividend_absZ[31:0]
+TOP.divider.divisor_absD[31:0]
+@28
+TOP.divider.div_signed_i
+TOP.divider.opp_q
+TOP.divider.opp_s
+@200
+-
+-res_handshake
+@28
+TOP.divider.res_valid
+TOP.divider.res_ready
+@200
+-
+@22
+TOP.divider.timer[31:0]
+@24
+TOP.divider.tmpB[0][66:0]
+@22
+TOP.divider.tmpB[1][66:0]
+TOP.divider.tmpB[2][66:0]
+TOP.divider.partial_sub[0][66:0]
+TOP.divider.partial_sub[1][66:0]
+TOP.divider.partial_sub[2][66:0]
+TOP.divider.tmpA[66:0]
+TOP.divider.q_o[31:0]
+TOP.divider.s_o[31:0]
+[pattern_trace] 1
+[pattern_trace] 0
