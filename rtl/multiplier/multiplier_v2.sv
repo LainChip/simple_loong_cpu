@@ -94,7 +94,7 @@ module multiplier (
     logic [67:0] wallace_c, wallace_s;
     wallacetree wallace_bit_0(
         .in(wallace_datain[0]),
-        .c_i(booth_carry[13:0]),
+        .c_i(mul_stage_2.booth_carry[13:0]),
         // output
         .c_o(wallace_carrypath[0]),
         .c(wallace_c[0]),
