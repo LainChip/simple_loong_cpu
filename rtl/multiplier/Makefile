@@ -16,6 +16,8 @@ ifneq ($(words $(CURDIR)),1)
  $(error Unsupported: GNU Make cannot build in directories containing spaces, build elsewhere: '$(CURDIR)')
 endif
 
+include Version.mk
+
 ######################################################################
 # Set up variables
 
@@ -38,7 +40,10 @@ VERILATOR_FLAGS += -cc --exe
 # Optimize
 VERILATOR_FLAGS += -x-assign fast
 # Warn abount lint issues; may not want this on less solid designs
-VERILATOR_FLAGS += -Wall
+# VERILATOR_FLAGS += -Wall
+VERILATOR_FLAGS += -Wno-fatal
+# Disable warning of UNUSEDSIGNAL
+# VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL
 # Make waveforms
 VERILATOR_FLAGS += --trace --trace-structs
 # Check SystemVerilog assertions
@@ -52,11 +57,10 @@ VERILATOR_FLAGS += --coverage
 # Include path
 VERILATOR_FLAGS += -I.. -I../decoder
 
-# Disable warning of UNUSEDSIGNAL
-VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL
 
 # Input files for Verilator
-VERILATOR_INPUT = -f input.vc multiplier.sv multiplier_tb.cpp
+VERILATOR_INPUT = -f input.vc multiplier$(MODULE_VERSION).sv multiplier$(MODULE_VERSION)_tb.cpp
+
 
 ######################################################################
 default: run
@@ -82,7 +86,7 @@ run:
 	@echo "-- RUN ---------------------"
 	@rm -rf logs
 	@mkdir -p logs
-	obj_dir/Vmultiplier +trace
+	obj_dir/Vmultiplier$(MODULE_VERSION) +trace
 
 	@echo
 	@echo "-- COVERAGE ----------------"
