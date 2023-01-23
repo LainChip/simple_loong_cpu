@@ -1,6 +1,8 @@
 `include "common.svh"
 `include "decoder.svh"
 
+/* --JSON-- {"module_name":"icache","module_ver":"1"} */
+
 // I cache的实现中实际包含解码与icache逻辑两部分
 // 对于外界的接口，外界输入一个pc信号，获得解码后的多组指令
 // 对于每次解码得到的指令数可以配置，对外部全部链接到一个cache_bus握手接口上
