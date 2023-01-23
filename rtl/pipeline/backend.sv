@@ -34,7 +34,7 @@ module backend(
 
 	// 信号定义
 	// 后端暂停和清零向量
-	logic m2_clr_exclude_self;
+	// logic m2_clr_exclude_self;
 	logic [1:0][2:0] stall_vec, clr_vec, stall_req, clr_req;
 	logic [3:0] revert_vector;
 	// 前端清零向量
@@ -132,7 +132,7 @@ module backend(
 	.ex_stall_req_o(stall_req[0][0]), // TODO
 	.m1_stall_req_o(stall_req[0][1]),
 	.m2_stall_req_o(stall_req[0][2]),
-	.m2_clr_exclude_self_o(m2_clr_exclude_self),
+	// .m2_clr_exclude_self_o(m2_clr_exclude_self),
 
 	.revert_vector_o(revert_vector),
 	.ex_clr_req_o(clr_req[0][0]),
@@ -175,7 +175,7 @@ module backend(
 	.ex_stall_req_o(stall_req[1][0]), // TODO
 	.m1_stall_req_o(stall_req[1][1]),
 	.m2_stall_req_o(stall_req[1][2]),
-	.m2_clr_exclude_self_o(/*NOT CONNECT*/),
+	// .m2_clr_exclude_self_o(/*NOT CONNECT*/),
 
 	.revert_vector_o(/* revert vector */),
 	.ex_clr_req_o(clr_req[1][0]),
@@ -230,7 +230,7 @@ module backend(
 				clr_vec[0][level] |= clr_req[0][level_req];
 				clr_vec[1][level] |= clr_req[0][level_req];
 			end
-			clr_vec[0][level] |= (level == 0) ? '0 : (m2_clr_exclude_self ? '0 : clr_req[0][level]);
+			clr_vec[0][level] |= '0;
 			clr_vec[1][level] |= clr_req[0][level] & ~revert_vector[level];
 		end
 	end
@@ -256,8 +256,8 @@ DifftestInstrCommit DifftestInstrCommit_0(
     .wen                (wb_ctrl_flow[0].w_reg != '0),
     .wdest              (wb_ctrl_flow[0].w_reg),
     .wdata              (wb_data_flow[0].result),
-    .csr_rstat          ('0/*TODO*/),
-    .csr_data           ('0/*TODO*/)
+    .csr_rstat          (wb_ctrl_flow[0].decode_info.m2.csr_write_en),
+    .csr_data           (reg_w_data[0])
 );
 DifftestInstrCommit DifftestInstrCommit_1(
     .clock              (clk           ),
@@ -276,17 +276,6 @@ DifftestInstrCommit DifftestInstrCommit_1(
     .wdata              (wb_data_flow[1].result),
     .csr_rstat          ('0/*TODO*/),
     .csr_data           ('0/*TODO*/)
-);
-
-DifftestExcpEvent DifftestExcpEvent(
-    .clock              (clk           ),
-    .coreid             (0              ),
-    .excp_valid         ('0/*TODO*/),
-    .eret               ('0/*TODO*/),
-    .intrNo             ('0/*TODO*/),
-    .cause              ('0/*TODO*/),
-    .exceptionPC        ('0/*TODO*/),
-    .exceptionInst      ('0/*TODO*/)
 );
 
 DifftestTrapEvent DifftestTrapEvent(

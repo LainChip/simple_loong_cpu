@@ -33,6 +33,7 @@ module csr(
     
     output  logic                   do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
+    // output  logic                   m2_clr_exclude_self_o,
 
     input   logic                   excp_tlbrefill_i,   //输入： tlbrefill异常
     //todo：tlb related exceptions
@@ -56,6 +57,7 @@ logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
 logic                   csr_write_en_i;     //输入：csr写使能
 logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号
 logic                   do_ertn_i;          //输入：例外返回
+logic                   do_ertn;
 
 
 //Exception handling
@@ -470,7 +472,7 @@ always_ff @(posedge clk) begin
         reg_crmd[`_CRMD_IE] <= 1'b0;
         //todo tlbrefill
     end
-    else if(do_ertn_i) begin
+    else if(do_ertn) begin
         reg_crmd[`_CRMD_PLV] <= reg_prmd[`_PRMD_PPLV];
         reg_crmd[`_CRMD_IE] <= reg_prmd[`_PRMD_PIE];
         //todo tlbrefill
@@ -514,7 +516,7 @@ always_ff @(posedge clk) begin
         else if (wen_tcfg) begin
             timer_en <= wr_data[`_TCFG_EN];
         end
-        else if (timer_en && (reg_tval == 32'd0)) begin
+        else if (timer_en && (reg_tval == 32'd0) && ~stall_i && decode_info_i.wb.valid) begin
             reg_estat[11] <= 1'b1;
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
         end
@@ -549,7 +551,7 @@ end
 always_ff @(posedge clk) begin
     if(wen_tcfg) begin
         reg_tval <= {wr_data[`_TCFG_INITVAL], 2'b0};
-    end else if(timer_en) begin
+    end else if(timer_en && ~stall_i && decode_info_i.wb.valid) begin
         if(reg_tval != 32'd0)begin
             reg_tval <= reg_tval - 32'd1;
         end else if(reg_tval == 32'b0) begin
@@ -574,7 +576,9 @@ end
 
 
 always_comb begin
+    do_ertn = 1'b0;
     do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
+    // do_interrupt = '0;
     do_redirect_o       = 1'b0;
     do_exception        = 1'b0;
     target_era          = reg_era;
@@ -604,7 +608,7 @@ always_comb begin
         va_error
         bad_va_selected 
     */
-    if(do_interrupt & (~stall_i)) begin
+    if(do_interrupt & (~stall_i) & decode_info_i.wb.valid) begin
         ecode_selcted = 0;
         esubcode_selected = 0;
         target_era = instr_pc_i;
@@ -631,12 +635,15 @@ always_comb begin
         end      
     end else if (do_ertn_i & (~stall_i) & decode_info_i.wb.valid) begin
         do_redirect_o = 1'b1;
+        do_ertn = 1'b1;
     end 
     else begin
         do_redirect_o = 1'b0;
     end
     
 end
+
+// assign m2_clr_exclude_self_o = do_interrupt || (decode_info_i.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) || (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
 
 `ifdef _DIFFTEST_ENABLE
 
@@ -671,6 +678,41 @@ DifftestCSRRegState DifftestCSRRegState(
     .dmw0               (reg_dmw0),
     .dmw1               (reg_dmw1)
 );
+
+logic[31:0] debug_pc_r,debug_pc_r_1,debug_inst_r,debug_inst_r_1;
+logic debug_exception_r,debug_exception_r_1,debug_ertn_r,debug_ertn_r_1;
+always_ff @(posedge clk) begin
+    debug_pc_r <= instr_pc_i;
+    debug_inst_r <= decode_info_i.wb.debug_inst;
+    debug_exception_r <= do_interrupt & do_redirect_o;
+    debug_ertn_r <= do_ertn;
+    // debug_pc_r <= debug_pc_r_1;
+    // debug_inst_r <= debug_inst_r_1;
+    // debug_exception_r <= debug_exception_r_1;
+    // debug_ertn_r <= debug_ertn_r_1;
+end
+// always_comb begin
+//     debug_pc_r = instr_pc_i;
+//     debug_inst_r = decode_info_i.wb.debug_inst;
+//     debug_exception_r = do_interrupt;
+//     debug_ertn_r = do_ertn;
+// end
+
+DifftestExcpEvent DifftestExcpEvent(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    // .excp_valid         (do_interrupt & do_redirect_o),
+    // .eret               (do_ertn),
+    .excp_valid         (debug_exception_r),
+    .eret               (debug_ertn_r),
+    .intrNo             (reg_estat[12:2]),
+    .cause              (reg_estat[`_ESTAT_ECODE]),
+    // .exceptionPC        (instr_pc_i),
+    .exceptionPC        (debug_pc_r),
+    // .exceptionInst      (decode_info_i.wb.debug_inst)
+    .exceptionInst      (debug_inst_r)
+);
+
 `endif
 
 endmodule : csr

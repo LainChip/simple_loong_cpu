@@ -23,7 +23,7 @@ module backend_pipeline #(
 	output logic ex_clr_req_o,
 	output logic m1_clr_req_o,
 	output logic m2_clr_req_o,
-	output logic m2_clr_exclude_self_o,
+	// output logic m2_clr_exclude_self_o,
 
 	input logic revert_i,
 	input logic issue_i,
@@ -39,6 +39,9 @@ module backend_pipeline #(
 	output logic[4:0]  reg_w_addr_o,
 	output logic[31:0] reg_w_data_o,
 	
+	output logic[63:0] timer_data_o,
+	output logic[31:0] tid_o,
+
 	// FOR MAIN PIPE
 	output cache_bus_req_t bus_req_o,         // cache的访问请求
     input cache_bus_resp_t bus_resp_i,        // cache的访问应答
@@ -287,8 +290,8 @@ module backend_pipeline #(
 	    .redirect_addr_o(m2_csr_jump_target),    //输出：返回或跳转的地址
 	    //todo：tlb related exceptions
 	    // timer
-	    .timer_data_o(/*TODO NOT CONNECTED*/),                //输出：定时器值
-	    .tid_o(/*TODO NOT CONNECTED*/)                        //输出：定时器id
+	    .timer_data_o(timer_data_o),                //输出：定时器值
+	    .tid_o(tid_o)                        //输出：定时器id
 	    //todo: llbit
 	    //todo: tlb related addr translate
 		);
@@ -303,12 +306,11 @@ module backend_pipeline #(
 			.bad_va_o(bad_va)
 		);
 		assign m2_clr_req_o = m2_csr_jump_req & ~stall_vec_i[2];
-		assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) || (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
 	end else begin
 		assign m2_lsu_read = '0;
 		assign m2_csr_read = '0;
 		assign m2_clr_req_o = '0;
-		assign m2_clr_exclude_self_o = '0;
+		// assign m2_clr_exclude_self_o = '0;
 	end
 	assign m1_data_flow_forwarding.result = m1_data_flow_raw.result;
 	assign m1_data_flow_forwarding.pc = m1_data_flow_raw.pc;
