@@ -68,7 +68,8 @@ module bpf (
 	assign pc_link_o = pc_i + 4;
 
 	// bpu update info
-	assign update_o.flush = (~stall_i & (predict_npc != target[31:0]) & decode_i.wb.valid) | csr_flush_i;
+	wire predict_miss = (predict_npc != target) | (predict_i.taken != taken);
+	assign update_o.flush = (~stall_i & predict_miss & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : target[31:2];

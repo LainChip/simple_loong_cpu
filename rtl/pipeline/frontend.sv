@@ -85,7 +85,7 @@ module frontend(
         return ret;
     endfunction
 
-    bpu_predict_t[1:0] bpu_predict,fifo_predict;
+    bpu_predict_t bpu_predict,fifo_predict;
     decode_info_t [1:0]fifo_decode_info;
     logic [31:0] bpu_vpc,bpu_ppc,fifo_vpc;
     logic [1:0] bpu_pc_valid, fifo_pc_valid;
@@ -127,7 +127,7 @@ module frontend(
     // I CACHE 模块
     icache #(
         .FETCH_SIZE(2),
-        .ATTACHED_INFO_WIDTH(2 * $bits(bpu_predict_t))
+        .ATTACHED_INFO_WIDTH($bits(bpu_predict_t))
     ) icache_module(
         .clk,    // Clock
         .rst_n,  // Asynchronous reset active low
@@ -154,12 +154,12 @@ module frontend(
     // INST 结构体组装模块
     always_comb begin
         fifo_write_num = {fifo_pc_valid[0] & fifo_pc_valid[1], fifo_pc_valid[0] ^ fifo_pc_valid[1]};
-        fifo_inst[0].bpu_predict = fifo_pc_valid[0] ? fifo_predict[0] : fifo_predict[1];
+        fifo_inst[0].bpu_predict = fifo_predict;
         fifo_inst[0].decode_info = fifo_pc_valid[0] ? fifo_decode_info[0] : fifo_decode_info[1];
         fifo_inst[0].pc = fifo_pc_valid[0] ? fifo_vpc : {fifo_vpc[31:3],3'b100};
         fifo_inst[0].valid = |fifo_pc_valid;
         fifo_inst[0].register_info = fifo_pc_valid[0] ? get_register_info(fifo_decode_info[0]) : get_register_info(fifo_decode_info[1]) ;
-        fifo_inst[1].bpu_predict = fifo_predict[1];
+        fifo_inst[1].bpu_predict = fifo_predict;
         fifo_inst[1].decode_info = fifo_decode_info[1];
         fifo_inst[1].pc = {fifo_vpc[31:3],3'b100};
         fifo_inst[1].valid = fifo_pc_valid[0] & fifo_pc_valid[1];
