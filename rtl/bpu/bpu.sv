@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-18 14:46:43
+// Revise : 2023-01-24 19:35:42
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -59,8 +59,8 @@ module bpu (
 		end
 	end
 
-	assign npc = bpu_state == BPU_REFILL ? pc : ppc;
-	assign pc_o = {pc, 2'b00};
+	assign npc = bpu_state == BPU_REFILL | stall_i ? pc : ppc;
+
 
 	// ====================== BTB ======================
 	wire btb_miss;
@@ -118,16 +118,30 @@ module bpu (
 	// ================= predict logic =================
 	// taken = btb_br_type != `_PC_RELATIVE | lphr == `_STRONGLY_TAKEN | lphr == `_WEAKLY_TAKEN
 	wire taken = |btb_br_type | lphr[1];
-	assign ppc = btb_br_type == `_RETURN ? ras_target :
-				 taken ? btb_bta : {pc[31:3] + 29'd1, 1'b0};
+	// assign ppc = btb_br_type == `_RETURN ? ras_target :
+	// 			 taken ? btb_bta : {pc[31:3] + 29'd1, 1'b0};
+
+	assign ppc = {pc[31:3] + 29'd1, 1'b0}; // debug 先预测不跳转
+
+	// output
+
+	assign pc_o = {pc, 2'b00};
+
+	assign stall_o = bpu_state == BPU_REFILL;
 
 	assign pc_valid_o[0] = ~pc[2]; // pc是4字对齐的
-	assign pc_valid_o[1] = ~taken & ~btb_fsc; // 预测第一条不跳转
+	assign pc_valid_o[1] = ~taken | btb_fsc | pc[2]; // 预测第一条不跳转或第一条无效
 
 	assign predict_o.fsc = btb_fsc;
 	assign predict_o.npc = npc;
 	assign predict_o.lphr = lphr;
 	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];
+
+	// debug
+	wire flush = update_i.flush;
+	wire [31:0] src = {update_i.br_target, 2'b00};
+	wire [31:0] npc_32 = {npc, 2'b00};
+	wire [31:0] target = {update_i.br_target, 2'b00}; 
 
 endmodule : bpu
 
