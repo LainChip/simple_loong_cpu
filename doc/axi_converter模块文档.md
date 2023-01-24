@@ -84,7 +84,7 @@ typedef struct packed{
 }
 ```
 
-![image-20230105205715322](..\..\pic\image-20230105205323130.png)
+![image-20230105205715322](..\pic\image-20230105205323130.png)
 
 
 
