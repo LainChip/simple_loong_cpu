@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-25 09:58:05
+// Revise : 2023-01-25 10:39:06
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -118,10 +118,10 @@ module bpu (
 	// ================= predict logic =================
 	// taken = btb_br_type != `_PC_RELATIVE | lphr == `_STRONGLY_TAKEN | lphr == `_WEAKLY_TAKEN
 	wire taken = |btb_br_type | lphr[1];
-	// assign ppc = btb_br_type == `_RETURN ? ras_target :
-	// 			 taken ? btb_bta : {pc[31:3] + 29'd1, 1'b0};
+	assign ppc = btb_br_type == `_RETURN ? ras_target :
+				 taken ? btb_bta : {pc[31:3] + 29'd1, 1'b0};
 
-	assign ppc = {pc[31:3] + 29'd1, 1'b0}; // debug 先预测不跳转
+	// assign ppc = {pc[31:3] + 29'd1, 1'b0}; // debug 先预测不跳转
 
 	// output
 
