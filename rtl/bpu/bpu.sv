@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-24 19:35:42
+// Revise : 2023-01-25 09:58:05
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -133,6 +133,7 @@ module bpu (
 	assign pc_valid_o[1] = ~taken | btb_fsc | pc[2]; // 预测第一条不跳转或第一条无效
 
 	assign predict_o.fsc = btb_fsc;
+	assign predict_o.taken = taken;
 	assign predict_o.npc = npc;
 	assign predict_o.lphr = lphr;
 	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];

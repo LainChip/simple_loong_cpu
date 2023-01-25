@@ -38,10 +38,11 @@ module bpf (
 	wire [31:0] offs_26 = {{4{offs_i[9]}},offs_i[9:0], offs_i[25:10], 2'b00};
 	wire [31:0] offs_16 = {{14{offs_i[25]}}, offs_i[25:10], 2'b00};
 
-	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE ? pc_i + (offs_26) :
-					     branch_type_i == `_BRANCH_INDIRECT  ? rj_i + (offs_16) :
-					     ((branch_type_i == `_BRANCH_CONDITION) && taken) ? pc_i + (offs_16) :
-								   						       pc_i + 4;
+	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE 		  ? pc_i + (offs_26) :
+					     branch_type_i == `_BRANCH_INDIRECT  		  ? rj_i + (offs_16) :
+					     branch_type_i == `_BRANCH_CONDITION && taken ? pc_i + (offs_16) :
+								   						       			// pc_i + 4;
+								   						       			{pc_i[31:3] + 1, 3'b000};
 	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
 	
 	always_comb begin : proc_taken
@@ -67,12 +68,19 @@ module bpf (
 	// link
 	assign pc_link_o = pc_i + 4;
 
-	// bpu update info
-	wire predict_miss = (predict_npc != target) | (predict_i.taken != taken);
+	// bpu update
+	// 添加taken的判断，因为有分支指令的目标为pc+8，如果bpu未预测到则pc+4的指令会被标记为有效
+	// 需要在此处检查这样的预测错误
+	wire target_miss = predict_npc != target;
+	wire direction_miss = predict_i.taken != taken;
+	wire predict_miss = target_miss | direction_miss;
 	assign update_o.flush = (~stall_i & predict_miss & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
-	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : target[31:2];
+	// 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
+	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : 
+								pc_i[2] == 0 && taken == 0 && predict_i.taken == 1 ? pc_i[31:2] + 1 : 
+								target[31:2];
 
 	assign update_o.btb_update = update_o.flush;
 	always_comb begin : proc_br_type
@@ -92,6 +100,11 @@ module bpf (
 	assign update_o.lpht_update = branch_type_i != `_BRANCH_INVALID;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
+
+	// debug
+	wire wb_valid = decode_i.wb.valid;
+	wire flush = update_o.flush;
+	wire predict_taken;
 	
 endmodule : bpf
 
