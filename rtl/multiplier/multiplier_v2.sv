@@ -6,7 +6,7 @@
 
 `ifdef __MULTIPLIER_VER_2
 
-module multiplier (
+module multiplier_v2 (
     input clk,
     input rst_n,
 

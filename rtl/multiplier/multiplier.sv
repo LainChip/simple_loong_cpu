@@ -7,9 +7,6 @@
 `ifdef __MULTIPLIER_VER_1
 
 module multiplier (
-    input clk,
-    input rst_n,
-
     input mul_signed_i,
     input  [31:0] X_i,
     input  [31:0] Y_i,
