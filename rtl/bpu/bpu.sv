@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-25 10:39:06
+// Revise : 2023-01-25 10:48:37
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -124,7 +124,6 @@ module bpu (
 	// assign ppc = {pc[31:3] + 29'd1, 1'b0}; // debug 先预测不跳转
 
 	// output
-
 	assign pc_o = {pc, 2'b00};
 
 	assign stall_o = bpu_state == BPU_REFILL;
