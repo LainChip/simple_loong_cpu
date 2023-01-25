@@ -141,7 +141,16 @@ class decoder_parser:
                 str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in inst]) + '}; //' + inst + '\n'
                 depth -= 1
                 str_builder += self.gen_blank(depth) + "end\n"
-        
+        str_builder += self.gen_blank(depth) + "default: begin\n"
+        depth += 1
+        for signal in self.signal_list:
+            signal_value = self.signal_list[signal][3]
+            if isinstance(signal_value,int):
+                signal_value = str(self.signal_list[signal][1]) + "\'d" + str(signal_value)
+            str_builder += self.gen_blank(depth) + 'decode_info_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
+        str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in 'NONEVALID']) + '}; //' + 'NONEVALID' + '\n'
+        depth -= 1
+        str_builder += self.gen_blank(depth) + "end\n"
 
         depth -= 1
         str_builder += self.gen_blank(depth) + "endcase\n"

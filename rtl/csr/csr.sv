@@ -22,7 +22,7 @@ module csr(
     input   logic   [31:0]          wr_mask_i,          //输入：rj寄存器存放的写掩码
 
     //for interrupt
-    input   logic   [8:0]           interrupt_i,        //输入：中断信号
+    input   logic   [7:0]           interrupt_i,        //输入：中断信号
 
     //for exception
     input   logic   [5:0]           ecode_i,            //输入：两条流水线的例外一级码
@@ -520,7 +520,7 @@ always_ff @(posedge clk) begin
             reg_estat[11] <= 1'b1;
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
         end
-        reg_estat[10:2] <= interrupt_i;
+        reg_estat[9:2] <= interrupt_i;
         if (excp_trigger_i & (~stall_i) & decode_info_i.wb.valid) begin
             reg_estat[`_ESTAT_ECODE] <= ecode_i;
             reg_estat[`_ESTAT_ESUBCODE] <= esubcode_i;

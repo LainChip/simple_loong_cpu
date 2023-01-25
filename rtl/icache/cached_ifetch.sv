@@ -24,7 +24,8 @@ module icache #(
 	output logic [31:0]ppc_o,
 	output logic [FETCH_SIZE - 1 : 0] valid_o,
 	output logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_o,
-	output decode_info_t [FETCH_SIZE - 1 : 0] decode_output_o,
+    output logic [FETCH_SIZE - 1 : 0][31:0] inst_o,
+	// output decode_info_t [FETCH_SIZE - 1 : 0] decode_output_o,
 
 	input  logic ready_i, // FROM QUEUE
 	output logic ready_o, // TO NPC/BPU
@@ -35,9 +36,8 @@ module icache #(
 );
 
 // 当FIFO没有就绪时候（已满），将stall拉高
-logic stall;
-assign stall = ~ready_i;
-
+logic stall,stall_delay;
+decode_info_t [FETCH_SIZE - 1 : 0] decode_buf;
 typedef struct packed {
     logic valid;
     logic dirty; // 对于 icache来说，这一位是无效的
@@ -62,12 +62,13 @@ logic[ATTACHED_INFO_WIDTH - 1 : 0] fetch_attached_early;
 logic[1:0] cache_op_type_early;
 
 // FSM 控制信号 (独热码)
-logic [4:0] fsm_state,fsm_state_next;
-localparam logic[4:0] STATE_NORM = 5'b00001;
-localparam logic[4:0] STATE_INVA = 5'b00010;
-localparam logic[4:0] STATE_ADDR = 5'b00100;
-localparam logic[4:0] STATE_FETC = 5'b01000;
-localparam logic[4:0] STATE_SYNC = 5'b10000;
+logic [5:0] fsm_state,fsm_state_next;
+localparam logic[5:0] STATE_NORM = 6'b000001;
+localparam logic[5:0] STATE_INVA = 6'b000010;
+localparam logic[5:0] STATE_ADDR = 6'b000100;
+localparam logic[5:0] STATE_FETC = 6'b001000;
+localparam logic[5:0] STATE_SYNC = 6'b010000;
+localparam logic[5:0] STATE_SYN2 = 6'b100000;
 
 // 指令fetch的计数器,最高位有效时，表示fetch已结束。
 logic [1:0] fetch_cnt;
@@ -78,18 +79,27 @@ logic [1:0] fetch_cnt;
 // 此模块的写数据，写tag相关控制信号唯一。
 
 logic[19:0] page_index_raw; // TODO 连接到tlb, 从va_early 中计算
-logic [11:0] datapath_addr;
+logic [11:2] datapath_addr;
 logic[31:0] w_data;
 tag_t w_tag;
 logic handling;
 
+assign stall = ~ready_i | handling;
+assign ready_o = ~stall & ~cacheop_valid_i;
+
 // 地址及控制信息流水
 always_ff @(posedge clk) begin
-    if(~handling & ~stall) begin
+    if(clr_i) begin
+        fetch_valid_early <= '0;
+        valid_req_early <= '0;
+        fetch_valid <= '0;
+        valid_req <= '0;
+        // valid_o <= '0;
+    end else if(~stall) begin
         va_early <= vpc_i;
         fetch_valid_early <= valid_i;
         fetch_attached_early <= attached_i;
-        valid_req_early <= (|valid_i) | cacheop_valid_i;
+        valid_req_early <= ((|valid_i) & ready_o) | cacheop_valid_i;
         cache_op_type_early <= cacheop_i;
         cache_op_early <= cacheop_valid_i;
         
@@ -102,28 +112,35 @@ always_ff @(posedge clk) begin
         cache_op <= cache_op_early;
         uncached <= 1'b0 /*TODO TLB UNCACHED*/;
 
-        vpc_o <= va;
-        ppc_o <= pa;
-        valid_o <= fetch_valid;
-        attached_o <= fetch_attached;
+        // vpc_o <= va;
+        // ppc_o <= pa;
+        // valid_o <= fetch_valid;
+        // attached_o <= fetch_attached;
     end
 end
+
+assign vpc_o = va;
+assign ppc_o = pa;
+assign valid_o = fetch_valid & {FETCH_SIZE{~stall}};
+assign attached_o = fetch_attached;
 
 // TLB 相关的逻辑
 assign page_index_raw = va_early[31:12];
 
+logic [WAY_CNT - 1 : 0] sel,data_we,tag_we;
+tag_t [WAY_CNT - 1 : 0] r_tag;
+logic [WAY_CNT - 1 : 0][FETCH_SIZE - 1 : 0][31:0] r_data;
 for (genvar way_id = 0 ; way_id < WAY_CNT; way_id += 1) begin : way
     // 对于每一路，共有的物理地址输入
     logic[19:0] page_index;
 
     // 下面这些是唯一的控制信号，直接由状态机在缺失 或者控制指令到来时进行控制
-    logic data_we,tag_we;
+    // logic data_we,tag_we;
 
     // 下面这些是需要选择的控制信号，有多个控制源，由状态机进行选择
     // 这两个信号是选择出来的信号，直接进行流水即可。
-    logic[FETCH_SIZE - 1 : 0][31:0] r_data,r_data_raw;
-    tag_t r_tag,r_tag_raw;
-    logic sel;
+    logic[FETCH_SIZE - 1 : 0][31:0] r_data_raw;
+    tag_t r_tag_raw;
 
     icache_datapath#(
         .FETCH_SIZE(FETCH_SIZE)
@@ -131,9 +148,9 @@ for (genvar way_id = 0 ; way_id < WAY_CNT; way_id += 1) begin : way
         .clk(clk),
         .rst_n(rst_n),
 
-        .data_we_i(data_we),
-        .tag_we_i(tag_we),
-        .addr_i(datapath_addr),
+        .data_we_i(data_we[way_id]),
+        .tag_we_i(tag_we[way_id]),
+        .addr_i(datapath_addr[11:2]),
 
         .data_o(r_data_raw),
         .data_i(w_data),
@@ -143,15 +160,15 @@ for (genvar way_id = 0 ; way_id < WAY_CNT; way_id += 1) begin : way
     );
 
     always_ff@(posedge clk) begin
-        if(~handling & ~stall) begin
-            r_data <= r_data_raw;
-            r_tag <= r_tag_raw;
+        if(~stall || fsm_state == STATE_SYNC || fsm_state == STATE_SYN2) begin
+            r_data[way_id] <= r_data_raw;
+            r_tag[way_id] <= r_tag_raw;
             page_index <= page_index_raw;
         end
     end
 
     // 路选择逻辑
-    assign sel = (page_index == r_tag.page_index) & r_tag.valid;
+    assign sel[way_id] = (page_index == r_tag[way_id].page_index) & r_tag[way_id].valid;
 end
 
 // 输出逻辑
@@ -159,32 +176,41 @@ logic[FETCH_SIZE - 1 : 0][31:0] inst_raw, inst;
 always_comb begin
     inst_raw = '0;
     for(int way_id = 0; way_id < WAY_CNT ; way_id += 1) begin
-        inst_raw |= {32{way[way_id].sel}} & way[way_id].r_data;
+        inst_raw |= {(FETCH_SIZE*32){sel[way_id]}} & r_data[way_id];
     end
 end
 always_ff @(posedge clk) begin
-    if(~rst_n) begin
-        inst <= '0;
-    end else begin
-        // TODO: FSM CONTROLLING LOGIC.
+    if(fsm_state == STATE_NORM && ~stall) 
         inst <= inst_raw;
-    end
+    else if(fsm_state == STATE_FETC && fetch_cnt[1] == pa[3]) 
+        inst[fetch_cnt[0]] <= bus_resp_i.r_data;
 end
+always_ff @(posedge clk) begin
+    stall_delay <= stall;
+end
+// for(genvar fetch_id = 0; fetch_id < FETCH_SIZE; fetch_id += 1) begin
+// 	decoder decoder_module(
+// 		.inst_i(inst[fetch_id]),
+// 		.decode_info_o(decode_buf[fetch_id]),
+// 		.inst_string_o(/*NC*/)
+// 	);
+// end
+assign inst_o = (stall_delay) ? inst : inst_raw;
 
 // REFILL 逻辑，整体状态机逻辑在此实现
 
 // PLRU 逻辑，使用 plru_tree 模块维护每个cache行的lru信息
 // 共计256个cache行，每行4word = 1k个word 共计每路4k大小
+logic[255:0][WAY_CNT - 1 : 0] use_vec;
+logic[255:0][WAY_CNT - 1 : 0] sel_vec;
 for(genvar cache_index = 0; cache_index < 256; cache_index += 1) begin : cache_line
-    logic[WAY_CNT - 1 : 0] use_vec;
-    logic[WAY_CNT - 1 : 0] sel_vec;
     plru_tree #(
         .ENTRIES(WAY_CNT)
     )plru_module(
         .clk(clk),
         .rst_n(rst_n),
-        .used_i(use_vec),
-        .plru_o(sel_vec)
+        .used_i(use_vec[cache_index]),
+        .plru_o(sel_vec[cache_index])
     );
 end
 
@@ -192,14 +218,14 @@ end
 always_comb begin
     inv = 1'b1;
     for(int way_id = 0 ; way_id < WAY_CNT ;way_id += 1) begin
-        inv &= ~way[way_id].sel;
+        inv &= ~sel[way_id];
     end
 end
 
 // FSM 状态转移逻辑
 always_comb begin
     fsm_state_next = fsm_state;
-    case(fsm_state) begin
+    case(fsm_state)
         STATE_NORM: begin
             if(cache_op) begin
                 if(cache_op_type[1]) begin // HIT INVALIDATE
@@ -210,7 +236,7 @@ always_comb begin
                     fsm_state_next = STATE_INVA;
                 end
             end
-            else if(~fetched) begin
+            else if(~fetched & valid_req) begin
                 if(uncached | inv) begin
                     fsm_state_next = STATE_ADDR;
                 end
@@ -230,12 +256,12 @@ always_comb begin
             fsm_state_next = STATE_SYNC;
         end
         STATE_SYNC: begin
-            fsm_state_next = STATE_NORM;
+            fsm_state_next = STATE_SYN2;
         end
         default: begin
             fsm_state_next = STATE_NORM;
         end
-    end
+    endcase
 end
 
 // 由FSM控制的内部维护信号管理
@@ -247,16 +273,14 @@ always_comb begin
     w_tag.page_index = pa[31:12];
 
     for(int way_id = 0; way_id < WAY_CNT ; way_id += 1) begin
-        way[way_id].data_we = '0;
-        way[way_id].tag_we = '0;
+        data_we[way_id] = '0;
+        tag_we[way_id] = '0;
     end
     for(int index_id = 0; index_id < 256;index_id += 1) begin
-        cache_line[index_id].use_vec = '0;
+        use_vec[index_id] = '0;
     end
     if(fsm_state == STATE_NORM && fsm_state == fsm_state_next) begin // ONLY UPDATE ON HIT STATE
-        for(int way_id = 0; way_id < WAY_CNT;way_id += 1) begin
-            cache_line[va[11:4]].use_vec[way_id] |= way[way_id].sel;
-        end
+        use_vec[va[11:4]] |= sel;
         if(stall) begin
             datapath_addr = va_early[11:2];
         end
@@ -265,27 +289,23 @@ always_comb begin
             // STORE TAG
             datapath_addr = va[11:2];
             w_tag = '0;
-            way[va[$clog2(WAY_CNT) - 1 : 0]].tag_we = 1'b1;
+            tag_we[va[$clog2(WAY_CNT) - 1 : 0]] = 1'b1;
         end else if(cache_op_type == 2'b01) begin
             // INDEX INVALIDATE
             datapath_addr = va[11:2];
             w_tag.valid = '0;
-            way[va[$clog2(WAY_CNT) - 1 : 0]].tag_we = 1'b1;
+            tag_we[va[$clog2(WAY_CNT) - 1 : 0]] = 1'b1;
         end else begin
             // HIT INVALIDATE
             datapath_addr = va[11:2];
             w_tag.valid = '0;
-            for(int way_id = 0; way_id < WAY_CNT; way_id += 1) begin
-                way[way_id].tag_we |= way[way_id].sel;
-            end
+            tag_we |= sel;
         end
     end else if(fsm_state == STATE_FETC) begin
         datapath_addr = {va[11:4],fetch_cnt[1:0]};
-        for(int way_id = 0; way_id < WAY_CNT; way_id += 1) begin
-            way[way_id].data_we |= cache_line[va[11:4]].sel_vec[way_id] & bus_resp_i.data_ok;
-            way[way_id].tag_we  |= cache_line[va[11:4]].sel_vec[way_id] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/;
-        end
-    end else if(fsm_state == STATE_SYNC) begin
+        data_we |= sel_vec[va[11:4]] & {WAY_CNT{bus_resp_i.data_ok}};
+        tag_we  |= sel_vec[va[11:4]] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/;
+    end else if(fsm_state == STATE_SYNC || fsm_state == STATE_SYN2) begin
         datapath_addr = va_early[11:2];
     end
 end
@@ -319,10 +339,18 @@ assign handling = (fsm_state != STATE_NORM) || (fsm_state != fsm_state_next);
 // 由FSM控制的fetched，transfer_done逻辑
 assign transfer_done = bus_resp_i.data_ok & bus_resp_i.data_last;
 always_ff @(posedge clk) begin
-    if(fsm_state == STATE_SYNC) begin
+    if(fsm_state == STATE_SYN2) begin
         fetched <= 1'b1;
     end else if(~stall)begin
         fetched <= 1'b0;
+    end
+end
+
+always_ff @(posedge clk) begin
+    if(~rst_n) begin
+        fsm_state <= STATE_NORM;
+    end else begin
+        fsm_state <= fsm_state_next;
     end
 end
 

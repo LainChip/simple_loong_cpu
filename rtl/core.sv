@@ -56,6 +56,7 @@ module core(
     backend backend(
 	.clk(clk),
 	.rst_n(rst_n),
+	.int_i(int_i),
 
 	// 指令输入
 	.inst_i(inst),

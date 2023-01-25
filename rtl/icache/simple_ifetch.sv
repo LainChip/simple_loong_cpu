@@ -1,7 +1,7 @@
 `include "common.svh"
 `include "decoder.svh"
 
-/* --JSON-- {"module_name":"icache","module_ver":"1"} */
+/*--JSON--{"module_name":"icache","module_ver":"1","module_type":"module"}--JSON--*/
 
 // I cache的实现中实际包含解码与icache逻辑两部分
 // 对于外界的接口，外界输入一个pc信号，获得解码后的多组指令
@@ -14,8 +14,11 @@ module icache #(
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
 	
+	input  logic [1:0] cacheop_i, // 输入两位的cache控制信号
+    input  logic cacheop_valid_i, // 输入的cache控制信号有效
+    output logic cacheop_ready_o,
+
 	input  logic [31:0]vpc_i,
-	input  logic [31:0]ppc_i,
 	input  logic [FETCH_SIZE - 1 : 0] valid_i,
 	input  logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_i,
 
@@ -25,8 +28,8 @@ module icache #(
 	output logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_o,
 	output decode_info_t [FETCH_SIZE - 1 : 0] decode_output_o,
 
-	input  logic stall_i,
-	output logic busy_o,
+	input  logic ready_i,
+	output logic ready_o,
 	input  logic clr_i,
 
 	output cache_bus_req_t bus_req_o,
@@ -50,7 +53,7 @@ module icache #(
 	localparam STATE_DATA = 3'b100;
 
 	// 暂停逻辑
-	assign stall_pipe = stall_i | busy_o;
+	assign stall_pipe = ~ready_i | ~ready_o;
 
 	// 流水线逻辑，需要正确处理 stall 和 clr
 	always_ff @(posedge clk) begin
@@ -104,8 +107,8 @@ module icache #(
 		end
 	end
 
-	// 内部暂停逻辑，当没有完成fetch的时候，拉高busy_o
-	assign busy_o = |fetch_need;
+	// 内部暂停逻辑，当没有完成fetch的时候，拉高ready_o
+	assign ready_o = ~|fetch_need & ready_i;
 
 	// find one 逻辑，获取下一个需要fetch的地址
 	always_comb begin
@@ -121,12 +124,12 @@ module icache #(
 	assign fetch_addr = {pc_stage_2[31 : 2 + $clog2(FETCH_SIZE)], fetch_offs, 2'b00};
 
 	// 核心状态机，从总线获取读取数据，或写入数据 并返回
-	assign transfer_done = busy_o & bus_resp_i.data_last & bus_resp_i.data_ok & bus_req_o.data_ok;
+	assign transfer_done = ~ready_o & bus_resp_i.data_last & bus_resp_i.data_ok & bus_req_o.data_ok;
 	always_comb begin
 		fsm_state_next = fsm_state;
 		case(fsm_state)
 			STATE_IDLE:begin
-				if(busy_o) begin
+				if(~ready_o) begin
 					fsm_state_next = STATE_ADDR;
 				end
 			end
@@ -186,7 +189,7 @@ module icache #(
 	end
 
 	// 输出有效逻辑
-	assign valid_o = valid_stage_2 & {FETCH_SIZE{~busy_o}};
+	assign valid_o = valid_stage_2 & {FETCH_SIZE{ready_o}};
 
 	// 其余伴随输出
 	assign attached_o = attached_stage_2;

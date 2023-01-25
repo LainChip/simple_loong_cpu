@@ -17,9 +17,12 @@ module excp_handler(
         esubcode_o = '0;
         excp_trigger_o = '0;
         bad_va_o = vpc_i;
-        // 目前仅仅处理syscall 和 break两个异常
+        // 目前仅仅处理syscall 和 break 和 INE三个异常
         if(decode_info_i.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) begin
             ecode_o = (decode_info_i.general.inst25_0[16]) ? 6'b001011 : 6'b001100;
+            excp_trigger_o = '1;
+        end else if(decode_info_i.m2.exception_hint == `_EXCEPTION_HINT_INVALID) begin
+            ecode_o = 6'hd; // INE
             excp_trigger_o = '1;
         end
     end

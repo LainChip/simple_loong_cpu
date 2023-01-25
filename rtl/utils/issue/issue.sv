@@ -42,7 +42,7 @@ module issue(
 		input scoreboard_info_t scoreboard_entry
 	);
 		forwarding_info_t ret;
-		
+		ret.forwarding_pipe_sel = scoreboard_entry.pipe_sel;
 		// ex gen
 		ret.ex_forward_source[3:1] = scoreboard_entry.inst_pos[2:0] & {3{scoreboard_entry.forwarding_ready[0]}};
 		ret.ex_forward_source[0] = ~|ret.ex_forward_source[3:1];
@@ -118,6 +118,7 @@ module issue(
 	function scoreboard_info_t scoreboard_update(
 		input inst_t [1:0] inst,
 		input logic  [1:0] issue,
+		input logic revert,
 		input logic [1:0][2:0] stall_vec,			// 0 for ex, 1 for m1, 2 for m2
 		input logic [1:0][2:0] clr_vec,				// 0 for ex, 1 for m1, 2 for m2
 		input scoreboard_info_t old_scoreboard_entry,
@@ -145,7 +146,7 @@ module issue(
 		// 发射更新逻辑 优先级最高
 		for(integer i = 0 ; i < 2 ; i += 1) begin
 			if((inst[i].register_info.w_reg == entry_id) && issue[i]) begin
-				ret.pipe_sel = i;
+				ret.pipe_sel = i[0] ^ revert;
 				ret.inst_pos = 3'b001;
 				ret.forwarding_ready = {1'b1,inst[i].decode_info.is.ready_time == `_READY_EX,inst[i].decode_info.is.ready_time == `_READY_EX};
 			end
@@ -184,7 +185,7 @@ module issue(
 				if(~rst_n) begin
 					scoreboard[i] <= '0;
 				end else begin
-					scoreboard[i] <= scoreboard_update(inst_i,issue_o,stall_vec_i,clr_vec_i,scoreboard[i],i);
+					scoreboard[i] <= scoreboard_update(inst_i,issue_o,revert_o,stall_vec_i,clr_vec_i,scoreboard[i],i);
 				end
 			end
 		end

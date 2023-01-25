@@ -7,6 +7,7 @@
 module backend(
 	input clk,
 	input rst_n,
+    input [7:0] int_i,
 
 	// 调试用输出信号组
 	// output debug_info_t [1:0] debug_info_o,

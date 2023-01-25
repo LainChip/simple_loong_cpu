@@ -9,6 +9,7 @@ module backend_pipeline #(
 )(
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
+    input [7:0] int_i,
 
 	// 控制用暂停信号
 	input logic [2:0] stall_vec_i, // 0 for ex, 1 for m1, 2 for m2
@@ -279,7 +280,7 @@ module backend_pipeline #(
 	    .wr_data_i(m2_data_flow_forwarding.reg_data[0]),          //输入：写数据
 	    .wr_mask_i(m2_data_flow_forwarding.reg_data[1]),          //输入：rj寄存器存放的写掩码
 	    //for interrupt
-	    .interrupt_i('0 /*TODO*/),        //输入：中断信号
+	    .interrupt_i(int_i),        //输入：中断信号
 	    //for exception
 	    .ecode_i(ecode),            //输入：两条流水线的例外一级码
 	    .esubcode_i(esubcode),         //输入：两条流水线的例外二级码

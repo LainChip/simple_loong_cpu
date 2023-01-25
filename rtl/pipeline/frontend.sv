@@ -85,31 +85,33 @@ module frontend(
         return ret;
     endfunction
 
-    bpu_predict_t[1:0] bpu_predict,fifo_predict;
+    bpu_predict_t[1:0] bpu_predict,fetch_predict,fetch_predict_fifo,fifo_predict;
     decode_info_t [1:0]fifo_decode_info;
-    logic [31:0] bpu_vpc,bpu_ppc,fifo_vpc;
-    logic [1:0] bpu_pc_valid, fifo_pc_valid;
-    logic frontend_stall,frontend_clr, bpu_stall,icache_stall,fifo_ready;
+    logic [31:0] bpu_vpc,bpu_ppc,fetch_vpc,fifo_vpc;
+    logic [1:0] bpu_pc_valid,fetch_pc_valid,fetch_valid;
+    logic frontend_clr, bpu_stall, bpu_stall_req,icache_ready,fetch_ready,fifo_ready;
 
+    logic[1:0][31:0] fetch_inst,fetch_inst_fifo;
+    logic[1:0][63+$bits(bpu_predict_t):0] fetch_fifo_out;
     inst_t [1:0] fifo_inst;
-    logic [1:0] fifo_write_num;
+    logic [1:0] fifo_write_num,fetch_write_num;
 
     // NPC / BPU 模块
     npc npc_module(
         .clk,
         .rst_n,
-        .stall_i(frontend_stall),
+        .stall_i(bpu_stall),
         .update_i(bpu_feedback_i),
         .predict_o(bpu_predict),
         .pc_o(bpu_vpc),
-        .stall_o(bpu_stall)
+        .stall_o(bpu_stall_req)
     );
 
-    assign bpu_pc_valid = {~frontend_clr , ~frontend_clr & ~bpu_vpc[2]};
+    assign bpu_pc_valid = {~frontend_clr & rst_n , ~frontend_clr & rst_n & ~bpu_vpc[2]};
 
     // 暂停以及清零控制逻辑
     assign frontend_clr = bpu_feedback_i.flush;
-    assign frontend_stall = (~fifo_ready) | icache_stall | bpu_stall;
+    assign bpu_stall = ~icache_ready;
     // I CACHE 模块
     icache #(
         .FETCH_SIZE(2),
@@ -118,43 +120,33 @@ module frontend(
         .clk,    // Clock
         .rst_n,  // Asynchronous reset active low
         
+        .cacheop_i('0 /*TODO*/),
+        .cacheop_valid_i('0 /*TODO*/),
+        .cacheop_ready_o(/*NOT CONNECT TODO*/),
+
         .vpc_i(bpu_vpc),
-        .ppc_i(bpu_ppc),
         .valid_i(bpu_pc_valid),
         .attached_i(bpu_predict),
 
-        .vpc_o(fifo_vpc),
+        .vpc_o(fetch_vpc),
         .ppc_o(/*NOT CONNECT*/),
-        .valid_o(fifo_pc_valid),
-        .attached_o(fifo_predict),
-        .decode_output_o(fifo_decode_info),
+        .valid_o(fetch_pc_valid),
+        .attached_o(fetch_predict),
+        // .decode_output_o(fetch_decode_info),
+        .inst_o(fetch_inst),
 
-        .stall_i(frontend_stall),
-        .busy_o(icache_stall),
+        .ready_i(fetch_ready),
+        .ready_o(icache_ready),
         .clr_i(frontend_clr),
 
         .bus_req_o,
         .bus_resp_i
     );
 
-    // INST 结构体组装模块
-    always_comb begin
-        fifo_write_num = {fifo_pc_valid[0] & fifo_pc_valid[1], fifo_pc_valid[0] ^ fifo_pc_valid[1]};
-        fifo_inst[0].bpu_predict = fifo_pc_valid[0] ? fifo_predict[0] : fifo_predict[1];
-        fifo_inst[0].decode_info = fifo_pc_valid[0] ? fifo_decode_info[0] : fifo_decode_info[1];
-        fifo_inst[0].pc = fifo_pc_valid[0] ? fifo_vpc : {fifo_vpc[31:3],3'b100};
-        fifo_inst[0].valid = |fifo_pc_valid;
-        fifo_inst[0].register_info = fifo_pc_valid[0] ? get_register_info(fifo_decode_info[0]) : get_register_info(fifo_decode_info[1]) ;
-        fifo_inst[1].bpu_predict = fifo_predict[1];
-        fifo_inst[1].decode_info = fifo_decode_info[1];
-        fifo_inst[1].pc = {fifo_vpc[31:3],3'b100};
-        fifo_inst[1].valid = fifo_pc_valid[0] & fifo_pc_valid[1];
-        fifo_inst[1].register_info = get_register_info(fifo_decode_info[1]);
-    end
 
     // FIFO 模块
     multi_channel_fifo #(
-        .DATA_WIDTH($bits(inst_t)),
+        .DATA_WIDTH(64 + $bits(bpu_predict_t)),
         .DEPTH(8),
         .BANK(4),
         .WRITE_PORT(2),
@@ -165,7 +157,65 @@ module frontend(
 
         .flush_i(frontend_clr),
 
-        .write_valid_i(~frontend_stall),
+        .write_valid_i(1'b1),
+        .write_ready_o(fetch_ready),
+        .write_num_i (fetch_write_num),
+        .write_data_i({fetch_predict_fifo[1],fetch_vpc[31:3],3'b100,fetch_inst_fifo[1],fetch_predict_fifo[0],fetch_vpc[31:3],~fetch_pc_valid[0],2'b00,fetch_inst_fifo[0]}),
+
+        .read_valid_o(fetch_valid),
+        .read_ready_i(fifo_ready),
+        .read_num_i(fifo_write_num),
+        .read_data_o(fetch_fifo_out)
+    );
+
+    // INST 选择逻辑
+    always_comb begin
+        fetch_write_num = {fetch_pc_valid[1] & fetch_pc_valid[0], fetch_pc_valid[1] ^ fetch_pc_valid[0]};
+        fetch_inst_fifo[0] = (fetch_pc_valid[0]) ? fetch_inst[0] : fetch_inst[1];
+        fetch_inst_fifo[1] = fetch_inst[1];
+        fetch_predict_fifo[0] =  (fetch_pc_valid[0]) ? fetch_predict[0] : fetch_predict[1];
+        fetch_predict_fifo[1] = fetch_predict[1];
+    end
+
+    // INST 结构体组装模块
+	decoder decoder_module_0(
+		.inst_i(fetch_fifo_out[0][31:0]),
+		.decode_info_o(fifo_decode_info[0]),
+		.inst_string_o(/*NC*/)
+	);
+	decoder decoder_module_1(
+		.inst_i(fetch_fifo_out[1][31:0]),
+		.decode_info_o(fifo_decode_info[1]),
+		.inst_string_o(/*NC*/)
+	);
+
+    always_comb begin
+        fifo_write_num = {fetch_valid[0] & fetch_valid[1], fetch_valid[0] ^ fetch_valid[1]};
+        fifo_inst[0].bpu_predict = fetch_fifo_out[0][63+$bits(bpu_predict_t):64];
+        fifo_inst[0].decode_info = fifo_decode_info[0];
+        fifo_inst[0].pc = fetch_fifo_out[0][63:32];
+        fifo_inst[0].valid = 1'b1;
+        fifo_inst[0].register_info = get_register_info(fifo_decode_info[0]);
+        fifo_inst[1].bpu_predict = fetch_fifo_out[1][63+$bits(bpu_predict_t):64];
+        fifo_inst[1].decode_info = fifo_decode_info[1];
+        fifo_inst[1].pc = fetch_fifo_out[1][63:32];
+        fifo_inst[1].valid = 1'b1;
+        fifo_inst[1].register_info = get_register_info(fifo_decode_info[1]);
+    end
+
+    multi_channel_fifo #(
+        .DATA_WIDTH($bits(inst_t)),
+        .DEPTH(2),
+        .BANK(2),
+        .WRITE_PORT(2),
+        .READ_PORT(2)
+    ) decoded_fifo(
+        .clk,
+        .rst_n,
+
+        .flush_i(frontend_clr),
+
+        .write_valid_i(1'b1),
         .write_ready_o(fifo_ready),
         .write_num_i (fifo_write_num),
         .write_data_i(fifo_inst),

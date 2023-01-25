@@ -98,6 +98,7 @@ module core_top_sv(
     assign araddr = mem_bus.Slave.ar_addr;
     assign arlen = mem_bus.Slave.ar_len;
     assign arsize = mem_bus.Slave.ar_size;
+    assign arburst = mem_bus.Slave.ar_burst;
     assign arlock = mem_bus.Slave.ar_lock;
     assign arcache = mem_bus.Slave.ar_cache;
     assign arprot = mem_bus.Slave.ar_prot;
