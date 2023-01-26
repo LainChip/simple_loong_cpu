@@ -2,6 +2,7 @@
 `define _TLB_HEADER
 
 `define _TLB_ENTRY_NUM 32
+`define _TLB_PORT 2
 
 typedef struct packed {  
     logic                                    fetch     ;
@@ -67,4 +68,23 @@ typedef struct packed {
     logic  [ 9:0]                            asid      ;
     logic  [18:0]                            vpn       ;
 } tlb_inv_req_t;
+
+typedef struct packed {
+    logic  [18:0]                            vppn      ;
+    logic  [ 5:0]                            ps        ;
+    logic                                    g         ;
+    logic [ 9:0]                             asid      ;
+    logic                                    e         ;
+    logic [19:0]                             ppn0      ;
+    logic [ 1:0]                             plv0      ;
+    logic [ 1:0]                             mat0      ;        
+    logic                                    d0        ;
+    logic                                    v0        ;
+    logic [19:0]                             ppn1      ;
+    logic [ 1:0]                             plv1      ;
+    logic [ 1:0]                             mat1      ;        
+    logic                                    d1        ;
+    logic                                    v1        ;
+} tlb_entry_t;
+
 `endif
