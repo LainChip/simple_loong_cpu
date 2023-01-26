@@ -33,7 +33,7 @@ module backend_pipeline #(
 	input logic[1:0][2:0][31:0] forwarding_src_i,
 
 	// FORWARDING DATA OUTPUT
-	output logic[2:0] forwarding_data_o,
+	output logic[2:0][31:0] forwarding_data_o,
 
 	output logic[4:0]  reg_w_addr_o,
 	output logic[31:0] reg_w_data_o,
@@ -56,7 +56,7 @@ module backend_pipeline #(
 	logic [31:0] alu_result;
 	logic [31:0] bpf_result;
 	logic [31:0] ex_vaddr;
-	logic [31:0] m1_vaddr;
+	logic [31:0] m1_paddr;
 	logic [31:0] m2_paddr;
 
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data;
@@ -135,7 +135,7 @@ module backend_pipeline #(
 		if(~rst_n) begin
 			wb_ctrl_flow <= '0;
 		end else begin
-			if(clr_vec_i[2]) begin
+			if(clr_vec_i[2] | stall_vec_i[2]) begin
 				wb_ctrl_flow <= '0;
 			end else begin
 				wb_ctrl_flow <= m2_ctrl_flow;
@@ -154,8 +154,8 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~stall_vec_i[1]) begin
 			m1_data_flow_raw <= ex_data_flow_forwarding;
-			m1_vaddr <= ex_vaddr;
-			m2_paddr <= m1_vaddr;
+			m1_paddr <= ex_vaddr;
+			m2_paddr <= m1_paddr;
 		end else begin
 			m1_data_flow_raw <= m1_data_flow_forwarding;
 		end
@@ -175,12 +175,12 @@ module backend_pipeline #(
 	// ALU here
 	alu alu_module(
     .decode_info_i(ex_ctrl_flow.decode_info),
-    .reg_fetch_i(ex_data_flow_forwarding.reg_data),
+    .reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
     .pc_i(ex_data_flow_forwarding.pc),
     .alu_res_o(alu_result)
 	);
 	assign ex_data_flow_forwarding.result = ex_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_BPF ? bpf_result : alu_result;
-
+	assign ex_data_flow_forwarding.pc = ex_data_flow_raw.pc;
 	if(MAIN_PIPE) begin
 		// BPF here
 		bpf bpf_module(
@@ -191,8 +191,8 @@ module backend_pipeline #(
 			.rd_i(ex_data_flow_forwarding.reg_data[0]),
 			.decode_i(ex_ctrl_flow.decode_info),
 			.predict_i(ex_ctrl_flow.bpu_predict),
-			.update_o(bpu_feedback_o),
-			.target_o(/*NOT CONNECT*/)
+			.update_o(bpu_feedback_o)
+
 		);
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_forwarding.pc + 32'd4;
@@ -214,9 +214,10 @@ module backend_pipeline #(
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
 		// Mem connection here
 		lsu lsu_module(.clk,.rst_n,
-			.decode_info_i(m1_ctrl_flow.decode_info),
-			.vaddr_i({'0,m1_vaddr}),
-			.paddr_i({'0,m2_paddr}),
+			.decode_info_i(ex_ctrl_flow.decode_info),
+			.request_valid_i(~stall_vec_i[0]),
+			.vaddr_i({'0,ex_vaddr}),
+			.paddr_i({'0,m1_paddr}),
 			.w_data_i({32'd0,m2_data_flow_forwarding.reg_data[0]}),
 			.r_data_o({m2_useless_data,m2_lsu_read}),
 
@@ -262,14 +263,19 @@ module backend_pipeline #(
 		assign m2_clr_req_o = '0;
 	end
 	assign m1_data_flow_forwarding.result = m1_data_flow_raw.result;
+	assign m1_data_flow_forwarding.pc = m1_data_flow_raw.pc;
 	assign m2_data_flow_forwarding.result = (m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_ALU || 
 											 m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_BPF) ? m2_data_flow_raw.result:
 	(m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_LSU ? m2_lsu_read : m2_csr_read);
+	assign m2_data_flow_forwarding.pc = m2_data_flow_raw.pc;
 	// WB部分，选择写回源进行写回。（转发源）
 	assign reg_w_addr_o = wb_ctrl_flow.w_reg;
 	assign reg_w_data_o = wb_data_flow.result;
 
 	// revert 信号生成
 	assign revert_vector_o = {wb_ctrl_flow.revert,m2_ctrl_flow.revert,m1_ctrl_flow.revert,ex_ctrl_flow.revert};
+
+	// 转发信号源生成
+	assign forwarding_data_o = {wb_data_flow.result,m2_data_flow_raw.result,m1_data_flow_raw.result};
 
 endmodule : backend_pipeline

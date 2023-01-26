@@ -10,6 +10,7 @@ module lsu (
 	
 	// 控制信号
 	input decode_info_t [1:0] decode_info_i,
+	input logic request_valid_i,
 	
 	// 流水线数据输入输出
 	input logic[1:0][31:0] vaddr_i,
@@ -53,8 +54,8 @@ module lsu (
 	always_comb begin
 		mem_req_comb.mem_addr = '0;
 		{mem_req_comb.mem_type,mem_req_comb.mem_write,mem_req_comb.mem_valid} =
-		{decode_info_i[0].m1.mem_type,decode_info_i[0].m1.mem_write,decode_info_i[0].m1.mem_valid} | 
-		{decode_info_i[1].m1.mem_type,decode_info_i[1].m1.mem_write,decode_info_i[1].m1.mem_valid};
+		{decode_info_i[0].m1.mem_type,decode_info_i[0].m1.mem_write,decode_info_i[0].m1.mem_valid & request_valid_i} | 
+		{decode_info_i[1].m1.mem_type,decode_info_i[1].m1.mem_write,decode_info_i[1].m1.mem_valid & request_valid_i};
 		if(decode_info_i[1].m1.mem_valid) begin
 			mem_req_comb.mem_addr = vaddr_i[1];
 		end else begin
@@ -120,13 +121,13 @@ module lsu (
 		bus_req_o.cached = '0;
 		bus_req_o.addr = mem_req_stage_2.mem_addr;
 
-		bus_req_o.w_data = w_data_i[mem_req_stage_2.mem_sel_1] << mem_req_stage_2.mem_addr[1:0];
+		bus_req_o.w_data = w_data_i[mem_req_stage_2.mem_sel_1] << {mem_req_stage_2.mem_addr[1:0],3'b000};
 		case(mem_req_stage_2.mem_type[1:0])
 			`_MEM_TYPE_WORD: begin
 				bus_req_o.data_strobe = 4'b1111;
 			end
 			`_MEM_TYPE_HALF: begin
-				bus_req_o.data_strobe = (4'b0011 << mem_req_stage_2.mem_addr[1]);
+				bus_req_o.data_strobe = (4'b0011 << {mem_req_stage_2.mem_addr[1],1'b0});
 			end
 			`_MEM_TYPE_BYTE: begin
 				bus_req_o.data_strobe = (4'b0001 << mem_req_stage_2.mem_addr[1:0]);

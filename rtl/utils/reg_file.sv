@@ -43,9 +43,9 @@ module reg_file #(
               end
             end
           end
-          assign r_data_o[i] = forwarding_enable ? forwarding_data : regs[r_ptr_i];
+          assign r_data_o[i] = forwarding_enable ? forwarding_data : regs[r_ptr_i[i]];
         end else begin
-          assign r_data_o[i] = regs[r_ptr_i];           // 无内部转发
+          assign r_data_o[i] = regs[r_ptr_i[i]];           // 无内部转发
         end
       end
     endgenerate

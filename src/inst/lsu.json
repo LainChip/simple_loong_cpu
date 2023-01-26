@@ -32,6 +32,8 @@
         "ld.wu": {
             "opcode": "0010101010",
             "mem_type": "`_MEM_TYPE_UWORD",
+            "reg_type": "`_REG_TYPE_RW",
+            "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
             "pipe_one_inst": 1
@@ -39,6 +41,8 @@
         "ld.hu": {
             "opcode": "0010101001",
             "mem_type": "`_MEM_TYPE_UHALF",
+            "reg_type": "`_REG_TYPE_RW",
+            "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
             "pipe_one_inst": 1
@@ -46,6 +50,8 @@
         "ld.bu": {
             "opcode": "0010101000",
             "mem_type": "`_MEM_TYPE_UBYTE",
+            "reg_type": "`_REG_TYPE_RW",
+            "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
             "pipe_one_inst": 1
@@ -53,6 +59,8 @@
         "ld.w": {
             "opcode": "0010100010",
             "mem_type": "`_MEM_TYPE_WORD",
+            "reg_type": "`_REG_TYPE_RW",
+            "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
             "pipe_one_inst": 1
@@ -60,6 +68,8 @@
         "ld.h": {
             "opcode": "0010100001",
             "mem_type": "`_MEM_TYPE_HALF",
+            "reg_type": "`_REG_TYPE_RW",
+            "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
             "pipe_one_inst": 1
@@ -67,6 +77,8 @@
         "ld.b": {
             "opcode": "0010100000",
             "mem_type": "`_MEM_TYPE_BYTE",
+            "reg_type": "`_REG_TYPE_RW",
+            "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
             "pipe_one_inst": 1
@@ -74,6 +86,7 @@
         "st.w": {
             "opcode": "0010100110",
             "mem_type": "`_MEM_TYPE_WORD",
+            "reg_type": "`_REG_TYPE_RR",
             "mem_valid": 1,
             "mem_write": 1,
             "pipe_one_inst": 1
@@ -81,6 +94,7 @@
         "st.h": {
             "opcode": "0010100101",
             "mem_type": "`_MEM_TYPE_HALF",
+            "reg_type": "`_REG_TYPE_RR",
             "mem_valid": 1,
             "mem_write": 1,
             "pipe_one_inst": 1
@@ -88,6 +102,7 @@
         "st.b": {
             "opcode": "0010100100",
             "mem_type": "`_MEM_TYPE_BYTE",
+            "reg_type": "`_REG_TYPE_RR",
             "mem_valid": 1,
             "mem_write": 1,
             "pipe_one_inst": 1

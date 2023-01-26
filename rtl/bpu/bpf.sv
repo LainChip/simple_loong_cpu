@@ -15,15 +15,19 @@
 module bpf (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
+	input csr_flush_i,
+	input stall_i,
 	input [31:0] pc_i,
 	input [31:0] rj_i,
 	input [31:0] rd_i,
+	input [31:0] csr_target_i,
 	input decode_info_t decode_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
-	output [31:0] target_o
+	output [31:0] pc_link_o
 );
 
+	logic taken;
 	wire [25:0] offs_i = decode_i.general.inst25_0; 
 	wire [4:0] rj_index_i = decode_i.general.inst25_0[9:5];
 	wire [4:0] rd_index_i = decode_i.general.inst25_0[4:0];
@@ -31,15 +35,15 @@ module bpf (
 	assign cmp_type_i = decode_i.ex.cmp_type;
 	branch_type_t branch_type_i = decode_i.ex.branch_type;
 	
-	wire [31:0] offs_26 = {{6{offs_i[25]}}, offs_i};
-	wire [31:0] offs_16 = {{16{offs_i[25]}}, offs_i[25:10]};
+	wire [31:0] offs_26 = {{4{offs_i[9]}},offs_i[9:0], offs_i[25:10], 2'b00};
+	wire [31:0] offs_16 = {{14{offs_i[25]}}, offs_i[25:10], 2'b00};
 
-	assign target_o = branch_type_i == `_BRANCH_IMMEDIATE ? pc_i + (offs_26 << 2) :
-					  branch_type_i == `_BRANCH_INDIRECT  ? rj_i + (offs_16 << 2) :
-					  branch_type_i == `_BRANCH_CONDITION ? pc_i + (offs_16 << 2) :
-								   						pc_i + 4;
+	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE ? pc_i + (offs_26) :
+					     branch_type_i == `_BRANCH_INDIRECT  ? rj_i + (offs_16) :
+					     ((branch_type_i == `_BRANCH_CONDITION) && taken) ? pc_i + (offs_16) :
+								   						       pc_i + 4;
+	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
 	
-	logic taken;
 	always_comb begin : proc_taken
 		if (branch_type_i == `_BRANCH_CONDITION) begin
 			case (cmp_type_i)
@@ -60,11 +64,14 @@ module bpf (
 		end
 	end
 
+	// link
+	assign pc_link_o = pc_i + 4;
+
 	// bpu update info
-	assign update_o.flush = (predict_i.npc != target_o[31:2]) & decode_i.wb.debug_valid;
+	assign update_o.flush = (~stall_i & (predict_npc != target[31:0]) & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
-	assign update_o.br_target = target_o[31:2];
+	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : target[31:2];
 
 	assign update_o.btb_update = update_o.flush;
 	always_comb begin : proc_br_type
@@ -79,9 +86,9 @@ module bpf (
 		end
 	end
 
-	assign update_o.bht_update = 1'b1;
+	assign update_o.bht_update = branch_type_i != `_BRANCH_INVALID;
 
-	assign update_o.lpht_update = 1'b1;
+	assign update_o.lpht_update = branch_type_i != `_BRANCH_INVALID;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
 	
