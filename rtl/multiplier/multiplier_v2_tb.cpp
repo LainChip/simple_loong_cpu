@@ -5,7 +5,7 @@
 #include <verilated.h>
 
 // Include model header, generated from Verilating "top.v"
-#include "Vdivider.h"
+#include "Vmultiplier_v2.h"
 
 // 导出vcd
 #include "verilated_vcd_c.h"
@@ -15,13 +15,15 @@
 #include <climits>
 #include <random>
 #include <ctime>
+#include <queue>
 
 #define TEST_TIMES (10000)
 
-/* step() 
- * - time walk a step, and then signal do something under statement control 
- * 先前信号的时延 -> 时延后信号赋值(clk固定取反 + 自定义信号变化) -> 模型同步
- */
+#define next(top) do { \
+        contextp->timeInc(1); \
+        top->eval();          \
+    } while (0)
+
 #define step(statements) do { \
         contextp->timeInc(1); \
         top->clk = !top->clk; \
@@ -29,30 +31,41 @@
         top->eval();          \
     } while (0)
 
-struct DivRes {
-    uint32_t q = 0;
-    uint32_t s = 0;
+std::queue<uint64_t> expResQueue; 
+
+uint64_t mult_expRes(uint32_t x, uint32_t y, bool isSigned) {
+    if (isSigned) {
+        int64_t x64 = (int64_t)x << 32 >> 32;
+        int64_t y64 = (int64_t)y << 32 >> 32;
+        return x64 * y64;
+    } else {
+        return (int64_t)x * (int64_t)y;
+    }
+}
+
+struct InputStore {
+    uint32_t X_i;
+    uint32_t Y_i;
+    uint64_t res_o;
+    bool mul_signed_i;
+
+    InputStore():X_i(0), Y_i(0), res_o(0), mul_signed_i(0) {}
+    InputStore(uint32_t x, uint32_t y, bool s):X_i(x), Y_i(y), mul_signed_i(s) {
+        res_o = mult_expRes(x, y ,s);
+    }
+
+    uint64_t mult_expRes(uint32_t x, uint32_t y, bool isSigned) {
+        if (isSigned) {
+            int64_t x64 = (int64_t)x << 32 >> 32;
+            int64_t y64 = (int64_t)y << 32 >> 32;
+            return x64 * y64;
+        } else {
+            return (int64_t)x * (int64_t)y;
+        }
+    }
 };
 
-void div_expRes(uint32_t z, uint32_t d, bool isSigned, DivRes& res) {
-    if (d == 0) return;
-    if (isSigned) {
-        res.q = (int32_t)z / (int32_t)d;
-        res.s = (int32_t)z % (int32_t)d;
-    } else {
-        res.q = z / d;
-        res.s = z % d;
-    }
-}
-
-bool is_equal(const std::unique_ptr<Vdivider>& top, const DivRes& exp) {
-    if (top->D_i == 0) {
-        return true;
-    }
-    if (top->q_o == exp.q && top->s_o == exp.s)
-        return true;
-    else return false;
-}
+std::queue<InputStore> InputQueue;
 
 // Legacy function required only so linking works on Cygwin and MSVC++
 double sc_time_stamp() { return 0; }
@@ -94,113 +107,82 @@ int main(int argc, char** argv) {
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v".
     // Using unique_ptr is similar to "Vtop* top = new Vtop" then deleting at end.
     // "TOP" will be the hierarchical name of the module.
-    const std::unique_ptr<Vdivider> top{new Vdivider{contextp.get(), "TOP"}};
+    const std::unique_ptr<Vmultiplier_v2> top{new Vmultiplier_v2{contextp.get(), "TOP"}};
 
-    // init util variables
-    DivRes expRes;
+    // util variables
+    uint64_t expRes;
+    InputStore former_in;
     std::default_random_engine e;
     std::uniform_int_distribution<uint32_t> gen_reg_fetch(0, UINT32_MAX);
     e.seed(time(0));
 
     // init signal
     top->rst_n = 0;
+    top->stall_i = 0;
     top->clk = 0;
     top->eval();
 
     step();
     step({
-        top->rst_n = 1; // 结束复位
+        top->rst_n = 1;
     });
     step();
-     
+
     // specific test
     std::cout << "[specific test]" << std::endl;
-    //// case: input self data
-    printf("== test selfdata ==\n");
     step({
-        top->div_signed_i = 0;
-        top->Z_i = 0x00001234;
-        top->D_i = 0x00000000;
-        top->div_valid = 1;
-        top->res_ready = 1;
-    });
-    div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
+        top->mul_signed_i = 0;
+        top->X_i = 0x2905ea84;
+        top->Y_i = 0xd6474f4a;
+        InputQueue.emplace(InputStore(top->X_i, top->Y_i, top->mul_signed_i));
+    }); 
+    step(); // posedge
 
-    step();
-    top->div_valid = 0;
-    while (!(top->res_valid && top->res_ready)) {
-        step();
-    }
+    // successive flows, wait two cycle for answer
+    step({
+        top->mul_signed_i = 1;  // 1 => to equal sign cases of random test
+        top->X_i = gen_reg_fetch(e);
+        top->Y_i = gen_reg_fetch(e);
+        InputQueue.emplace(InputStore(top->X_i, top->Y_i, top->mul_signed_i));
+    }); 
+    step(); // posedge
 
-    if (!is_equal(top, expRes)) {
-        printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
-        printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
-        printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
-        step(); step();
+    former_in = InputQueue.front();
+    if (top->res_o != former_in.res_o) {
+        printf("%08x, %08x, %d\n", former_in.X_i, former_in.Y_i, former_in.mul_signed_i);
+        printf("got   : %016llx\n", top->res_o);
+        printf("expect: %016llx\n", former_in.res_o);
+        step();step();
         goto finished;
     } else {
         std::cout << "passed" << std::endl;
     }
-
-    //// cases: res_ready = 0 from master, cannot receive
-    printf("== test res_ready ==\n");
-    step(); step();
-    step({
-        top->div_signed_i = 1;
-        top->Z_i = gen_reg_fetch(e);
-        top->D_i = gen_reg_fetch(e);
-        top->div_valid = 1;
-    });
-    div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
-
-    step();
-    top->res_ready = 0; // master's res_ready not equipped
-    top->div_valid = 0; 
-    for (int i = 0; i < 16; ++i) {
-        step();
-    }
-    step({
-        top->res_ready = 1;
-    });
-    if (!is_equal(top, expRes)) {
-        printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
-        printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
-        printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
-        step(); step();
-        goto finished;
-    } else {
-        std::cout << "passed" << std::endl;
-    }
-
+    InputQueue.pop();
 
     puts("");
 
     // random test
     std::cout << "[random test]" << std::endl;
-    
-    for (int div_signed = 0; div_signed < 2; ++div_signed) {
-        top->div_signed_i = div_signed;
-        printf(div_signed ? "== test signed ==\n" : "== test unsigned ==\n");
+    for (int mul_signed = 0; mul_signed < 2; ++mul_signed) {
+        printf(mul_signed ? "== test signed ==\n" : "== test unsigned ==\n");
         for (int i = 0; i < TEST_TIMES; ++i) {
             step({
-                top->Z_i = gen_reg_fetch(e);
-                top->D_i = gen_reg_fetch(e);
-                top->div_valid = 1;
+                top->mul_signed_i = mul_signed;
+                top->X_i = gen_reg_fetch(e);
+                top->Y_i = gen_reg_fetch(e);
+                InputQueue.emplace(InputStore(top->X_i, top->Y_i, top->mul_signed_i));
             });
-            div_expRes(top->Z_i, top->D_i, top->div_signed_i, expRes);
-            
             step();
-            while (!(top->res_valid && top->res_ready)) {
-                step();
-            }
-
-            if (!is_equal(top, expRes)) {
-                printf("%08x, %08x, %d\n", top->Z_i, top->D_i, top->div_signed_i);
-                printf("got   : %08x ... %08x\n", top->q_o, top->s_o);
-                printf("expect: %08x ... %08x\n", expRes.q, expRes.s);
+            
+            former_in = InputQueue.front();
+            if (top->res_o != former_in.res_o) {
+                printf("%08x, %08x, %d\n", former_in.X_i, former_in.Y_i, former_in.mul_signed_i);
+                printf("got   : %016llx\n", top->res_o);
+                printf("expect: %016llx\n", former_in.res_o);
                 step();step();
                 goto finished;
             }
+            InputQueue.pop();
         }
         std::cout << "pass\n";
     }

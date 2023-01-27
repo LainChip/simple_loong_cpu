@@ -6,6 +6,8 @@
 `define __DLSU_VER_1
 `define __NPC_VER_1
 `define __ALU_VER_1
+`define __MULTIPLIER_VER_2
+`define __DIVIDER_VER_1
 `define __NPC_VER_1
 `define _DIFFTEST_ENABLE
 
