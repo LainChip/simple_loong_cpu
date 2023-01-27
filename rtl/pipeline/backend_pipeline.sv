@@ -24,7 +24,7 @@ module backend_pipeline #(
 	output logic ex_clr_req_o,
 	output logic m1_clr_req_o,
 	output logic m2_clr_req_o,
-	// output logic m2_clr_exclude_self_o,
+	output logic m2_clr_exclude_self_o,
 
 	input logic revert_i,
 	input logic issue_i,
@@ -289,6 +289,7 @@ module backend_pipeline #(
 	    .instr_pc_i(m2_data_flow_forwarding.pc),         //输入：指令pc
 	    .do_redirect_o(m2_csr_jump_req),      //输出：是否发生跳转
 	    .redirect_addr_o(m2_csr_jump_target),    //输出：返回或跳转的地址
+		.m2_clr_exclude_self_o(m2_clr_exclude_self_o),
 	    //todo：tlb related exceptions
 	    // timer
 	    .timer_data_o(timer_data_o),                //输出：定时器值
@@ -311,7 +312,7 @@ module backend_pipeline #(
 		assign m2_lsu_read = '0;
 		assign m2_csr_read = '0;
 		assign m2_clr_req_o = '0;
-		// assign m2_clr_exclude_self_o = '0;
+		assign m2_clr_exclude_self_o = '0;
 	end
 	assign m1_data_flow_forwarding.result = m1_data_flow_raw.result;
 	assign m1_data_flow_forwarding.pc = m1_data_flow_raw.pc;

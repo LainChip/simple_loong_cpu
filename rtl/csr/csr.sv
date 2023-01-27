@@ -33,7 +33,7 @@ module csr(
     
     output  logic                   do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
-    // output  logic                   m2_clr_exclude_self_o,
+    output  logic                   m2_clr_exclude_self_o,
 
     input   logic                   excp_tlbrefill_i,   //输入： tlbrefill异常
     //todo：tlb related exceptions
@@ -521,9 +521,9 @@ always_ff @(posedge clk) begin
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
         end
         reg_estat[9:2] <= interrupt_i;
-        if (excp_trigger_i & (~stall_i) & decode_info_i.wb.valid) begin
-            reg_estat[`_ESTAT_ECODE] <= ecode_i;
-            reg_estat[`_ESTAT_ESUBCODE] <= esubcode_i;
+        if ((excp_trigger_i | (do_interrupt & do_redirect_o)) & (~stall_i) & decode_info_i.wb.valid) begin
+            reg_estat[`_ESTAT_ECODE] <= ecode_selcted;
+            reg_estat[`_ESTAT_ESUBCODE] <= esubcode_selected;
         end
         else if (wen_estat) begin
             reg_estat[      1:0] <= wr_data[      1:0];
@@ -643,7 +643,7 @@ always_comb begin
     
 end
 
-// assign m2_clr_exclude_self_o = do_interrupt || (decode_info_i.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) || (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
+assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
 
 `ifdef _DIFFTEST_ENABLE
 
@@ -684,7 +684,7 @@ logic debug_exception_r,debug_exception_r_1,debug_ertn_r,debug_ertn_r_1;
 always_ff @(posedge clk) begin
     debug_pc_r <= instr_pc_i;
     debug_inst_r <= decode_info_i.wb.debug_inst;
-    debug_exception_r <= do_interrupt & do_redirect_o;
+    debug_exception_r <= do_exception & do_redirect_o;
     debug_ertn_r <= do_ertn;
     // debug_pc_r <= debug_pc_r_1;
     // debug_inst_r <= debug_inst_r_1;
@@ -701,15 +701,11 @@ end
 DifftestExcpEvent DifftestExcpEvent(
     .clock              (clk           ),
     .coreid             (0              ),
-    // .excp_valid         (do_interrupt & do_redirect_o),
-    // .eret               (do_ertn),
     .excp_valid         (debug_exception_r),
     .eret               (debug_ertn_r),
     .intrNo             (reg_estat[12:2]),
     .cause              (reg_estat[`_ESTAT_ECODE]),
-    // .exceptionPC        (instr_pc_i),
     .exceptionPC        (debug_pc_r),
-    // .exceptionInst      (decode_info_i.wb.debug_inst)
     .exceptionInst      (debug_inst_r)
 );
 
