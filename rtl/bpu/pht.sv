@@ -31,11 +31,10 @@ module pht #(
 
     sdpram #(
         .ADDR_WIDTH ( ADDR_WIDTH    ),
-        .DATA_WIDTH ( 2             ),
-        .WRITE_MODE ( "write_first" )
+        .DATA_WIDTH ( 2             )
     ) u_sdpram (
         .clk                     ( clk     ),
-        .reset                   ( ~rst_n   ),
+        .rst_n                   ( rst_n   ),
         .en                      ( 1'b1    ),
         .we                      ( we_i    ),
         .raddr                  ( rindex_i ),

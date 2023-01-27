@@ -85,7 +85,8 @@ module frontend(
         return ret;
     endfunction
 
-    bpu_predict_t[1:0] bpu_predict,fetch_predict,fetch_predict_fifo,fifo_predict;
+    bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict;
+    bpu_predict_t bpu_predict,fetch_predict;
     decode_info_t [1:0]fifo_decode_info;
     logic [31:0] bpu_vpc,bpu_ppc,fetch_vpc,fifo_vpc;
     logic [1:0] bpu_pc_valid,fetch_pc_valid,fetch_valid;
@@ -97,25 +98,39 @@ module frontend(
     logic [1:0] fifo_write_num,fetch_write_num;
 
     // NPC / BPU 模块
-    npc npc_module(
+    // npc npc_module(
+    //     .clk,
+    //     .rst_n,
+    //     .stall_i(bpu_stall),
+    //     .update_i(bpu_feedback_i),
+    //     .predict_o(bpu_predict),
+    //     .pc_o(bpu_vpc),
+    //     .stall_o(bpu_stall_req)
+    // );
+
+    // assign bpu_pc_valid = {~frontend_clr & rst_n , ~frontend_clr & ~bpu_vpc[2] & rst_n};
+
+
+    bpu inst_bpu
+    (
         .clk,
         .rst_n,
         .stall_i(bpu_stall),
         .update_i(bpu_feedback_i),
         .predict_o(bpu_predict),
         .pc_o(bpu_vpc),
-        .stall_o(bpu_stall_req)
+        .stall_o(bpu_stall_req),
+        .pc_valid_o(bpu_pc_valid)
     );
 
-    assign bpu_pc_valid = {~frontend_clr & rst_n , ~frontend_clr & rst_n & ~bpu_vpc[2]};
 
     // 暂停以及清零控制逻辑
     assign frontend_clr = bpu_feedback_i.flush;
-    assign bpu_stall = ~icache_ready;
+    assign bpu_stall = ~icache_ready | bpu_stall_req;
     // I CACHE 模块
     icache #(
         .FETCH_SIZE(2),
-        .ATTACHED_INFO_WIDTH(2 * $bits(bpu_predict_t))
+        .ATTACHED_INFO_WIDTH($bits(bpu_predict_t))
     ) icache_module(
         .clk,    // Clock
         .rst_n,  // Asynchronous reset active low
@@ -173,8 +188,8 @@ module frontend(
         fetch_write_num = {fetch_pc_valid[1] & fetch_pc_valid[0], fetch_pc_valid[1] ^ fetch_pc_valid[0]};
         fetch_inst_fifo[0] = (fetch_pc_valid[0]) ? fetch_inst[0] : fetch_inst[1];
         fetch_inst_fifo[1] = fetch_inst[1];
-        fetch_predict_fifo[0] =  (fetch_pc_valid[0]) ? fetch_predict[0] : fetch_predict[1];
-        fetch_predict_fifo[1] = fetch_predict[1];
+        fetch_predict_fifo[0] = fetch_predict;
+        fetch_predict_fifo[1] = fetch_predict;
     end
 
     // INST 结构体组装模块
