@@ -7,7 +7,8 @@ module icache #(
 	parameter int ATTACHED_INFO_WIDTH = 32,     // 用于捆绑bpu输出的信息，跟随指令流水
     // parameter int LANE_SIZE = 4,             // 指示一条cache line中存有几条指令 -- fixed为4,不可配置
     parameter int WAY_CNT = 4,                  // 指示cache的组相联度
-    parameter bit BUFFERED_DECODER = 1'b1
+    parameter bit BUFFERED_DECODER = 1'b1,
+    parameter bit ENABLE_PLRU = 1'b0
 )(
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
@@ -203,14 +204,27 @@ assign inst_o = (stall_delay) ? inst : inst_raw;
 // 共计256个cache行，每行4word = 1k个word 共计每路4k大小
 logic[255:0][WAY_CNT - 1 : 0] use_vec;
 logic[255:0][WAY_CNT - 1 : 0] sel_vec;
-for(genvar cache_index = 0; cache_index < 256; cache_index += 1) begin : cache_line
-    plru_tree #(
-        .ENTRIES(WAY_CNT)
-    )plru_module(
+if(ENABLE_PLRU) begin
+    for(genvar cache_index = 0; cache_index < 256; cache_index += 1) begin : cache_line
+        plru_tree #(
+            .ENTRIES(WAY_CNT)
+        )plru_module(
+            .clk(clk),
+            .rst_n(rst_n),
+            .used_i(use_vec[cache_index]),
+            .plru_o(sel_vec[cache_index])
+        );
+    end
+end else begin
+    logic [WAY_CNT - 1 : 0]lfsr_sel_vec;
+    lfsr #(
+        .LfsrWidth((8 * WAY_CNT) >= 64 ? 64 : (8 * WAY_CNT)),
+        .OutWidth(WAY_CNT)
+    ) lfsr (
         .clk(clk),
         .rst_n(rst_n),
-        .used_i(use_vec[cache_index]),
-        .plru_o(sel_vec[cache_index])
+        .en_i(fsm_state == STATE_SYN2),
+        .out_o(lfsr_sel_vec)
     );
 end
 
@@ -276,11 +290,15 @@ always_comb begin
         data_we[way_id] = '0;
         tag_we[way_id] = '0;
     end
-    for(int index_id = 0; index_id < 256;index_id += 1) begin
-        use_vec[index_id] = '0;
+    if(ENABLE_PLRU) begin
+        for(int index_id = 0; index_id < 256;index_id += 1) begin
+            use_vec[index_id] = '0;
+        end
     end
     if(fsm_state == STATE_NORM && fsm_state == fsm_state_next) begin // ONLY UPDATE ON HIT STATE
-        use_vec[va[11:4]] |= sel;
+        if(ENABLE_PLRU) begin
+            use_vec[va[11:4]] |= sel;
+        end
         if(stall) begin
             datapath_addr = va_early[11:2];
         end
@@ -303,8 +321,13 @@ always_comb begin
         end
     end else if(fsm_state == STATE_FETC) begin
         datapath_addr = {va[11:4],fetch_cnt[1:0]};
-        data_we |= sel_vec[va[11:4]] & {WAY_CNT{bus_resp_i.data_ok}};
-        tag_we  |= sel_vec[va[11:4]] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/;
+        if(ENABLE_PLRU) begin
+            data_we |= sel_vec[va[11:4]] & {WAY_CNT{bus_resp_i.data_ok}};
+            tag_we  |= sel_vec[va[11:4]] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/;
+        end else begin
+            data_we |= lfsr_sel_vec;
+            tag_we  |= lfsr_sel_vec;
+        end
     end else if(fsm_state == STATE_SYNC || fsm_state == STATE_SYN2) begin
         datapath_addr = va_early[11:2];
     end
