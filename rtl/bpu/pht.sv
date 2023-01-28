@@ -27,7 +27,7 @@ module pht #(
             phr_i == 2'b11 ? (taken_i ? 2'b11 : 2'b10) :
             phr_i == 2'b10 ? (taken_i ? 2'b11 : 2'b01) :
             phr_i == 2'b01 ? (taken_i ? 2'b10 : 2'b00) :
-            (taken_i ? 2'b01 : 2'b00);
+                             (taken_i ? 2'b01 : 2'b00);
 
     sdpram #(
         .ADDR_WIDTH ( ADDR_WIDTH    ),

@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-25 10:48:37
+// Revise : 2023-01-28 15:54:02
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -96,7 +96,7 @@ module bpu (
 		.we_i     (update_i.lpht_update),
 		.taken_i  (update_i.br_taken),
 		.phr_i    (update_i.lphr),
-		.rindex_i (npc[`_LPHT_ADDR_WIDTH - 1:0]),
+		.rindex_i (npc[`_LPHT_ADDR_WIDTH + 2:3]),
 		.windex_i (update_i.lphr_index),
 		.phr_o    (lphr)
 	);
@@ -129,19 +129,20 @@ module bpu (
 	assign stall_o = bpu_state == BPU_REFILL;
 
 	assign pc_valid_o[0] = ~pc[2] & rst_n & ~stall_o; // pc是2字对齐的
-	assign pc_valid_o[1] = (~taken | btb_fsc | pc[2]) & rst_n & ~stall_o; // 预测第一条不跳转或第一条无效
+	assign pc_valid_o[1] = (~taken | ~btb_fsc | pc[2]) & rst_n & ~stall_o; // 预测第一条不跳转或第一条无效
 
 	assign predict_o.fsc = btb_fsc;
 	assign predict_o.taken = taken;
 	assign predict_o.npc = npc;
 	assign predict_o.lphr = lphr;
-	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];
+	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH +2:3];
 
 	// debug
 	wire flush = update_i.flush;
 	wire [31:0] src = {update_i.br_target, 2'b00};
 	wire [31:0] npc_32 = {npc, 2'b00};
-	wire [31:0] target = {update_i.br_target, 2'b00}; 
+	wire [31:0] target = {update_i.br_target, 2'b00};
+	wire [`_LPHT_ADDR_WIDTH - 1:0] lphr_index = pc[`_LPHT_ADDR_WIDTH + 2:3];
 
 endmodule : bpu
 

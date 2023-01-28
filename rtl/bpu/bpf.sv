@@ -82,7 +82,7 @@ module bpf (
 								pc_i[2] == 0 && taken == 0 && predict_i.taken == 1 ? pc_i[31:2] + 1 : 
 								target[31:2];
 
-	assign update_o.btb_update = (~stall_i & (predict_npc != target[31:0]) & decode_i.wb.valid) | csr_flush_i;
+	assign update_o.btb_update = 1'b1;
 	always_comb begin : proc_br_type
 		if ((branch_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || decode_i.ex.branch_link) begin
 			update_o.br_type = `_CALL;
@@ -95,16 +95,17 @@ module bpf (
 		end
 	end
 
-	assign update_o.bht_update = branch_type_i != `_BRANCH_INVALID;
+	assign update_o.bht_update = 1'b1;
 
-	assign update_o.lpht_update = branch_type_i != `_BRANCH_INVALID;
+	assign update_o.lpht_update = 1'b1;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
 
 	// debug
 	wire wb_valid = decode_i.wb.valid;
 	wire flush = update_o.flush;
-	wire predict_taken;
+	wire predict_taken = predict_i.taken;
+	wire [1:0] br_type = update_o.br_type;
 	
 endmodule : bpf
 
