@@ -12,12 +12,14 @@ module tlb #(
     input                                       clk         ,
     input                                       rst_n       ,
     //search
-    input   tlb_s_req_t     [TLB_PORT - 1 : 0]  s_req_i     ,
-    output  tlb_s_resp_t    [TLB_PORT - 1 : 0]  s_resp_o    ,
+    input   tlb_s_req_t                         s_instr_req_i    ,
+    output  tlb_s_resp_t                        s_instr_resp_o   ,
+    input   tlb_s_req_t     [TLB_PORT - 1 : 0]  s_data_req_i     ,
+    output  tlb_s_resp_t    [TLB_PORT - 1 : 0]  s_data_resp_o    ,
     //write
     input   tlb_w_req_t                         w_req_i     ,
     //read
-    input   [$clog2(TLB_ENTRY_NUM)-1:0]        r_index_i   ,
+    input   [$clog2(TLB_ENTRY_NUM)-1:0]         r_index_i   ,
     output  tlb_r_resp_t                        r_resp_o    ,
     //invalid
     input   tlb_inv_req_t                       inv_req_i   
@@ -29,14 +31,20 @@ tlb_entry_t [TLB_ENTRY_NUM-1 : 0] tlb_entry [TLB_ENTRY_NUM-1 : 0];
 //search
 generate
     for(genvar i = 0; i < TLB_PORT; ++i) begin
-        tlb_lookup tlb_lookup_item(
+        tlb_lookup tlb_lookup_data(
             .tlb_entry_i(tlb_entry),
-            .req_i(s_req_i[i]),
-            .resp_o(s_resp_o[i])
-        )
+            .req_i(s_data_req_i[i]),
+            .resp_o(s_data_resp_o[i])
+        );
     end
 endgenerate
 
+
+tlb_lookup tlb_lookup_instr(
+            .tlb_entry_i(tlb_entry),
+            .req_i(s_instr_req_i),
+            .resp_o(s_instr_resp_o)
+);
 
 //write
 always_ff @(posedge clk) begin
