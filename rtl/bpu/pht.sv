@@ -27,15 +27,14 @@ module pht #(
             phr_i == 2'b11 ? (taken_i ? 2'b11 : 2'b10) :
             phr_i == 2'b10 ? (taken_i ? 2'b11 : 2'b01) :
             phr_i == 2'b01 ? (taken_i ? 2'b10 : 2'b00) :
-            (taken_i ? 2'b01 : 2'b00);
+                             (taken_i ? 2'b01 : 2'b00);
 
     sdpram #(
         .ADDR_WIDTH ( ADDR_WIDTH    ),
-        .DATA_WIDTH ( 2             ),
-        .WRITE_MODE ( "write_first" )
+        .DATA_WIDTH ( 2             )
     ) u_sdpram (
         .clk                     ( clk     ),
-        .reset                   ( ~rst_n   ),
+        .rst_n                   ( rst_n   ),
         .en                      ( 1'b1    ),
         .we                      ( we_i    ),
         .raddr                  ( rindex_i ),

@@ -61,7 +61,7 @@ module btb #(
         .DATA_WIDTH (ENTRY_WIDTH)
     ) way0 (
         .clk    (clk),
-        .reset  (~rst_n),
+        .rst_n  (rst_n),
         .en     (1'b1),
         .we     (update_i),
         .raddr  (index_r),

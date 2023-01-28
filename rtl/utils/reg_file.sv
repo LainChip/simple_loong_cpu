@@ -37,7 +37,7 @@ module reg_file #(
             forwarding_enable = '0;
             forwarding_data = '0;
             for(integer j = 0 ; j < REG_WRITE_PORT ; j+=1) begin
-              if(w_ptr_i[j] == r_ptr_i[i]) begin
+              if(w_ptr_i[j] == r_ptr_i[i] && w_ptr_i[j] != 0) begin
                 forwarding_enable |= 1'b1;
                 forwarding_data   |= w_data_i[j];
               end

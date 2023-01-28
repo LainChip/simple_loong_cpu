@@ -12,6 +12,6 @@
 `define _DIFFTEST_ENABLE
 
 `define _CACHE_BUS_DATA_LEN (32)
-`define _AXI_BURST_SIZE (4'b1111)
+`define _AXI_BURST_SIZE (4'b0011)
 
 `endif

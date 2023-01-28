@@ -116,7 +116,7 @@ class decoder_parser:
         inst_list_dict_order.sort(key=cmp_to_key(self.dict_order_cmp))
         str_builder += self.gen_blank(depth) + "always_comb begin\n"
         depth += 1
-        str_builder += self.gen_blank(depth) + "casex(inst_i)\n"
+        str_builder += self.gen_blank(depth) + "casez(inst_i)\n"
         depth += 1
         opcode_len = 0
         while len(inst_list_dict_order) != 0 and opcode_len != 32:
@@ -126,7 +126,7 @@ class decoder_parser:
             while len(inst_list_dict_order) != 0 and len(self.inst_list[inst_list_dict_order[0]]['opcode']) == opcode_len:
                 inst = inst_list_dict_order[0]
                 inst_list_dict_order.remove(inst)
-                str_builder += self.gen_blank(depth) + "32'b" + self.inst_list[inst]['opcode'] + (32 - opcode_len) * 'x' + ': begin\n'
+                str_builder += self.gen_blank(depth) + "32'b" + self.inst_list[inst]['opcode'].replace('x','?') + (32 - opcode_len) * '?' + ': begin\n'
                 depth += 1
                 for signal in self.signal_list:
                     signal_value = ''
@@ -141,7 +141,16 @@ class decoder_parser:
                 str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in inst]) + '}; //' + inst + '\n'
                 depth -= 1
                 str_builder += self.gen_blank(depth) + "end\n"
-        
+        str_builder += self.gen_blank(depth) + "default: begin\n"
+        depth += 1
+        for signal in self.signal_list:
+            signal_value = self.signal_list[signal][3]
+            if isinstance(signal_value,int):
+                signal_value = str(self.signal_list[signal][1]) + "\'d" + str(signal_value)
+            str_builder += self.gen_blank(depth) + 'decode_info_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
+        str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in 'NONEVALID']) + '}; //' + 'NONEVALID' + '\n'
+        depth -= 1
+        str_builder += self.gen_blank(depth) + "end\n"
 
         depth -= 1
         str_builder += self.gen_blank(depth) + "endcase\n"
