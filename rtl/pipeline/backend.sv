@@ -109,6 +109,7 @@ module backend(
 			ctrl_flow[pipe_id].decode_info = inst_sel.decode_info;
 			ctrl_flow[pipe_id].bpu_predict = inst_sel.bpu_predict;
 			ctrl_flow[pipe_id].w_reg = inst_sel.register_info.w_reg;
+			ctrl_flow[pipe_id].fetch_excp = inst_sel.fetch_excp;
 			ctrl_flow[pipe_id].forwarding_info = forwarding_info_sel;
 			ctrl_flow[pipe_id].revert = revert;
 			reg_r_addr[pipe_id] = inst_sel.register_info.r_reg;
@@ -161,6 +162,10 @@ module backend(
     .priv_resp_i,
     .priv_req_o,
     .bpu_feedback_o
+
+	`ifdef _DIFFTEST_ENABLE
+    	,.delay_csr_i(~wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[1].decode_info.wb.valid)
+    `endif
 	);
 
 	backend_pipeline #(
@@ -204,6 +209,10 @@ module backend(
     .priv_resp_i(/*NOT CONNECT*/),
     .priv_req_o(/*NOT CONNECT*/),
     .bpu_feedback_o(/*NOT CONNECT*/)
+
+	`ifdef _DIFFTEST_ENABLE
+    	,.delay_csr_i('0)
+    `endif
 	);
 
 	// 暂停及清零控制器
@@ -239,6 +248,10 @@ module backend(
 	assign revert_vector = revert_vector_pipe[0] | revert_vector_pipe[1];
 
 `ifdef _DIFFTEST_ENABLE
+logic[63:0] timer_64_diff;
+always_ff @(posedge clk) begin
+	timer_64_diff <= pipeline_0.timer_data_o;
+end
 ctrl_flow_t [1:0]wb_ctrl_flow;
 data_flow_t [1:0]wb_data_flow;
 assign wb_ctrl_flow = {pipeline_1.wb_ctrl_flow,pipeline_0.wb_ctrl_flow};
@@ -253,13 +266,13 @@ DifftestInstrCommit DifftestInstrCommit_0(
     .skip               (0),
     .is_TLBFILL         ('0/*TODO*/),
     .TLBFILL_index      ('0/*TODO*/),
-    .is_CNTinst         ('0/*TODO*/),
-    .timer_64_value     ('0/*TODO*/),
+    .is_CNTinst         (wb_ctrl_flow[0].decode_info.is.reg_type == `_REG_TYPE_RDCNTID),
+    .timer_64_value     (timer_64_diff),
     .wen                (wb_ctrl_flow[0].w_reg != '0),
     .wdest              (wb_ctrl_flow[0].w_reg),
     .wdata              (wb_data_flow[0].result),
-    .csr_rstat          (wb_ctrl_flow[0].decode_info.m2.csr_write_en),
-    .csr_data           (reg_w_data[0])
+    .csr_rstat          ('1),
+    .csr_data           (pipeline_0.sp_inst_blk.csr_module.delay_reg_estat)
 );
 DifftestInstrCommit DifftestInstrCommit_1(
     .clock              (clk           ),
@@ -272,7 +285,7 @@ DifftestInstrCommit DifftestInstrCommit_1(
     .is_TLBFILL         ('0/*TODO*/),
     .TLBFILL_index      ('0/*TODO*/),
     .is_CNTinst         ('0/*TODO*/),
-    .timer_64_value     ('0/*TODO*/),
+    .timer_64_value     (timer_64_diff),
     .wen                (wb_ctrl_flow[1].w_reg != '0),
     .wdest              (wb_ctrl_flow[1].w_reg),
     .wdata              (wb_data_flow[1].result),

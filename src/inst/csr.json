@@ -32,20 +32,11 @@
         "_CSR_DMW1" : "14'h181",
         "_CSR_BRK" : "14'h100",
         "_CSR_DISABLE_CACHE" : "14'h101",
-        "_RDCNTV_TYPE_NONE":"2'd0",
-        "_RDCNTV_TYPE_LOW":"2'd1",
-        "_RDCNTV_TYPE_HIGH":"2'd2",
         "_EXCEPTION_HINT_NONE":"2'd0",
         "_EXCEPTION_HINT_SYSCALL":"2'd1",
         "_EXCEPTION_HINT_INVALID":"2'd2"
     },
     "signal": {
-        "rdcntv_type":{
-            "length":2,
-            "stage":"m2",
-            "default_value":"`_RDCNTV_TYPE_NONE",
-            "invalid_value":"`_RDCNTV_TYPE_NONE"
-        },
         "exception_hint":{
             "length":2,
             "stage":"m2",
@@ -167,26 +158,9 @@
             "pipe_one_inst": 1
         },
 
-        "rdcntid.w": {
-            "opcode": "0000000000000000011000",
-            "do_rdcntid":1,
+        "rdcnt.w": {
+            "opcode": "000000000000000001100",
             "reg_type":"`_REG_TYPE_RDCNTID",
-            "ready_time":"`_READY_M2",
-            "wb_sel":"`_REG_WB_CSR",
-            "pipe_one_inst": 1
-        },
-        "rdcntvl.w": {
-            "opcode": "0000000000000000011000",
-            "rdcntv_type":"`_RDCNTV_TYPE_LOW",
-            "reg_type":"`_REG_TYPE_RW",
-            "ready_time":"`_READY_M2",
-            "wb_sel":"`_REG_WB_CSR",
-            "pipe_one_inst": 1
-        },
-        "rdcntvh.w": {
-            "opcode": "0000000000000000011001",
-            "rdcntv_type":"`_RDCNTV_TYPE_HIGH",
-            "reg_type":"`_REG_TYPE_RW",
             "ready_time":"`_READY_M2",
             "wb_sel":"`_REG_WB_CSR",
             "pipe_one_inst": 1

@@ -26,6 +26,7 @@ module icache #(
 	output logic [FETCH_SIZE - 1 : 0] valid_o,
 	output logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_o,
     output logic [FETCH_SIZE - 1 : 0][31:0] inst_o,
+    output fetch_excp_t fetch_excp_o,
 	// output decode_info_t [FETCH_SIZE - 1 : 0] decode_output_o,
 
 	input  logic ready_i, // FROM QUEUE
@@ -38,14 +39,11 @@ module icache #(
 
 // 当FIFO没有就绪时候（已满），将stall拉高
 logic stall,stall_delay;
-decode_info_t [FETCH_SIZE - 1 : 0] decode_buf;
 typedef struct packed {
     logic valid;
     logic dirty; // 对于 icache来说，这一位是无效的
     logic[19:0] page_index;
 } tag_t;
-
-// 解码阶段的信息,不需要重复声明，即为output的那几个信号
 
 // 第二阶段的信息
 logic[31:0] va,pa;
@@ -55,12 +53,18 @@ logic[ATTACHED_INFO_WIDTH - 1 : 0] fetch_attached;
 logic inv,fetched,uncached,cache_op,transfer_done;
 logic[1:0] cache_op_type;
 
+// 第二阶段的异常
+logic fetch_excp, fetch_excp_adef;
+
 // 第一阶段的信息
 logic[31:0] va_early;
 logic valid_req_early,cache_op_early;
 logic[FETCH_SIZE - 1 : 0] fetch_valid_early;
 logic[ATTACHED_INFO_WIDTH - 1 : 0] fetch_attached_early;
 logic[1:0] cache_op_type_early;
+
+// 第一阶段的异常
+logic fetch_excp_adef_early;
 
 // FSM 控制信号 (独热码)
 logic [5:0] fsm_state,fsm_state_next;
@@ -92,12 +96,14 @@ assign ready_o = ~stall & ~cacheop_valid_i;
 always_ff @(posedge clk) begin
     if(clr_i) begin
         fetch_valid_early <= '0;
+        fetch_excp_adef_early <= '0;
         valid_req_early <= '0;
         fetch_valid <= '0;
         valid_req <= '0;
         // valid_o <= '0;
     end else if(~stall) begin
         va_early <= vpc_i;
+        fetch_excp_adef_early <= |vpc_i[1:0];
         fetch_valid_early <= valid_i;
         fetch_attached_early <= attached_i;
         valid_req_early <= ((|valid_i) & ready_o) | cacheop_valid_i;
@@ -105,6 +111,8 @@ always_ff @(posedge clk) begin
         cache_op_early <= cacheop_valid_i;
         
         va <= va_early;
+        fetch_excp <= fetch_excp_adef_early;
+        fetch_excp_adef <= fetch_excp_adef_early;
         pa <= {page_index_raw,va_early[11:0]};
         fetch_valid <= fetch_valid_early;
         fetch_attached <= fetch_attached_early;
@@ -124,6 +132,7 @@ assign vpc_o = va;
 assign ppc_o = pa;
 assign valid_o = fetch_valid & {FETCH_SIZE{~stall}};
 assign attached_o = fetch_attached;
+assign fetch_excp_o.adef = fetch_excp_adef;
 
 // TLB 相关的逻辑
 assign page_index_raw = va_early[31:12];
@@ -196,7 +205,7 @@ end
 // 		.inst_string_o(/*NC*/)
 // 	);
 // end
-assign inst_o = (stall_delay) ? inst : inst_raw;
+assign inst_o = (fetch_excp) ? '0 : ((stall_delay) ? inst : inst_raw);
 
 // REFILL 逻辑，整体状态机逻辑在此实现
 
@@ -204,6 +213,7 @@ assign inst_o = (stall_delay) ? inst : inst_raw;
 // 共计256个cache行，每行4word = 1k个word 共计每路4k大小
 logic[255:0][WAY_CNT - 1 : 0] use_vec;
 logic[255:0][WAY_CNT - 1 : 0] sel_vec;
+logic [$clog2(WAY_CNT) - 1 : 0]lfsr_sel_vec;
 if(ENABLE_PLRU) begin
     for(genvar cache_index = 0; cache_index < 256; cache_index += 1) begin : cache_line
         plru_tree #(
@@ -216,10 +226,9 @@ if(ENABLE_PLRU) begin
         );
     end
 end else begin
-    logic [WAY_CNT - 1 : 0]lfsr_sel_vec;
     lfsr #(
-        .LfsrWidth((8 * WAY_CNT) >= 64 ? 64 : (8 * WAY_CNT)),
-        .OutWidth(WAY_CNT)
+        .LfsrWidth((8 * $clog2(WAY_CNT)) >= 64 ? 64 : (8 * $clog2(WAY_CNT))),
+        .OutWidth($clog2(WAY_CNT))
     ) lfsr (
         .clk(clk),
         .rst_n(rst_n),
@@ -251,7 +260,7 @@ always_comb begin
                 end
             end
             else if(~fetched & valid_req) begin
-                if(uncached | inv) begin
+                if((uncached | inv) & ~fetch_excp) begin
                     fsm_state_next = STATE_ADDR;
                 end
             end
@@ -325,8 +334,8 @@ always_comb begin
             data_we |= sel_vec[va[11:4]] & {WAY_CNT{bus_resp_i.data_ok}};
             tag_we  |= sel_vec[va[11:4]] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/;
         end else begin
-            data_we |= lfsr_sel_vec;
-            tag_we  |= lfsr_sel_vec;
+            data_we[lfsr_sel_vec] = 1'b1;
+            tag_we[lfsr_sel_vec]  = 1'b1;
         end
     end else if(fsm_state == STATE_SYNC || fsm_state == STATE_SYN2) begin
         datapath_addr = va_early[11:2];

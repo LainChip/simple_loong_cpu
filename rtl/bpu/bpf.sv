@@ -24,12 +24,11 @@ module bpf (
 	input decode_info_t decode_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
-	output [31:0] pc_link_o,
-
-	output logic adef_o
+	output [31:0] pc_link_o
 );
 
 	logic taken;
+
 	wire [25:0] offs_i = decode_i.general.inst25_0; 
 	wire [4:0] rj_index_i = decode_i.general.inst25_0[9:5];
 	wire [4:0] rd_index_i = decode_i.general.inst25_0[4:0];
@@ -80,9 +79,9 @@ module bpf (
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	// 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
-	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : 
-								pc_i[2] == 0 && taken == 0 && predict_i.taken == 1 ? pc_i[31:2] + 1 : 
-								target[31:2];
+	assign update_o.br_target = csr_flush_i ? csr_target_i[31:0] : 
+								(pc_i[2] == 0 && taken == 0 && predict_i.taken == 1) ? {pc_i[31:2] + 1, 2'b00} : 
+								target[31:0];
 
 	assign update_o.btb_update = (~stall_i & (predict_npc != target[31:0]) & decode_i.wb.valid) | csr_flush_i;
 	always_comb begin : proc_br_type
@@ -98,13 +97,9 @@ module bpf (
 	end
 
 	assign update_o.bht_update = branch_type_i != `_BRANCH_INVALID;
-
 	assign update_o.lpht_update = branch_type_i != `_BRANCH_INVALID;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
-
-	// 地址检查
-	assign adef_o = taken && (|target[1:0]);
 
 	// debug
 	wire wb_valid = decode_i.wb.valid;

@@ -49,6 +49,10 @@ module backend_pipeline #(
     input priv_resp_t priv_resp_i,
     output priv_req_t priv_req_o,
     output bpu_update_t bpu_feedback_o
+
+    `ifdef _DIFFTEST_ENABLE
+    ,input logic delay_csr_i
+    `endif
 );
 	/*
 		流水线寄存器定义及管理，包括数据转发
@@ -65,10 +69,10 @@ module backend_pipeline #(
 	logic [31:0] m1_paddr,m1_word_shift;
 	logic [31:0] m2_paddr;
 
-	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data, m2_csr_jump_target;
+	logic [31:0] m2_csr_read, m2_lsu_read, m2_csr_jump_target, m2_vaddr;
 
-	logic m2_csr_jump_req;
-	logic ex_bpf_adef,m1_lsu_ale;
+	logic m2_csr_jump_req,m2_lsu_clr_hint;
+	logic m1_lsu_ale;
 
 	// 数据转发
 	for (genvar reg_id = 0; reg_id < 2; reg_id += 1) begin
@@ -138,7 +142,7 @@ module backend_pipeline #(
 				m1_excp_flow <= '0;
 			end else begin
 				m1_ctrl_flow <= ex_ctrl_flow;
-				m1_excp_flow.adef <= ex_bpf_adef; 
+				m1_excp_flow.adef <= ex_ctrl_flow.fetch_excp.adef; 
 			end
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
@@ -238,8 +242,6 @@ module backend_pipeline #(
 			.predict_i(ex_ctrl_flow.bpu_predict),
 			.update_o(bpu_feedback_o),
 
-			.adef_o(ex_bpf_adef)
-
 		);
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_raw.pc + 32'd4;
@@ -253,7 +255,7 @@ module backend_pipeline #(
 	assign m1_stall_req_o = '0;
 	assign m1_clr_req_o = '0;
 
-	if(MAIN_PIPE) begin	
+	if(MAIN_PIPE) begin	: sp_inst_blk
 		// AGU here
 		assign ex_vaddr = ex_data_flow_forwarding.reg_data[1] + {{20{ex_ctrl_flow.decode_info.general.inst25_0[21]}},ex_ctrl_flow.decode_info.general.inst25_0[21:10]};
 
@@ -268,12 +270,13 @@ module backend_pipeline #(
 		lsu lsu_module(.clk,.rst_n,
 			.decode_info_i(ex_ctrl_flow.decode_info),
 			.request_valid_i(~stall_vec_i[0]),
-			.vaddr_i({'0,ex_vaddr}),
-			.paddr_i({'0,m1_paddr}),
-			.w_data_i({32'd0,m2_data_flow_forwarding.reg_data[0]}),
-			.request_clr_m2_i(clr_vec_i[2]),
+			.vaddr_i(ex_vaddr),
+			.vaddr_o(m2_vaddr),
+			.paddr_i(m1_paddr),
+			.w_data_i(m2_data_flow_forwarding.reg_data[0]),
+			.request_clr_m2_i(clr_vec_i[2] | m2_lsu_clr_hint),
 			.request_clr_m1_i(clr_vec_i[1]),
-			.r_data_o({m2_useless_data,m2_lsu_read}),
+			.r_data_o(m2_lsu_read),
 
 			.bus_req_o(bus_req_o),
 			.bus_resp_i(bus_resp_i),
@@ -307,6 +310,7 @@ module backend_pipeline #(
 			.bad_va_i(bad_va),           //输入：地址相关例外出错的虚地址
 			.instr_pc_i(m2_data_flow_forwarding.pc),         //输入：指令pc
 			.do_redirect_o(m2_csr_jump_req),      //输出：是否发生跳转
+			.lsu_clr_hint_o(m2_lsu_clr_hint),
 			.redirect_addr_o(m2_csr_jump_target),    //输出：返回或跳转的地址
 			.m2_clr_exclude_self_o(m2_clr_exclude_self_o),
 			//todo：tlb related exceptions
@@ -315,6 +319,9 @@ module backend_pipeline #(
 			.tid_o(tid_o)                        //输出：定时器id
 			//todo: llbit
 			//todo: tlb related addr translate
+		`ifdef _DIFFTEST_ENABLE
+    		,.delay_csr_i(delay_csr_i)
+    	`endif
 		);
 
 		// Exception defines here
@@ -322,6 +329,7 @@ module backend_pipeline #(
 			.decode_info_i(m2_ctrl_flow.decode_info),
 			.excp_i(m2_excp_flow),
 			.vpc_i(m2_data_flow_forwarding.pc),
+			.vlsu_i(m2_vaddr),
 			.ecode_o(ecode),
 			.esubcode_o(esubcode),
 			.excp_trigger_o(excp_trigger),

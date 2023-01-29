@@ -69,7 +69,7 @@ module frontend(
             `_REG_TYPE_RDCNTID:begin
                 ret.r_reg[0] = '0;
                 ret.r_reg[1] = '0;
-                ret.w_reg = decode_info.general.inst25_0[9:5];
+                ret.w_reg = decode_info.general.inst25_0[4:0] | decode_info.general.inst25_0[9:5];
             end
             `_REG_TYPE_INVTLB:begin
                 ret.r_reg[0] = decode_info.general.inst25_0[14:10];
@@ -85,6 +85,8 @@ module frontend(
         return ret;
     endfunction
 
+
+    fetch_excp_t fetch_excp;
     bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict;
     bpu_predict_t bpu_predict,fetch_predict;
     decode_info_t [1:0]fifo_decode_info;
@@ -93,7 +95,7 @@ module frontend(
     logic frontend_clr, bpu_stall, bpu_stall_req,icache_ready,fetch_ready,fifo_ready;
 
     logic[1:0][31:0] fetch_inst,fetch_inst_fifo;
-    logic[1:0][63+$bits(bpu_predict_t):0] fetch_fifo_out;
+    logic[1:0][63 + $bits(bpu_predict_t) + $bits(fetch_excp_t):0] fetch_fifo_out;
     inst_t [1:0] fifo_inst;
     logic [1:0] fifo_write_num,fetch_write_num;
 
@@ -149,6 +151,7 @@ module frontend(
         .attached_o(fetch_predict),
         // .decode_output_o(fetch_decode_info),
         .inst_o(fetch_inst),
+        .fetch_excp_o(fetch_excp),
 
         .ready_i(fetch_ready),
         .ready_o(icache_ready),
@@ -161,7 +164,7 @@ module frontend(
 
     // FIFO 模块
     multi_channel_fifo #(
-        .DATA_WIDTH(64 + $bits(bpu_predict_t)),
+        .DATA_WIDTH(64 + $bits(bpu_predict_t) + $bits(fetch_excp_t)),
         .DEPTH(8),
         .BANK(4),
         .WRITE_PORT(2),
@@ -175,7 +178,7 @@ module frontend(
         .write_valid_i(1'b1),
         .write_ready_o(fetch_ready),
         .write_num_i (fetch_write_num),
-        .write_data_i({fetch_predict_fifo[1],fetch_vpc[31:3],3'b100,fetch_inst_fifo[1],fetch_predict_fifo[0],fetch_vpc[31:3],~fetch_pc_valid[0],2'b00,fetch_inst_fifo[0]}),
+        .write_data_i({fetch_excp,fetch_predict_fifo[1],fetch_vpc[31:3],1'b1,fetch_vpc[1:0],fetch_inst_fifo[1],fetch_excp,fetch_predict_fifo[0],fetch_vpc[31:3],~fetch_pc_valid[0],fetch_vpc[1:0],fetch_inst_fifo[0]}),
 
         .read_valid_o(fetch_valid),
         .read_ready_i(fifo_ready),
@@ -211,11 +214,13 @@ module frontend(
         fifo_inst[0].pc = fetch_fifo_out[0][63:32];
         fifo_inst[0].valid = 1'b1;
         fifo_inst[0].register_info = get_register_info(fifo_decode_info[0]);
+        fifo_inst[0].fetch_excp = fetch_fifo_out[0][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
         fifo_inst[1].bpu_predict = fetch_fifo_out[1][63+$bits(bpu_predict_t):64];
         fifo_inst[1].decode_info = fifo_decode_info[1];
         fifo_inst[1].pc = fetch_fifo_out[1][63:32];
         fifo_inst[1].valid = 1'b1;
         fifo_inst[1].register_info = get_register_info(fifo_decode_info[1]);
+        fifo_inst[1].fetch_excp = fetch_fifo_out[1][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
     end
 
     multi_channel_fifo #(

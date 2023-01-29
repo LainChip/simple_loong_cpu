@@ -30,7 +30,7 @@ typedef struct packed {
 	logic flush;
 	logic br_taken;
 	logic [31:2] pc;
-	logic [31:2] br_target;
+	logic [31:0] br_target;
 	
 	// for btb
 	logic btb_update;
@@ -44,8 +44,6 @@ typedef struct packed {
 	logic [1:0] lphr;
 	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
 
-	// for exception
-	logic adef;
 } bpu_update_t;
 
 
@@ -56,8 +54,6 @@ typedef struct packed {
 	logic [1:0] lphr;
 	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
 
-	// for exception
-	logic adef;
 } bpu_predict_t;
 
 `endif // _BPU_SVH_
