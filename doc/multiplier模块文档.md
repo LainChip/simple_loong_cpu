@@ -9,7 +9,8 @@ module multiplier (
     input clk,
     input rst_n,
 
-    input stall_i,  // 暂停信号，与核心流水线一致
+    input [1:0] stall_i,  // 暂停信号，与核心流水线一致
+    // 不需要clr_i信号，清空的话最后结果不用就行
 
     input mul_signed_i, // 有无符号
     input  [31:0] X_i,  // 被乘数
