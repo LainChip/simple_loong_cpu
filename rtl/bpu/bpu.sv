@@ -136,6 +136,7 @@ module bpu (
 	assign predict_o.npc = npc;
 	assign predict_o.lphr = lphr;
 	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH - 1:0];
+	assign predict_o.adef = ;
 
 	// debug
 	wire flush = update_i.flush;

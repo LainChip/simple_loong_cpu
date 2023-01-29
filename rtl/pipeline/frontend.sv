@@ -98,30 +98,30 @@ module frontend(
     logic [1:0] fifo_write_num,fetch_write_num;
 
     // NPC / BPU 模块
-    // npc npc_module(
-    //     .clk,
-    //     .rst_n,
-    //     .stall_i(bpu_stall),
-    //     .update_i(bpu_feedback_i),
-    //     .predict_o(bpu_predict),
-    //     .pc_o(bpu_vpc),
-    //     .stall_o(bpu_stall_req)
-    // );
-
-    // assign bpu_pc_valid = {~frontend_clr & rst_n , ~frontend_clr & ~bpu_vpc[2] & rst_n};
-
-
-    bpu inst_bpu
-    (
+    npc npc_module(
         .clk,
         .rst_n,
         .stall_i(bpu_stall),
         .update_i(bpu_feedback_i),
         .predict_o(bpu_predict),
         .pc_o(bpu_vpc),
-        .stall_o(bpu_stall_req),
-        .pc_valid_o(bpu_pc_valid)
+        .stall_o(bpu_stall_req)
     );
+
+    assign bpu_pc_valid = {~frontend_clr & rst_n , ~frontend_clr & ~bpu_vpc[2] & rst_n};
+
+
+    // bpu inst_bpu
+    // (
+    //     .clk,
+    //     .rst_n,
+    //     .stall_i(bpu_stall),
+    //     .update_i(bpu_feedback_i),
+    //     .predict_o(bpu_predict),
+    //     .pc_o(bpu_vpc),
+    //     .stall_o(bpu_stall_req),
+    //     .pc_valid_o(bpu_pc_valid)
+    // );
 
 
     // 暂停以及清零控制逻辑

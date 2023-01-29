@@ -24,7 +24,9 @@ module bpf (
 	input decode_info_t decode_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
-	output [31:0] pc_link_o
+	output [31:0] pc_link_o,
+
+	output logic adef_o
 );
 
 	logic taken;
@@ -100,6 +102,9 @@ module bpf (
 	assign update_o.lpht_update = branch_type_i != `_BRANCH_INVALID;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
+
+	// 地址检查
+	assign adef_o = taken && (|target[1:0]);
 
 	// debug
 	wire wb_valid = decode_i.wb.valid;

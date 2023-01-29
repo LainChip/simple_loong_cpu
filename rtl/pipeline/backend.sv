@@ -37,6 +37,7 @@ module backend(
 	// 后端暂停和清零向量
 	logic m2_clr_exclude_self;
 	logic [1:0][2:0] stall_vec, clr_vec, stall_req, clr_req;
+	logic [1:0][3:0] revert_vector_pipe;
 	logic [3:0] revert_vector;
 	// 前端清零向量
 	logic clr_frontend;
@@ -135,7 +136,7 @@ module backend(
 	.m2_stall_req_o(stall_req[0][2]),
 	.m2_clr_exclude_self_o(m2_clr_exclude_self),
 
-	.revert_vector_o(revert_vector),
+	.revert_vector_o(revert_vector_pipe[0]),
 	.ex_clr_req_o(clr_req[0][0]),
 	.m1_clr_req_o(clr_req[0][1]),
 	.m2_clr_req_o(clr_req[0][2]),
@@ -178,7 +179,7 @@ module backend(
 	.m2_stall_req_o(stall_req[1][2]),
 	// .m2_clr_exclude_self_o(/*NOT CONNECT*/),
 
-	.revert_vector_o(/* revert vector */),
+	.revert_vector_o(revert_vector_pipe[1]),
 	.ex_clr_req_o(clr_req[1][0]),
 	.m1_clr_req_o(clr_req[1][1]),
 	.m2_clr_req_o(clr_req[1][2]),
@@ -235,7 +236,7 @@ module backend(
 			clr_vec[1][level] |= clr_req[0][level] & ~revert_vector[level];
 		end
 	end
-
+	assign revert_vector = revert_vector_pipe[0] | revert_vector_pipe[1];
 
 `ifdef _DIFFTEST_ENABLE
 ctrl_flow_t [1:0]wb_ctrl_flow;

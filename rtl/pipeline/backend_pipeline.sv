@@ -54,6 +54,7 @@ module backend_pipeline #(
 		流水线寄存器定义及管理，包括数据转发
 	*/
 	ctrl_flow_t ex_ctrl_flow,m1_ctrl_flow,m2_ctrl_flow,wb_ctrl_flow;
+	excp_flow_t ex_excp_flow,m1_excp_flow,m2_excp_flow;
 	data_flow_t ex_data_flow_raw,ex_data_flow_forwarding,
 			    m1_data_flow_raw,m1_data_flow_forwarding,
 				m2_data_flow_raw,m2_data_flow_forwarding,
@@ -61,12 +62,13 @@ module backend_pipeline #(
 	logic [31:0] alu_result;
 	logic [31:0] bpf_result;
 	logic [31:0] ex_vaddr;
-	logic [31:0] m1_paddr;
+	logic [31:0] m1_paddr,m1_word_shift;
 	logic [31:0] m2_paddr;
 
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data, m2_csr_jump_target;
 
 	logic m2_csr_jump_req;
+	logic ex_bpf_adef,m1_lsu_ale;
 
 	// 数据转发
 	for (genvar reg_id = 0; reg_id < 2; reg_id += 1) begin
@@ -108,6 +110,7 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~rst_n) begin
 			ex_ctrl_flow <= '0;
+			ex_excp_flow <= '0;
 		end else if(~stall_vec_i[0]) begin
 			if(issue_i) begin
 				ex_ctrl_flow <= ctrl_flow_i;
@@ -128,11 +131,14 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~rst_n) begin
 			m1_ctrl_flow <= '0;
+			m1_excp_flow <= '0;
 		end else if(~stall_vec_i[1]) begin
 			if(clr_vec_i[0]) begin
 				m1_ctrl_flow <= '0;
+				m1_excp_flow <= '0;
 			end else begin
 				m1_ctrl_flow <= ex_ctrl_flow;
+				m1_excp_flow.adef <= ex_bpf_adef; 
 			end
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
@@ -147,11 +153,15 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~rst_n) begin
 			m2_ctrl_flow <= '0;
+			m2_excp_flow <= '0;
 		end else if(~stall_vec_i[2]) begin
 			if(clr_vec_i[1]) begin
 				m2_ctrl_flow <= '0;
+				m2_excp_flow <= '0;
 			end else begin
 				m2_ctrl_flow <= m1_ctrl_flow;
+				m2_excp_flow.adef <= m1_excp_flow.adef;
+				m2_excp_flow.ale  <= m1_lsu_ale;
 			end
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
@@ -186,6 +196,7 @@ module backend_pipeline #(
 		if(~stall_vec_i[1]) begin
 			m1_data_flow_raw <= ex_data_flow_forwarding;
 			m1_paddr <= ex_vaddr;
+			m1_word_shift <= ex_vaddr[1:0];
 			m2_paddr <= m1_paddr;
 		end else begin
 			m1_data_flow_raw <= m1_data_flow_forwarding;
@@ -225,7 +236,9 @@ module backend_pipeline #(
 			.csr_target_i(m2_csr_jump_target),
 			.decode_i(ex_ctrl_flow.decode_info),
 			.predict_i(ex_ctrl_flow.bpu_predict),
-			.update_o(bpu_feedback_o)
+			.update_o(bpu_feedback_o),
+
+			.adef_o(ex_bpf_adef)
 
 		);
 		assign ex_clr_req_o = bpu_feedback_o.flush;
@@ -236,13 +249,18 @@ module backend_pipeline #(
 	end
 	assign ex_stall_req_o = '0;
 
-	// AGU here
-	assign ex_vaddr = ex_data_flow_forwarding.reg_data[1] + {{20{ex_ctrl_flow.decode_info.general.inst25_0[21]}},ex_ctrl_flow.decode_info.general.inst25_0[21:10]};
 
 	assign m1_stall_req_o = '0;
 	assign m1_clr_req_o = '0;
 
-	if(MAIN_PIPE) begin
+	if(MAIN_PIPE) begin	
+		// AGU here
+		assign ex_vaddr = ex_data_flow_forwarding.reg_data[1] + {{20{ex_ctrl_flow.decode_info.general.inst25_0[21]}},ex_ctrl_flow.decode_info.general.inst25_0[21:10]};
+
+		// 地址检查
+		assign m1_lsu_ale = ((|m1_word_shift) & m1_ctrl_flow.decode_info.m1.mem_type[0] & ~m1_ctrl_flow.decode_info.m1.mem_type[1]) 
+		|| ((m1_word_shift[0]) & ~m1_ctrl_flow.decode_info.m1.mem_type[0] & m1_ctrl_flow.decode_info.m1.mem_type[1]);
+
 		// Mem 1 部分，准备读取Tag和Data的地址，进行TLB第二阶段比较。 （转发源）
 		// Mem connection here
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
@@ -269,38 +287,40 @@ module backend_pipeline #(
 		logic        excp_trigger;
 		logic [31:0] bad_va;
 		csr csr_module(
-	    .clk,
-	    .rst_n,
-	    .decode_info_i(m2_ctrl_flow.decode_info),     //输入：解码信息
-	    .stall_i(stall_vec_i[2]),           //输入：流水线暂停
-	    .instr_i(m2_ctrl_flow.decode_info.general.inst25_0),           //输入：指令后26位
-	    //for read
-	    .rd_data_o(m2_csr_read),         //输出：读数据
-	    // for write
-	    .wr_data_i(m2_data_flow_forwarding.reg_data[0]),          //输入：写数据
-	    .wr_mask_i(m2_data_flow_forwarding.reg_data[1]),          //输入：rj寄存器存放的写掩码
-	    //for interrupt
-	    .interrupt_i(int_i),        //输入：中断信号
-	    //for exception
-	    .ecode_i(ecode),            //输入：两条流水线的例外一级码
-	    .esubcode_i(esubcode),         //输入：两条流水线的例外二级码
-	    .excp_trigger_i(excp_trigger),     //输入：发生异常的流水级
-	    .bad_va_i(bad_va),           //输入：地址相关例外出错的虚地址
-	    .instr_pc_i(m2_data_flow_forwarding.pc),         //输入：指令pc
-	    .do_redirect_o(m2_csr_jump_req),      //输出：是否发生跳转
-	    .redirect_addr_o(m2_csr_jump_target),    //输出：返回或跳转的地址
-		.m2_clr_exclude_self_o(m2_clr_exclude_self_o),
-	    //todo：tlb related exceptions
-	    // timer
-	    .timer_data_o(timer_data_o),                //输出：定时器值
-	    .tid_o(tid_o)                        //输出：定时器id
-	    //todo: llbit
-	    //todo: tlb related addr translate
+			.clk,
+			.rst_n,
+			.decode_info_i(m2_ctrl_flow.decode_info),     //输入：解码信息
+			.excp_i(m2_excp_flow),
+			.stall_i(stall_vec_i[2]),           //输入：流水线暂停
+			.instr_i(m2_ctrl_flow.decode_info.general.inst25_0),           //输入：指令后26位
+			//for read
+			.rd_data_o(m2_csr_read),         //输出：读数据
+			// for write
+			.wr_data_i(m2_data_flow_forwarding.reg_data[0]),          //输入：写数据
+			.wr_mask_i(m2_data_flow_forwarding.reg_data[1]),          //输入：rj寄存器存放的写掩码
+			//for interrupt
+			.interrupt_i(int_i),        //输入：中断信号
+			//for exception
+			.ecode_i(ecode),            //输入：两条流水线的例外一级码
+			.esubcode_i(esubcode),         //输入：两条流水线的例外二级码
+			.excp_trigger_i(excp_trigger),     //输入：发生异常的流水级
+			.bad_va_i(bad_va),           //输入：地址相关例外出错的虚地址
+			.instr_pc_i(m2_data_flow_forwarding.pc),         //输入：指令pc
+			.do_redirect_o(m2_csr_jump_req),      //输出：是否发生跳转
+			.redirect_addr_o(m2_csr_jump_target),    //输出：返回或跳转的地址
+			.m2_clr_exclude_self_o(m2_clr_exclude_self_o),
+			//todo：tlb related exceptions
+			// timer
+			.timer_data_o(timer_data_o),                //输出：定时器值
+			.tid_o(tid_o)                        //输出：定时器id
+			//todo: llbit
+			//todo: tlb related addr translate
 		);
 
 		// Exception defines here
 		excp_handler excp_handler_module(
 			.decode_info_i(m2_ctrl_flow.decode_info),
+			.excp_i(m2_excp_flow),
 			.vpc_i(m2_data_flow_forwarding.pc),
 			.ecode_o(ecode),
 			.esubcode_o(esubcode),

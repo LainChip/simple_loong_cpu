@@ -10,6 +10,7 @@ module csr(
     input           rst_n,
     
     input   decode_info_t           decode_info_i,     //输入：解码信息
+    input   excp_flow_t             excp_i,
     input   logic                   stall_i,           //输入：流水线暂停
     input   logic   [25:0]          instr_i,           //输入：指令后26位
 
@@ -56,7 +57,7 @@ module csr(
 logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
 logic                   csr_write_en_i;     //输入：csr写使能
 logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号
-logic                   do_ertn_i;          //输入：例外返回
+logic                   ertn_i;          //输入：例外返回
 logic                   do_ertn;
 
 
@@ -71,7 +72,7 @@ always_comb begin
     rd_addr_i = instr_i[`_INSTR_CSR_NUM];
     wr_addr_i = instr_i[`_INSTR_CSR_NUM];
     csr_write_en_i = decode_info_i.m2.csr_write_en & (|instr_i[9:5]);
-    do_ertn_i = decode_info_i.m2.do_ertn;
+    ertn_i = decode_info_i.m2.do_ertn;
 end
 
 logic [31:0]    reg_crmd;
@@ -467,7 +468,7 @@ always_ff @(posedge clk) begin
         reg_crmd[ `_CRMD_DATM] <=  2'b0;
         reg_crmd[      31 : 9] <= 23'b0;
     end
-    else if(do_exception) begin
+    else if(do_exception | do_interrupt) begin
         reg_crmd[`_CRMD_PLV] <= 2'b0;
         reg_crmd[`_CRMD_IE] <= 1'b0;
         //todo tlbrefill
@@ -492,7 +493,7 @@ always_ff @(posedge clk) begin
     if (~rst_n) begin
         reg_prmd[31:3] <= 29'b0;
     end
-    else if (do_exception) begin
+    else if (do_exception | do_interrupt) begin
         reg_prmd[`_PRMD_PPLV] <= reg_crmd[`_CRMD_PLV];
         reg_prmd[ `_PRMD_PIE] <= reg_crmd[`_CRMD_IE ];
     end
@@ -506,7 +507,7 @@ end
 logic timer_en;
 always_ff @(posedge clk) begin
     if (~rst_n) begin
-        reg_estat <= 0;
+        reg_estat <= '0;
         timer_en <= 1'b0;
     end
     else begin
@@ -521,7 +522,7 @@ always_ff @(posedge clk) begin
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
         end
         reg_estat[9:2] <= interrupt_i;
-        if ((excp_trigger_i | (do_interrupt & do_redirect_o)) & (~stall_i) & decode_info_i.wb.valid) begin
+        if (do_interrupt | do_exception) begin
             reg_estat[`_ESTAT_ECODE] <= ecode_selcted;
             reg_estat[`_ESTAT_ESUBCODE] <= esubcode_selected;
         end
@@ -574,11 +575,11 @@ always_comb begin
     timer_data_o = reg_timer_64 + {{32{reg_cntc[31]}}, reg_cntc};
 end
 
-
+logic interrupt_need_handle;
 always_comb begin
     do_ertn = 1'b0;
-    do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
-    // do_interrupt = '0;
+    interrupt_need_handle = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
+    do_interrupt        = 1'b0;
     do_redirect_o       = 1'b0;
     do_exception        = 1'b0;
     target_era          = reg_era;
@@ -589,12 +590,12 @@ always_comb begin
     exception_handler = reg_eentry;
     interrupt_handler = reg_eentry;
     // redirect_addr_o
-    if(do_interrupt) begin
+    if(interrupt_need_handle) begin
         redirect_addr_o = interrupt_handler;
     end else if (excp_trigger_i)begin
         //todo: tlb exception
         redirect_addr_o = exception_handler;
-    end else if (do_ertn_i) begin
+    end else if (ertn_i) begin
         redirect_addr_o = reg_era;
     end else begin
         redirect_addr_o = exception_handler;
@@ -608,18 +609,20 @@ always_comb begin
         va_error
         bad_va_selected 
     */
-    if(do_interrupt & (~stall_i) & decode_info_i.wb.valid) begin
-        ecode_selcted = 0;
-        esubcode_selected = 0;
+    if(interrupt_need_handle & (~stall_i) & decode_info_i.wb.valid) begin
+        ecode_selcted = '0;
+        esubcode_selected = '0;
         target_era = instr_pc_i;
         do_redirect_o = 1'b1;
-        do_exception  = 1'b1;
+        do_exception  = 1'b0;
+        do_interrupt  = 1'b1;
     end else if (excp_trigger_i & (~stall_i) & decode_info_i.wb.valid)begin
         ecode_selcted = ecode_i;
         esubcode_selected = esubcode_i;
         target_era = instr_pc_i;
         do_redirect_o = 1'b1;
         do_exception  = 1'b1;
+        do_interrupt  = 1'b0;
         if (   ecode_i == `_ECODE_ADEF 
             || ecode_i == `_ECODE_ADEM
             || ecode_i == `_ECODE_ALE
@@ -633,7 +636,7 @@ always_comb begin
             va_error = 1'b1;
             bad_va_selected = bad_va_i;
         end      
-    end else if (do_ertn_i & (~stall_i) & decode_info_i.wb.valid) begin
+    end else if (ertn_i & (~stall_i) & decode_info_i.wb.valid) begin
         do_redirect_o = 1'b1;
         do_ertn = 1'b1;
     end 
@@ -643,7 +646,8 @@ always_comb begin
     
 end
 
-assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
+assign m2_clr_exclude_self_o = (excp_i.adef) || (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1) || (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) || (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_INVALID);
+// assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
 
 `ifdef _DIFFTEST_ENABLE
 
@@ -682,10 +686,14 @@ DifftestCSRRegState DifftestCSRRegState(
 logic[31:0] debug_pc_r,debug_pc_r_1,debug_inst_r,debug_inst_r_1;
 logic debug_exception_r,debug_exception_r_1,debug_ertn_r,debug_ertn_r_1;
 always_ff @(posedge clk) begin
-    debug_pc_r <= instr_pc_i;
-    debug_inst_r <= decode_info_i.wb.debug_inst;
-    debug_exception_r <= do_exception & do_redirect_o;
-    debug_ertn_r <= do_ertn;
+    // debug_pc_r <= instr_pc_i;
+    // debug_inst_r <= decode_info_i.wb.debug_inst;
+    // debug_exception_r <= do_exception & do_redirect_o;
+    // debug_ertn_r <= do_ertn;
+    // debug_pc_r_1 <= instr_pc_i;
+    // debug_inst_r_1 <= decode_info_i.wb.debug_inst;
+    // debug_exception_r_1 <= do_exception & do_redirect_o;
+    // debug_ertn_r_1 <= do_ertn;
     // debug_pc_r <= debug_pc_r_1;
     // debug_inst_r <= debug_inst_r_1;
     // debug_exception_r <= debug_exception_r_1;
@@ -701,8 +709,10 @@ end
 DifftestExcpEvent DifftestExcpEvent(
     .clock              (clk           ),
     .coreid             (0              ),
-    .excp_valid         (debug_exception_r),
+    // .excp_valid         (debug_exception_r),
+    .excp_valid         ('0),
     .eret               (debug_ertn_r),
+    // .eret               ('0),
     .intrNo             (reg_estat[12:2]),
     .cause              (reg_estat[`_ESTAT_ECODE]),
     .exceptionPC        (debug_pc_r),
