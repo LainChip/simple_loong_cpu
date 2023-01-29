@@ -87,4 +87,24 @@ typedef struct packed {
     logic                                    v1        ;
 } tlb_entry_t;
 
+typedef struct packed {
+    logic                  fetch           ;
+    logic  [31:0]          vaddr           ;
+    logic                  dmw0_en         ;
+    logic                  dmw1_en         ;
+    logic  [9:0]           asid            ;
+} mmu_s_req_t;
+
+typedef struct packed {
+    logic                                    found     ;
+    logic [$clog2(`_TLB_ENTRY_NUM)-1:0]      index     ;
+    logic [ 5:0]                             ps        ;
+    logic [31:0]                             paddr     ;
+    logic                                    v         ;
+    logic                                    d         ;
+    logic [ 1:0]                             mat       ;
+    logic [ 1:0]                             plv       ;
+
+} mmu_s_resp_t;
+
 `endif
