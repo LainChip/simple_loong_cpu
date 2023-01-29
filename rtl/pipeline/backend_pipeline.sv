@@ -12,8 +12,8 @@ module backend_pipeline #(
     input [7:0] int_i,
 
 	// 控制用暂停信号
-	input logic [2:0] stall_vec_i, // 0 for ex, 1 for m1, 2 for m2
-	input logic [2:0] clr_vec_i,   // 0 for ex, 1 for m1, 2 for m2
+	input logic [2:0] stall_vec_i, // [0] for ex, [1] for m1, [2] for m2
+	input logic [2:0] clr_vec_i,   // [0] for ex, [1] for m1, [2] for m2
 
 	// 暂停请求
 	output logic ex_stall_req_o,
@@ -64,7 +64,7 @@ module backend_pipeline #(
 	logic [31:0] m1_paddr;
 	logic [31:0] m2_paddr;
 
-	logic [31:0] m2_csr_read, m2_lsu_read, m2_useless_data, m2_csr_jump_target;
+	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_useless_data, m2_csr_jump_target;
 
 	logic m2_csr_jump_req;
 
@@ -204,14 +204,32 @@ module backend_pipeline #(
 
 	// Excute 部分，对计算和跳转指令进行执行，对访存地址进行计算并完成第一阶段TLB比较 
 	// ALU here
-	alu alu_module(
-    .decode_info_i(ex_ctrl_flow.decode_info),
-    .reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
-    .pc_i(ex_data_flow_forwarding.pc),
-    .alu_res_o(alu_result)
+	alu alu_module (
+    	.decode_info_i(ex_ctrl_flow.decode_info),
+    	.reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
+    	.pc_i(ex_data_flow_forwarding.pc),
+    	.alu_res_o(alu_result)
 	);
+
+	logic div_stall;	// TODO: 未接，从m2级向前都需要暂停
+	if (~MAIN_PIPE) begin
+		mdu mdu_module (
+			.clk(clk),
+    		.rst_n(rst_n),
+			
+    		.stall_i(stall_vec_i[2:1]),
+			.clr_i(clr_vec_i[2:0]),
+    		.div_stall_o(div_stall),
+
+    		.decode_info_i(ex_ctrl_flow.decode_info),
+    		.reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
+    		.mdu_res_o(m2_mdu_res)
+		);
+	end
+
 	assign ex_data_flow_forwarding.result = ex_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_BPF ? bpf_result : alu_result;
 	assign ex_data_flow_forwarding.pc = ex_data_flow_raw.pc;
+	
 	if(MAIN_PIPE) begin
 		// BPF here
 		bpf bpf_module(
@@ -226,7 +244,6 @@ module backend_pipeline #(
 			.decode_i(ex_ctrl_flow.decode_info),
 			.predict_i(ex_ctrl_flow.bpu_predict),
 			.update_o(bpu_feedback_o)
-
 		);
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_raw.pc + 32'd4;
@@ -247,7 +264,9 @@ module backend_pipeline #(
 		// Mem connection here
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
 		// Mem connection here
-		lsu lsu_module(.clk,.rst_n,
+		lsu lsu_module(
+			.clk,
+			.rst_n,
 			.decode_info_i(ex_ctrl_flow.decode_info),
 			.request_valid_i(~stall_vec_i[0]),
 			.vaddr_i({'0,ex_vaddr}),
@@ -318,7 +337,8 @@ module backend_pipeline #(
 	assign m1_data_flow_forwarding.pc = m1_data_flow_raw.pc;
 	assign m2_data_flow_forwarding.result = (m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_ALU || 
 											 m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_BPF) ? m2_data_flow_raw.result:
-	(m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_LSU ? m2_lsu_read : m2_csr_read);
+											m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_LSU   ? m2_lsu_read : 
+											m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_MDU   ? m2_mdu_res  : m2_csr_read;
 	assign m2_data_flow_forwarding.pc = m2_data_flow_raw.pc;
 	// WB部分，选择写回源进行写回。（转发源）
 	assign reg_w_addr_o = wb_ctrl_flow.w_reg;

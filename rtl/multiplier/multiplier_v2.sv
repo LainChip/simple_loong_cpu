@@ -10,7 +10,7 @@ module multiplier_v2 (
     input clk,
     input rst_n,
 
-    input stall_i,
+    input [1:0] stall_i,    // stall_i : [0] for m1, [1] for m2
 
     input mul_signed_i,
     input  [31:0] X_i,
@@ -77,7 +77,7 @@ module multiplier_v2 (
         if (~rst_n) begin
             wallace_datain <= 0;
             mul_stage_2 <= 0;
-        end else if (~stall_i) begin
+        end else if (~stall_i[0]) begin
             for (int i = 0; i < 68; i = i + 1) begin
                 for (int j = 0; j < 17; j = j + 1) begin
                     wallace_datain[i][j] <= booth_product[j][i];
@@ -118,7 +118,7 @@ module multiplier_v2 (
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             mul_stage_3 <= 0;
-        end else if (~stall_i) begin
+        end else if (~stall_i[1]) begin
             mul_stage_3.booth_carry <= mul_stage_2.booth_carry;
             mul_stage_3.wallace_c <= wallace_c[63:0];
             mul_stage_3.wallace_s <= wallace_s[63:0];

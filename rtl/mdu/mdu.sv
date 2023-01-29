@@ -9,7 +9,8 @@ module mdu (
     input clk,
     input rst_n,
     
-    input stall_i,
+    input [1:0] stall_i,    // stall_i : [0] for m1, [1] for m2
+    input [2:0] clr_i,      // clr_i   : [0] for ex, [1] for m1, [2] for m2
     output div_stall_o,
 
     input decode_info_t decode_info_i,
@@ -41,18 +42,25 @@ module mdu (
 
     always_ff @(posedge clk) begin
         if (~rst_n) begin
-            mdu_stage_1 <= 0;
-            mdu_stage_2 <= 0;
-        end else if (~stall_i & ~div_stall_o) begin
-            mdu_stage_1.alu_type     <= mdu_stage_0.alu_type    ; 
-            mdu_stage_1.opd_unsigned <= mdu_stage_0.opd_unsigned; 
-            mdu_stage_1.mdu_opd1     <= mdu_stage_0.mdu_opd1    ; 
-            mdu_stage_1.mdu_opd2     <= mdu_stage_0.mdu_opd2    ; 
+            mdu_stage_1 <= '0;
+        end else if (~stall_i[0] & ~div_stall_o) begin
+            if (clr_i[0]) begin
+                mdu_stage_1 <= '0;                
+            end else begin
+                mdu_stage_1 <= mdu_stage_0;
+            end 
+        end
+    end
 
-            mdu_stage_2.alu_type     <= mdu_stage_1.alu_type    ; 
-            mdu_stage_2.opd_unsigned <= mdu_stage_1.opd_unsigned; 
-            mdu_stage_2.mdu_opd1     <= mdu_stage_1.mdu_opd1    ; 
-            mdu_stage_2.mdu_opd2     <= mdu_stage_1.mdu_opd2    ; 
+    always_ff @(posedge clk) begin
+        if (~rst_n) begin
+            mdu_stage_2 <= '0;
+        end else if (~stall_i[1] & ~div_stall_o) begin
+            if (clr_i[1]) begin
+                mdu_stage_2 <= '0;                
+            end else begin
+                mdu_stage_2 <= mdu_stage_1;
+            end 
         end
     end
 
@@ -62,7 +70,7 @@ module mdu (
     multiplier_v2 instance_multiplier_v2 (
         .clk(clk),
         .rst_n(rst_n),
-        .stall_i(stall_i | div_stall_o),
+        .stall_i(stall_i | {2{div_stall_o}}),
 
         .mul_signed_i(~mdu_stage_0.opd_unsigned),
         .X_i(mdu_stage_0.mdu_opd1),
@@ -82,7 +90,7 @@ module mdu (
     
     logic busy;
     always_ff @(posedge clk) begin
-        if (~rst_n) begin
+        if (~rst_n | clr_i[2]) begin
             busy <= 0;            
         end else begin
             case (busy)
@@ -108,7 +116,7 @@ module mdu (
 
     divider instance_divider (
         .clk(clk),
-        .rst_n(rst_n),
+        .rst_n(rst_n | ~clr_i[2]),   // force reset
 
         .div_valid(div_valid_m),
         .div_ready(div_ready_s),      

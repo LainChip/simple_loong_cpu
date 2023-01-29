@@ -10,10 +10,11 @@
         "_REG_TYPE_RDCNTID": "4'd7",
         "_REG_TYPE_INVTLB": "4'd8",
 
-        "_REG_WB_ALU": "2'd0",
-        "_REG_WB_BPF": "2'd1",
-        "_REG_WB_LSU": "2'd2",
-        "_REG_WB_CSR": "2'd3",
+        "_REG_WB_ALU": "3'd0",
+        "_REG_WB_BPF": "3'd1",
+        "_REG_WB_LSU": "3'd2",
+        "_REG_WB_CSR": "3'd3",
+        "_REG_WB_MDU": "3'd4",
 
         "_READY_EX": "1'b0",
         "_READY_M2": "1'b1",
@@ -35,7 +36,7 @@
             "invalid_value": "1'b1"
         },
         "wb_sel": {
-            "length": 2,
+            "length": 3,
             "stage": "wb",
             "default_value": "`_REG_WB_ALU",
             "invalid_value": "`_REG_WB_ALU"
