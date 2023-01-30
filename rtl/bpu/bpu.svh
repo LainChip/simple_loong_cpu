@@ -30,7 +30,7 @@ typedef struct packed {
 	logic flush;
 	logic br_taken;
 	logic [31:2] pc;
-	logic [31:2] br_target;
+	logic [31:0] br_target;
 	
 	// for btb
 	logic btb_update;
