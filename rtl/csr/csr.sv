@@ -63,7 +63,7 @@ logic estat_chg;
 
 logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
 logic                   csr_write_en_i;     //输入：csr写使能
-logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号
+logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号 
 logic                   ertn_i;          //输入：例外返回
 logic                   do_ertn;
 
@@ -370,11 +370,11 @@ always_comb begin
     wr_data_era        = (wen_era        & ~(|do_redirect_o)) ? wr_data : target_era ;//todo
     
     wr_data_eentry     = (wen_eentry     & ~(|do_redirect_o)) ? wr_data : reg_eentry ;
-    wr_data_tlbidx     = (wen_tlbidx     & ~(|do_redirect_o)) ? wr_data : reg_tlbidx ;//todo
-    wr_data_tlbehi     = (wen_tlbehi     & ~(|do_redirect_o)) ? wr_data : reg_tlbehi ;//todo
-    wr_data_tlbelo0    = (wen_tlbelo0    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo0 ;//todo
-    wr_data_tlbelo1    = (wen_tlbelo1    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo1 ;//todo
-    wr_data_asid       = (wen_asid       & ~(|do_redirect_o)) ? wr_data : reg_asid ;//todo
+    // wr_data_tlbidx     = (wen_tlbidx     & ~(|do_redirect_o)) ? wr_data : reg_tlbidx ;//todo
+    // wr_data_tlbehi     = (wen_tlbehi     & ~(|do_redirect_o)) ? wr_data : reg_tlbehi ;//todo
+    // wr_data_tlbelo0    = (wen_tlbelo0    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo0 ;//todo
+    // wr_data_tlbelo1    = (wen_tlbelo1    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo1 ;//todo
+    // wr_data_asid       = (wen_asid       & ~(|do_redirect_o)) ? wr_data : reg_asid ;//todo
     wr_data_pgdl       = (wen_pgdl       & ~(|do_redirect_o)) ? wr_data : reg_pgdl ;//todo
     wr_data_pgdh       = (wen_pgdh       & ~(|do_redirect_o)) ? wr_data : reg_pgdh ;//todo
     wr_data_pgd        = (wen_pgd        & ~(|do_redirect_o)) ? wr_data : reg_pgd ;//todo
@@ -406,11 +406,11 @@ always_ff @(posedge clk) begin
         reg_era         <= 32'd0;
         
         reg_eentry      <= 32'd0;
-        reg_tlbidx      <= 32'd0;
-        reg_tlbehi      <= 32'd0;
-        reg_tlbelo0     <= 32'd0;
-        reg_tlbelo1     <= 32'd0;
-        reg_asid        <= 32'd0;//todo init asidbits
+        // reg_tlbidx      <= 32'd0;
+        // reg_tlbehi      <= 32'd0;
+        // reg_tlbelo0     <= 32'd0;
+        // reg_tlbelo1     <= 32'd0;
+        // reg_asid        <= 32'd0;//todo init asidbits
         reg_pgdl        <= 32'd0;
         reg_pgdh        <= 32'd0;
         reg_pgd         <= 32'd0;
@@ -438,11 +438,11 @@ always_ff @(posedge clk) begin
         reg_era         <= (wr_data_era & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_era & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         
         reg_eentry      <= (wr_data_eentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_eentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
-        reg_tlbidx      <= (wr_data_tlbidx & 32'b1011_1111_0000_0000_1111_1111_1111_1111) | (reg_tlbidx & ~32'b1011_1111_0000_0000_1111_1111_1111_1111);// tlb size define
-        reg_tlbehi      <= (wr_data_tlbehi & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_tlbehi & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
-        reg_tlbelo0     <= (wr_data_tlbelo0 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo0 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
-        reg_tlbelo1     <= (wr_data_tlbelo1 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo1 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
-        reg_asid        <= (wr_data_asid & 32'b0000_0000_0000_0000_0000_0011_1111_1111) | (reg_asid & ~32'b0000_0000_0000_0000_0000_0011_1111_1111);
+        // reg_tlbidx      <= (wr_data_tlbidx & 32'b1011_1111_0000_0000_1111_1111_1111_1111) | (reg_tlbidx & ~32'b1011_1111_0000_0000_1111_1111_1111_1111);// tlb size define
+        // reg_tlbehi      <= (wr_data_tlbehi & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_tlbehi & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
+        // reg_tlbelo0     <= (wr_data_tlbelo0 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo0 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
+        // reg_tlbelo1     <= (wr_data_tlbelo1 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo1 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
+        // reg_asid        <= (wr_data_asid & 32'b0000_0000_0000_0000_0000_0011_1111_1111) | (reg_asid & ~32'b0000_0000_0000_0000_0000_0011_1111_1111);
         reg_pgdl        <= (wr_data_pgdl & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdl & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
         reg_pgdh        <= (wr_data_pgdh & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdh & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
         reg_pgd         <= (wr_data_pgd & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgd & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
@@ -583,6 +583,133 @@ always_ff @(posedge clk) begin
         reg_timer_64 <= 64'd0;
     end else begin
         reg_timer_64 <= reg_timer_64 + 64'b1;
+    end
+end
+
+//tlbidx
+always @(posedge clk) begin
+    if (reset) begin
+        csr_tlbidx[23: 5] <= 19'b0;
+        csr_tlbidx[30]    <= 1'b0;
+    end
+    else if (tlbidx_wen) begin
+        csr_tlbidx[`INDEX] <= wr_data[`INDEX];
+        csr_tlbidx[`PS]    <= wr_data[`PS];
+        csr_tlbidx[`NE]    <= wr_data[`NE];
+    end
+    else if (tlbsrch_en) begin
+        if (tlbsrch_found) begin
+            csr_tlbidx[`INDEX] <= tlbsrch_index;
+            csr_tlbidx[`NE]    <= 1'b0;
+        end
+        else begin
+            csr_tlbidx[`NE] <= 1'b1;
+        end
+    end
+    else if (tlbrd_valid_wr_en) begin
+        csr_tlbidx[`PS] <= tlbidx_in[`PS];
+        csr_tlbidx[`NE] <= tlbidx_in[`NE];
+    end
+    else if (tlbrd_invalid_wr_en) begin
+        csr_tlbidx[`PS] <= 6'b0;
+        csr_tlbidx[`NE] <= tlbidx_in[`NE];
+    end
+end
+
+//tlbehi
+always @(posedge clk) begin
+    if (reset) begin
+        csr_tlbehi[12:0] <= 13'b0;
+    end
+    else if (tlbehi_wen) begin
+        csr_tlbehi[`VPPN] <= wr_data[`VPPN];
+    end
+    else if (tlbrd_valid_wr_en) begin
+        csr_tlbehi[`VPPN] <= tlbehi_in[`VPPN];
+    end
+    else if (tlbrd_invalid_wr_en) begin
+        csr_tlbehi[`VPPN] <= 19'b0;
+    end
+    else if (excp_tlb) begin
+        csr_tlbehi[`VPPN] <= excp_tlb_vppn;
+    end
+end
+
+//tlbelo0
+always @(posedge clk) begin
+    if (reset) begin
+        csr_tlbelo0[7] <= 1'b0;
+    end
+    else if (tlbelo0_wen) begin
+        csr_tlbelo0[`TLB_V]   <= wr_data[`TLB_V];
+        csr_tlbelo0[`TLB_D]   <= wr_data[`TLB_D];
+        csr_tlbelo0[`TLB_PLV] <= wr_data[`TLB_PLV];
+        csr_tlbelo0[`TLB_MAT] <= wr_data[`TLB_MAT];
+        csr_tlbelo0[`TLB_G]   <= wr_data[`TLB_G];
+        csr_tlbelo0[`TLB_PPN] <= wr_data[`TLB_PPN];
+    end
+    else if (tlbrd_valid_wr_en) begin
+        csr_tlbelo0[`TLB_V]   <= tlbelo0_in[`TLB_V];
+        csr_tlbelo0[`TLB_D]   <= tlbelo0_in[`TLB_D];
+        csr_tlbelo0[`TLB_PLV] <= tlbelo0_in[`TLB_PLV];
+        csr_tlbelo0[`TLB_MAT] <= tlbelo0_in[`TLB_MAT];
+        csr_tlbelo0[`TLB_G]   <= tlbelo0_in[`TLB_G];
+        csr_tlbelo0[`TLB_PPN] <= tlbelo0_in[`TLB_PPN];
+    end
+    else if (tlbrd_invalid_wr_en) begin
+        csr_tlbelo0[`TLB_V]   <= 1'b0;
+        csr_tlbelo0[`TLB_D]   <= 1'b0;
+        csr_tlbelo0[`TLB_PLV] <= 2'b0;
+        csr_tlbelo0[`TLB_MAT] <= 2'b0;
+        csr_tlbelo0[`TLB_G]   <= 1'b0;
+        csr_tlbelo0[`TLB_PPN] <= 24'b0;
+    end
+end
+
+//tlbelo1
+always @(posedge clk) begin
+    if (reset) begin
+        csr_tlbelo1[7] <= 1'b0;
+    end
+    else if (tlbelo1_wen) begin
+        csr_tlbelo1[`TLB_V]   <= wr_data[`TLB_V];
+        csr_tlbelo1[`TLB_D]   <= wr_data[`TLB_D];
+        csr_tlbelo1[`TLB_PLV] <= wr_data[`TLB_PLV];
+        csr_tlbelo1[`TLB_MAT] <= wr_data[`TLB_MAT];
+        csr_tlbelo1[`TLB_G]   <= wr_data[`TLB_G];
+        csr_tlbelo1[`TLB_PPN] <= wr_data[`TLB_PPN];
+    end
+    else if (tlbrd_valid_wr_en) begin
+        csr_tlbelo1[`TLB_V]   <= tlbelo1_in[`TLB_V];
+        csr_tlbelo1[`TLB_D]   <= tlbelo1_in[`TLB_D];
+        csr_tlbelo1[`TLB_PLV] <= tlbelo1_in[`TLB_PLV];
+        csr_tlbelo1[`TLB_MAT] <= tlbelo1_in[`TLB_MAT];
+        csr_tlbelo1[`TLB_G]   <= tlbelo1_in[`TLB_G];
+        csr_tlbelo1[`TLB_PPN] <= tlbelo1_in[`TLB_PPN];
+    end
+    else if (tlbrd_invalid_wr_en) begin
+        csr_tlbelo1[`TLB_V]   <= 1'b0;
+        csr_tlbelo1[`TLB_D]   <= 1'b0;
+        csr_tlbelo1[`TLB_PLV] <= 2'b0;
+        csr_tlbelo1[`TLB_MAT] <= 2'b0;
+        csr_tlbelo1[`TLB_G]   <= 1'b0;
+        csr_tlbelo1[`TLB_PPN] <= 24'b0;
+    end
+end
+
+//asid
+always @(posedge clk) begin
+    if (reset) begin
+        csr_asid[31:10] <= 22'h280; //ASIDBITS = 10
+    end
+    else if (asid_wen) begin
+        csr_asid[`TLB_ASID] <= wr_data[`TLB_ASID];
+    end
+    else if (tlbrd_valid_wr_en) begin
+        csr_asid[`TLB_ASID] <= asid_in;
+    end
+    else if (tlbrd_invalid_wr_en) begin
+        csr_asid[`TLB_ASID] <= 10'b0;
     end
 end
 

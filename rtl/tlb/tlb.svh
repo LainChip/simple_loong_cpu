@@ -2,7 +2,7 @@
 `define _TLB_HEADER
 
 `define _TLB_ENTRY_NUM 32
-`define _TLB_PORT 2
+`define _TLB_PORT 1
 
 typedef struct packed {  
     logic                                    fetch     ;
