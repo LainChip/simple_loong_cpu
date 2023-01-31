@@ -25,7 +25,7 @@ typedef struct packed {
 
 typedef struct packed {
     logic                                    we        ;
-    logic  [$clog2(`_TLB_ENTRY_NUM)-1:0]              index     ;
+    logic  [$clog2(`_TLB_ENTRY_NUM)-1:0]     index     ;
     logic  [18:0]                            vppn      ;
     logic  [ 9:0]                            asid      ;
     logic                                    g         ;

@@ -259,6 +259,7 @@ logic[63:0] timer_64_diff;
 always_ff @(posedge clk) begin
 	timer_64_diff <= pipeline_0.timer_data_o;
 end
+logic [4:0] debug_rand_index;
 ctrl_flow_t [1:0]wb_ctrl_flow;
 data_flow_t [1:0]wb_data_flow;
 assign wb_ctrl_flow = {pipeline_1.wb_ctrl_flow,pipeline_0.wb_ctrl_flow};
@@ -271,8 +272,8 @@ DifftestInstrCommit DifftestInstrCommit_0(
     .pc                 (wb_data_flow[0].pc),
     .instr              (wb_ctrl_flow[0].decode_info.wb.debug_inst),
     .skip               (0),
-    .is_TLBFILL         ('0/*TODO*/),
-    .TLBFILL_index      ('0/*TODO*/),
+    .is_TLBFILL         (wb_ctrl_flow[0].decode_info.m2.tlbfill_en),
+    .TLBFILL_index      (debug_rand_index),
     .is_CNTinst         (wb_ctrl_flow[0].decode_info.is.reg_type == `_REG_TYPE_RDCNTID),
     .timer_64_value     (timer_64_diff),
     .wen                (wb_ctrl_flow[0].w_reg != '0),
@@ -289,15 +290,15 @@ DifftestInstrCommit DifftestInstrCommit_1(
     .pc                 (wb_data_flow[1].pc),
     .instr              (wb_ctrl_flow[1].decode_info.wb.debug_inst),
     .skip               (0),
-    .is_TLBFILL         ('0/*TODO*/),
-    .TLBFILL_index      ('0/*TODO*/),
-    .is_CNTinst         ('0/*TODO*/),
+    .is_TLBFILL         ('0),
+    .TLBFILL_index      ('0),
+    .is_CNTinst         ('0),
     .timer_64_value     (timer_64_diff),
     .wen                (wb_ctrl_flow[1].w_reg != '0),
     .wdest              (wb_ctrl_flow[1].w_reg),
     .wdata              (wb_data_flow[1].result),
-    .csr_rstat          ('0/*TODO*/),
-    .csr_data           ('0/*TODO*/)
+    .csr_rstat          ('0),
+    .csr_data           ('0)
 );
 
 DifftestTrapEvent DifftestTrapEvent(

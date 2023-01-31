@@ -190,7 +190,7 @@ always_comb begin
     end
 end
 always_ff @(posedge clk) begin
-    if(fsm_state == STATE_NORM && ~stall) 
+    if(fsm_state == STATE_NORM && ~stall_delay) 
         inst <= inst_raw;
     else if(fsm_state == STATE_FETC && fetch_cnt[1] == pa[3]) 
         inst[fetch_cnt[0]] <= bus_resp_i.r_data;

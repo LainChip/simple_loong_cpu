@@ -211,9 +211,9 @@ module backend_pipeline #(
 		if(~stall_vec_i[1]) begin
 			m1_data_flow_raw <= ex_data_flow_forwarding;
 			if(ex_ctrl_flow.decode_info.m2.tlbsrch_en) begin
-				m1_saddr <= ex_vaddr;
-			end else begin
 				m1_saddr <= {m2_csr_vppn, 13'd0};
+			end else begin
+				m1_saddr <= ex_vaddr;
 			end
 			m1_word_shift <= ex_vaddr[1:0];
 			m2_paddr <= m1_paddr;
@@ -221,6 +221,7 @@ module backend_pipeline #(
 			m1_data_flow_raw <= m1_data_flow_forwarding;
 		end
 	end
+	assign m1_paddr = mmu_resp_i.paddr;
 	always_ff @(posedge clk) begin
 		if(~stall_vec_i[2]) begin
 			m2_data_flow_raw <= m1_data_flow_forwarding;

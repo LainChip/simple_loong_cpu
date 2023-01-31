@@ -107,6 +107,8 @@ mmu #(
 
 	.tlb_entry_o  (r_tlbentry),
 
+	.timer_rand   (backend.pipeline_0.sp_inst_blk.csr_module.timer_data_o),
+
 	.asid         (backend.pipeline_0.sp_inst_blk.csr_module.reg_asid[`_ASID]),
 	.invtlb_asid  (backend.pipeline_0.m2_data_flow_forwarding.reg_data[0][`_ASID]),
 	.invtlb_vpn   (backend.pipeline_0.m2_data_flow_forwarding.reg_data[0][`_TLBEHI_VPPN]),
@@ -115,5 +117,9 @@ mmu #(
 	.csr_da_i     (backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DA]),
 	.csr_pg_i     (backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PG])
 );
+
+`ifdef _DIFFTEST_ENABLE
+	assign backend.debug_rand_index = mmu.debug_rand_index;
+`endif
 
 endmodule
