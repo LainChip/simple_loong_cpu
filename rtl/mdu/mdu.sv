@@ -11,7 +11,7 @@ module mdu (
     
     input [1:0] stall_i,    // stall_i : [0] for m1, [1] for m2
     input [2:0] clr_i,      // clr_i   : [0] for ex, [1] for m1, [2] for m2
-    output div_stall_o,
+    output div_busy_o,
 
     input decode_info_t decode_info_i,
     input [1:0][31:0] reg_fetch_i,
@@ -43,7 +43,7 @@ module mdu (
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             mdu_stage_1 <= '0;
-        end else if (~stall_i[0] & ~div_stall_o) begin
+        end else if (~stall_i[0] & ~div_busy_o) begin
             if (clr_i[0]) begin
                 mdu_stage_1 <= '0;                
             end else begin
@@ -55,7 +55,7 @@ module mdu (
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             mdu_stage_2 <= '0;
-        end else if (~stall_i[1] & ~div_stall_o) begin
+        end else if (~stall_i[1] & ~div_busy_o) begin
             if (clr_i[1]) begin
                 mdu_stage_2 <= '0;                
             end else begin
@@ -70,7 +70,7 @@ module mdu (
     multiplier_v2 instance_multiplier_v2 (
         .clk(clk),
         .rst_n(rst_n),
-        .stall_i(stall_i | {2{div_stall_o}}),
+        .stall_i(stall_i | {2{div_busy_o}}),
 
         .mul_signed_i(~mdu_stage_0.opd_unsigned),
         .X_i(mdu_stage_0.mdu_opd1),
@@ -111,7 +111,7 @@ module mdu (
     assign div_valid_m = is_div & (mdu_stage_2.mdu_opd2 != 0) & ~busy;
     assign res_ready_m = busy;
     // stall signal from inside, while divider is still calculating
-    assign div_stall_o = ((div_valid_m & div_ready_s) | busy) & 
+    assign div_busy_o = ((div_valid_m & div_ready_s) | busy) & 
                          ~(res_valid_s & res_ready_m);
 
     divider instance_divider (

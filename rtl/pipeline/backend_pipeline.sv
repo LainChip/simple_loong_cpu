@@ -68,7 +68,7 @@ module backend_pipeline #(
 
 	logic m2_csr_jump_req;
 
-	logic div_stall;	// TODO: 未接，从m2级向前都需要暂停
+	logic div_busy, lsu_busy;
 
 	// 数据转发
 	for (genvar reg_id = 0; reg_id < 2; reg_id += 1) begin
@@ -111,7 +111,7 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~rst_n) begin
 			ex_ctrl_flow <= '0;
-		end else if(~stall_vec_i[0] & ~div_stall) begin
+		end else if(~stall_vec_i[0]) begin
 			if(issue_i) begin
 				ex_ctrl_flow <= ctrl_flow_i;
 			end else begin
@@ -120,8 +120,8 @@ module backend_pipeline #(
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
 			for(integer i = 0 ; i < 2 ; i += 1) begin
-				if((~stall_vec_i[1] & ~div_stall & ex_ctrl_flow.forwarding_info[i].ex_forward_source[1]) | 
-				   (~stall_vec_i[2] & ~div_stall & ex_ctrl_flow.forwarding_info[i].ex_forward_source[2]) | 
+				if((~stall_vec_i[1] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[1]) | 
+				   (~stall_vec_i[2] & ex_ctrl_flow.forwarding_info[i].ex_forward_source[2]) | 
 				   (ex_ctrl_flow.forwarding_info[i].ex_forward_source[3])
 				   ) begin
 					ex_ctrl_flow.forwarding_info[i].ex_forward_source <= {ex_ctrl_flow.forwarding_info[i].ex_forward_source[2:1],1'b0, ~|ex_ctrl_flow.forwarding_info[i].ex_forward_source[2:1]};
@@ -134,7 +134,7 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~rst_n) begin
 			m1_ctrl_flow <= '0;
-		end else if(~stall_vec_i[1] & ~div_stall) begin
+		end else if(~stall_vec_i[1]) begin
 			if(clr_vec_i[0]) begin
 				m1_ctrl_flow <= '0;
 			end else begin
@@ -143,7 +143,7 @@ module backend_pipeline #(
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
 			for(integer i = 0 ; i < 2 ; i += 1) begin
-				if((~stall_vec_i[2] & div_stall & m1_ctrl_flow.forwarding_info[i].m1_forward_source[1]) | 
+				if((~stall_vec_i[2] & m1_ctrl_flow.forwarding_info[i].m1_forward_source[1]) | 
 				   (m1_ctrl_flow.forwarding_info[i].m1_forward_source[2])
 				   ) begin
 					m1_ctrl_flow.forwarding_info[i].m1_forward_source <= {m1_ctrl_flow.forwarding_info[i].m1_forward_source[1],1'b0,~m1_ctrl_flow.forwarding_info[i].m1_forward_source[1]};
@@ -155,7 +155,7 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~rst_n) begin
 			m2_ctrl_flow <= '0;
-		end else if(~stall_vec_i[2] & ~div_stall) begin
+		end else if(~stall_vec_i[2]) begin
 			if(clr_vec_i[1]) begin
 				m2_ctrl_flow <= '0;
 			end else begin
@@ -174,7 +174,7 @@ module backend_pipeline #(
 		if(~rst_n) begin
 			wb_ctrl_flow <= '0;
 		end else begin
-			if(clr_vec_i[2] | stall_vec_i[2] | div_stall) begin
+			if(clr_vec_i[2] | stall_vec_i[2]) begin
 				wb_ctrl_flow <= '0;
 			end else begin
 				wb_ctrl_flow <= m2_ctrl_flow;
@@ -184,14 +184,14 @@ module backend_pipeline #(
 
 	// 数据寄存器
 	always_ff @(posedge clk) begin
-		if(~stall_vec_i[0] & ~div_stall) begin
+		if(~stall_vec_i[0]) begin
 			ex_data_flow_raw <= data_flow_i;
 		end else begin
 			ex_data_flow_raw <= ex_data_flow_forwarding;
 		end
 	end
 	always_ff @(posedge clk) begin
-		if(~stall_vec_i[1] & ~div_stall) begin
+		if(~stall_vec_i[1]) begin
 			m1_data_flow_raw <= ex_data_flow_forwarding;
 			m1_paddr <= ex_vaddr;
 			m2_paddr <= m1_paddr;
@@ -200,7 +200,7 @@ module backend_pipeline #(
 		end
 	end
 	always_ff @(posedge clk) begin
-		if(~stall_vec_i[2] & ~div_stall) begin
+		if(~stall_vec_i[2]) begin
 			m2_data_flow_raw <= m1_data_flow_forwarding;
 		end else begin
 			m2_data_flow_raw <= m2_data_flow_forwarding;
@@ -220,13 +220,14 @@ module backend_pipeline #(
 	);
 
 	if (~MAIN_PIPE) begin
+		// MDU here
 		mdu mdu_module (
 			.clk(clk),
     		.rst_n(rst_n),
 
     		.stall_i(stall_vec_i[2:1]),
 			.clr_i(clr_vec_i[2:0]),
-    		.div_stall_o(div_stall),
+    		.div_busy_o(m2_stall_req_o),
 
     		.decode_info_i(ex_ctrl_flow.decode_info),
     		.reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
@@ -243,7 +244,7 @@ module backend_pipeline #(
 			.clk,    // Clock DONT NEED
 			.rst_n,  // Asynchronous reset active low
 			.csr_flush_i(m2_csr_jump_req),
-			.stall_i(stall_vec_i[0] | div_stall),
+			.stall_i(stall_vec_i[0]),
 			.pc_i(ex_data_flow_forwarding.pc),
 			.rj_i(ex_data_flow_forwarding.reg_data[1]),
 			.rd_i(ex_data_flow_forwarding.reg_data[0]),
@@ -275,7 +276,7 @@ module backend_pipeline #(
 			.clk,
 			.rst_n,
 			.decode_info_i(ex_ctrl_flow.decode_info),
-			.request_valid_i(~stall_vec_i[0] & ~div_stall),
+			.request_valid_i(~stall_vec_i[0]),
 			.vaddr_i({'0,ex_vaddr}),
 			.paddr_i({'0,m1_paddr}),
 			.w_data_i({32'd0,m2_data_flow_forwarding.reg_data[0]}),
@@ -286,8 +287,8 @@ module backend_pipeline #(
 			.bus_req_o(bus_req_o),
 			.bus_resp_i(bus_resp_i),
 
-			.stall_i(|stall_vec_i[2:1] | div_stall),
-			.busy_o(m2_stall_req_o)
+			.stall_i(|stall_vec_i[2:1]),
+			.busy_o(lsu_busy)
 		);
 		// CSR connection here
 		logic [5:0]  ecode;
@@ -298,7 +299,7 @@ module backend_pipeline #(
 	    	.clk,
 	    	.rst_n,
 	    	.decode_info_i(m2_ctrl_flow.decode_info),     //输入：解码信息
-	    	.stall_i(stall_vec_i[2] | div_stall),           //输入：流水线暂停
+	    	.stall_i(stall_vec_i[2]),           //输入：流水线暂停
 	    	.instr_i(m2_ctrl_flow.decode_info.general.inst25_0),           //输入：指令后26位
 	    	//for read
 	    	.rd_data_o(m2_csr_read),         //输出：读数据
@@ -333,13 +334,16 @@ module backend_pipeline #(
 			.excp_trigger_o(excp_trigger),
 			.bad_va_o(bad_va)
 		);
-		assign m2_clr_req_o = m2_csr_jump_req & ~stall_vec_i[2] & ~div_stall;
+		assign m2_clr_req_o = m2_csr_jump_req & ~stall_vec_i[2];
 	end else begin
 		assign m2_lsu_read = '0;
 		assign m2_csr_read = '0;
 		assign m2_clr_req_o = '0;
 		assign m2_clr_exclude_self_o = '0;
 	end
+
+	assign m2_stall_req_o = div_busy | lsu_busy;	// 虽然mdu和lsu分属两条管线，不会撞车；但这样应该更清楚些
+
 	assign m1_data_flow_forwarding.result = m1_data_flow_raw.result;
 	assign m1_data_flow_forwarding.pc = m1_data_flow_raw.pc;
 	assign m2_data_flow_forwarding.result = (m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_ALU || 

@@ -4,7 +4,7 @@
 
 乘法器：32位有无符号共用乘法器，Booth两位乘（基4）算法，WallaceTree实现，x周期流水
 
-除法器：32位有无符号共用除法器，SRT基4整数除法器，16周期内完成（除0就不要送入除法器，直接指令作废）
+除法器：32位有无符号共用除法器，SRT基4整数除法器，16周期内完成（除0就不送入除法器了，直接指令作废）
 
 ## 模块定义
 
@@ -15,7 +15,7 @@ module mdu (
     
     input [1:0] stall_i,    // [0] for m1, [1] for m2
     input [2:0] clr_i,      // [0] for ex, [1] for m1, [2] for m2
-    output div_stall_o,
+    output div_busy_o,
 
     input decode_info_t decode_info_i,
     input [1:0][31:0] reg_fetch_i,
@@ -27,7 +27,7 @@ module mdu (
 
 包装了乘除法器，流水级与pipeline并行（`ex | m1 | m2`）。
 
-其中乘法指令在ex级输入乘法器，在m2级产生可用结果输出，暂停清空与pipeline同步；除法指令则流至m2级时输出触发器，经过若干拍的暂停（div_stall_o标识)得出可用结果。
+其中乘法指令在ex级输入乘法器，在m2级产生可用结果输出，暂停清空与pipeline同步；除法指令则流至m2级时输出触发器，经过若干拍的暂停（div_busy_o标识)得出可用结果。
 
 具体流水寄存器控制信号与模块排布情况见下图：
 
