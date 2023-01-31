@@ -9,7 +9,6 @@ module mmu #(
     input                                   rst_n        ,
     input                                   mmu_instr_trans_en,
     input               [TLB_PORT - 1 : 0]  mmu_data_trans_en ,
-    input               [TLB_PORT - 1 : 0]  cacop_op_mode_di_i ,
     input  mmu_s_req_t  [TLB_PORT - 1 : 0]  mmu_s_data_req_i  ,
     output mmu_s_resp_t [TLB_PORT - 1 : 0]  mmu_s_data_resp_o ,
     input  mmu_s_req_t                      mmu_s_instr_req_i ,
@@ -148,9 +147,9 @@ end
 generate
     for(genvar i = 0; i < TLB_PORT; ++i) begin
         mmu_s_data_resp_o[i].paddr = mmu_s_data_req_i[i].vaddr;
-        if(pg_mode && mmu_s_data_req_i[i].dmw0_en && !cacop_op_mode_di_i[i]) begin
+        if(pg_mode && mmu_s_data_req_i[i].dmw0_en) begin
             mmu_s_data_resp_o[i].paddr = {csr_dmw0_i[`_DMW_PSEG], mmu_s_data_req_i[i].vaddr[28:0]};
-        end else if(pg_mode && mmu_s_data_req_i[i].dmw1_en && !cacop_op_mode_di_i[i]) begin
+        end else if(pg_mode && mmu_s_data_req_i[i].dmw1_en) begin
             mmu_s_data_resp_o[i].paddr = {csr_dmw1_i[`_DMW_PSEG], mmu_s_data_req_i[i].vaddr[28:0]};
         end
 

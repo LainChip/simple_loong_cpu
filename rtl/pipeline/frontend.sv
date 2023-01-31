@@ -23,7 +23,11 @@ module frontend(
 
 	// 访存总线
     output cache_bus_req_t bus_req_o,       // cache的访问请求
-    input cache_bus_resp_t bus_resp_i        // cache的访问应答
+    input cache_bus_resp_t bus_resp_i,        // cache的访问应答
+
+	// MMU 访问信号
+	output mmu_s_req_t mmu_req_o,
+	input mmu_s_resp_t mmu_resp_i
 );
     // 这个function应该放在前端，在fetch阶段和写入fifo阶段之间，合成inst_t的阶段进行。
     function register_info_t get_register_info(

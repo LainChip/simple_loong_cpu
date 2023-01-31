@@ -30,7 +30,11 @@ module backend(
     output cache_bus_req_t bus_req_o,       // cache的访问请求
     input cache_bus_resp_t bus_resp_i        // cache的访问应答
 
+	// MMU 访问信号
+	output mmu_s_req_t mmu_req_o,
+	input mmu_s_resp_t mmu_resp_i,
 
+	input tlb_entry_t tlb_entry_i
 );
 
 	// 信号定义
@@ -161,7 +165,10 @@ module backend(
     .bus_resp_i,        // cache的访问应答
     .priv_resp_i,
     .priv_req_o,
-    .bpu_feedback_o
+    .bpu_feedback_o,
+	.tlb_entry_i,
+	.mmu_req_o,
+	.mmu_resp_i,
 
 	`ifdef _DIFFTEST_ENABLE
     	,.delay_csr_i(~wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[1].decode_info.wb.valid)

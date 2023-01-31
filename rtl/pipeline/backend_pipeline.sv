@@ -48,7 +48,13 @@ module backend_pipeline #(
     input cache_bus_resp_t bus_resp_i,        // cache的访问应答
     input priv_resp_t priv_resp_i,
     output priv_req_t priv_req_o,
-    output bpu_update_t bpu_feedback_o
+    output bpu_update_t bpu_feedback_o,
+	
+	// MMU 访问信号
+	output mmu_s_req_t mmu_req_o,
+	input mmu_s_resp_t mmu_resp_i,
+
+	input tlb_entry_t tlb_entry_i
 
     `ifdef _DIFFTEST_ENABLE
     ,input logic delay_csr_i
@@ -316,9 +322,12 @@ module backend_pipeline #(
 			//todo：tlb related exceptions
 			// timer
 			.timer_data_o(timer_data_o),                //输出：定时器值
-			.tid_o(tid_o)                        //输出：定时器id
+			.tid_o(tid_o),                        //输出：定时器id
 			//todo: llbit
 			//todo: tlb related addr translate
+
+			// TLB 连线
+			.tlb_entry_i(tlb_entry_i)
 		`ifdef _DIFFTEST_ENABLE
     		,.delay_csr_i(delay_csr_i)
     	`endif
