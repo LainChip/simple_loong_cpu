@@ -11,8 +11,8 @@ module frontend(
 	// 指令输出
 	output  inst_t [1:0] inst_o,
 	output  logic  [1:0] inst_valid_o,
-	input logic    [1:0] issue_num_i, // 0, 1, 2
-	input logic          backend_stall_i, 
+	input   logic  [1:0] issue_num_i, // 0, 1, 2
+	input   logic        backend_stall_i, 
 
 	// BPU 反馈
 	input bpu_update_t bpu_feedback_i,

@@ -1,8 +1,8 @@
 `ifndef _TLB_HEADER
 `define _TLB_HEADER
 
-`define _TLB_ENTRY_NUM 32
-`define _TLB_PORT 1
+`define _TLB_ENTRY_NUM (16)
+`define _TLB_PORT (2)
 
 typedef struct packed {  
     logic                                    fetch     ;
@@ -45,24 +45,6 @@ typedef struct packed {
 } tlb_w_req_t;
 
 typedef struct packed {
-    logic [18:0]                             vppn      ;
-    logic [ 9:0]                             asid      ;
-    logic                                    g         ;
-    logic [ 5:0]                             ps        ;
-    logic                                    e         ;
-    logic                                    v0        ;
-    logic                                    d0        ;
-    logic [ 1:0]                             mat0      ;
-    logic [ 1:0]                             plv0      ;
-    logic [19:0]                             ppn0      ;
-    logic                                    v1        ;
-    logic                                    d1        ;
-    logic [ 1:0]                             mat1      ;
-    logic [ 1:0]                             plv1      ;
-    logic [19:0]                             ppn1      ;
-} tlb_r_resp_t;
-
-typedef struct packed {
     logic                                    en        ;
     logic  [ 4:0]                            op        ;
     logic  [ 9:0]                            asid      ;
@@ -88,11 +70,10 @@ typedef struct packed {
 } tlb_entry_t;
 
 typedef struct packed {
-    logic                  fetch           ;
+    logic                  trans_en        ;
     logic  [31:0]          vaddr           ;
     logic                  dmw0_en         ;
     logic                  dmw1_en         ;
-    logic  [9:0]           asid            ;
 } mmu_s_req_t;
 
 typedef struct packed {

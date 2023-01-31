@@ -28,7 +28,7 @@ module backend(
 
 	// 访存总线
     output cache_bus_req_t bus_req_o,       // cache的访问请求
-    input cache_bus_resp_t bus_resp_i        // cache的访问应答
+    input cache_bus_resp_t bus_resp_i,        // cache的访问应答
 
 	// MMU 访问信号
 	output mmu_s_req_t mmu_req_o,
@@ -168,10 +168,10 @@ module backend(
     .bpu_feedback_o,
 	.tlb_entry_i,
 	.mmu_req_o,
-	.mmu_resp_i,
+	.mmu_resp_i
 
 	`ifdef _DIFFTEST_ENABLE
-    	,.delay_csr_i(~wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[1].decode_info.wb.valid)
+    ,.delay_csr_i(~wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[1].decode_info.wb.valid)
     `endif
 	);
 

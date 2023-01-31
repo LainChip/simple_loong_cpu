@@ -12,15 +12,13 @@ module tlb #(
     input                                       clk         ,
     input                                       rst_n       ,
     //search
-    input   tlb_s_req_t                         s_instr_req_i    ,
-    output  tlb_s_resp_t                        s_instr_resp_o   ,
-    input   tlb_s_req_t     [TLB_PORT - 1 : 0]  s_data_req_i     ,
-    output  tlb_s_resp_t    [TLB_PORT - 1 : 0]  s_data_resp_o    ,
+    input   tlb_s_req_t     [TLB_PORT - 1 : 0]  s_req_i     ,
+    output  tlb_s_resp_t    [TLB_PORT - 1 : 0]  s_resp_o    ,
     //write
     input   tlb_w_req_t                         w_req_i     ,
     //read
     input   [$clog2(TLB_ENTRY_NUM)-1:0]         r_index_i   ,
-    output  tlb_r_resp_t                        r_resp_o    ,
+    output  tlb_entry_t                         r_resp_o    ,
     //invalid
     input   tlb_inv_req_t                       inv_req_i   
 
@@ -33,18 +31,11 @@ generate
     for(genvar i = 0; i < TLB_PORT; ++i) begin
         tlb_lookup tlb_lookup_data(
             .tlb_entry_i(tlb_entry),
-            .req_i(s_data_req_i[i]),
-            .resp_o(s_data_resp_o[i])
+            .req_i(s_req_i[i]),
+            .resp_o(s_resp_o[i])
         );
     end
 endgenerate
-
-
-tlb_lookup tlb_lookup_instr(
-            .tlb_entry_i(tlb_entry),
-            .req_i(s_instr_req_i),
-            .resp_o(s_instr_resp_o)
-);
 
 //write
 always_ff @(posedge clk) begin
@@ -67,22 +58,7 @@ always_ff @(posedge clk) begin
 end
 
 //read
-assign r_resp_o.vppn  =  tlb_entry[r_index_i].vppn ; 
-assign r_resp_o.asid  =  tlb_entry[r_index_i].asid ; 
-assign r_resp_o.g     =  tlb_entry[r_index_i].g    ; 
-assign r_resp_o.ps    =  tlb_entry[r_index_i].ps   ; 
-assign r_resp_o.e     =  tlb_entry[r_index_i].e    ; 
-assign r_resp_o.v0    =  tlb_entry[r_index_i].v0   ; 
-assign r_resp_o.d0    =  tlb_entry[r_index_i].d0   ; 
-assign r_resp_o.mat0  =  tlb_entry[r_index_i].mat0 ; 
-assign r_resp_o.plv0  =  tlb_entry[r_index_i].plv0 ; 
-assign r_resp_o.ppn0  =  tlb_entry[r_index_i].ppn0 ; 
-assign r_resp_o.v1    =  tlb_entry[r_index_i].v1   ; 
-assign r_resp_o.d1    =  tlb_entry[r_index_i].d1   ; 
-assign r_resp_o.mat1  =  tlb_entry[r_index_i].mat1 ; 
-assign r_resp_o.plv1  =  tlb_entry[r_index_i].plv1 ; 
-assign r_resp_o.ppn1  =  tlb_entry[r_index_i].ppn1 ; 
-
+assign r_resp_o = tlb_entry[r_index_i]; 
 //invalid
 generate
     for (genvar i = 0; i <  TLB_ENTRY_NUM; i = i + 1 ) begin

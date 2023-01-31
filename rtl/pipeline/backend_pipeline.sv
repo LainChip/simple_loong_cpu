@@ -51,8 +51,8 @@ module backend_pipeline #(
     output bpu_update_t bpu_feedback_o,
 	
 	// MMU 访问信号
-	output mmu_s_req_t mmu_req_o,
-	input mmu_s_resp_t mmu_resp_i,
+	output mmu_s_req_t mmu_req_o,			  // attached in m1
+	input mmu_s_resp_t mmu_resp_i,		      // response in m1
 
 	input tlb_entry_t tlb_entry_i
 
@@ -69,14 +69,18 @@ module backend_pipeline #(
 			    m1_data_flow_raw,m1_data_flow_forwarding,
 				m2_data_flow_raw,m2_data_flow_forwarding,
 			    wb_data_flow;
+
+	logic [18:0] m2_csr_vppn;
+
 	logic [31:0] alu_result;
 	logic [31:0] bpf_result;
 	logic [31:0] ex_vaddr;
-	logic [31:0] m1_paddr,m1_word_shift;
+	logic [31:0] m1_saddr,m1_paddr,m1_word_shift;
 	logic [31:0] m2_paddr;
 
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_csr_jump_target, m2_vaddr;
-
+	
+	mmu_s_resp_t m2_mmu_resp;
 	logic m2_csr_jump_req,m2_lsu_clr_hint;
 	logic m1_lsu_ale;
 
@@ -169,6 +173,7 @@ module backend_pipeline #(
 				m2_ctrl_flow <= '0;
 				m2_excp_flow <= '0;
 			end else begin
+				m2_mmu_resp <= mmu_resp_i;
 				m2_ctrl_flow <= m1_ctrl_flow;
 				m2_excp_flow.adef <= m1_excp_flow.adef;
 				m2_excp_flow.ale  <= m1_lsu_ale;
@@ -205,7 +210,11 @@ module backend_pipeline #(
 	always_ff @(posedge clk) begin
 		if(~stall_vec_i[1]) begin
 			m1_data_flow_raw <= ex_data_flow_forwarding;
-			m1_paddr <= ex_vaddr;
+			if(ex_ctrl_flow.decode_info.m2.tlbsrch_en) begin
+				m1_saddr <= ex_vaddr;
+			end else begin
+				m1_saddr <= {m2_csr_vppn, 13'd0};
+			end
 			m1_word_shift <= ex_vaddr[1:0];
 			m2_paddr <= m1_paddr;
 		end else begin
@@ -249,13 +258,14 @@ module backend_pipeline #(
 			.update_o(bpu_feedback_o),
 
 		);
+		assign ex_stall_req_o = ex_ctrl_flow.decode_info.m2.tlbsrch_en & (m1_ctrl_flow.decode_info.is.pipe_one_inst | (m2_ctrl_flow.decode_info.is.pipe_one_inst & stall_vec_i[2])); // ex级的TLBSRCH 需要等待 m1 m2处 可能对tlb存在修改的指令执行完成。
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_raw.pc + 32'd4;
 	end else begin
+		assign ex_stall_req_o = '0;
 		assign ex_clr_req_o = 0;
 		assign bpf_result = 32'd0;
 	end
-	assign ex_stall_req_o = '0;
 
 
 	assign m1_stall_req_o = '0;
@@ -269,8 +279,6 @@ module backend_pipeline #(
 		assign m1_lsu_ale = ((|m1_word_shift) & m1_ctrl_flow.decode_info.m1.mem_type[0] & ~m1_ctrl_flow.decode_info.m1.mem_type[1]) 
 		|| ((m1_word_shift[0]) & ~m1_ctrl_flow.decode_info.m1.mem_type[0] & m1_ctrl_flow.decode_info.m1.mem_type[1]);
 
-		// Mem 1 部分，准备读取Tag和Data的地址，进行TLB第二阶段比较。 （转发源）
-		// Mem connection here
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
 		// Mem connection here
 		lsu lsu_module(.clk,.rst_n,
@@ -327,11 +335,28 @@ module backend_pipeline #(
 			//todo: tlb related addr translate
 
 			// TLB 连线
-			.tlb_entry_i(tlb_entry_i)
+			.tlb_entry_i(tlb_entry_i),
+			.mmu_resp_i(m2_mmu_resp)
+
 		`ifdef _DIFFTEST_ENABLE
     		,.delay_csr_i(delay_csr_i)
     	`endif
 		);
+
+		// Mem 1 部分，准备读取Tag和Data的地址，进行MMU比较。 （转发源）
+		// MMU connection here
+		logic da_mode,pg_mode,dmw0_en,dmw1_en;
+		assign pg_mode = !csr_module.reg_crmd[`_CRMD_DA] && csr_module.reg_crmd[`_CRMD_PG];
+		assign da_mode = csr_module.reg_crmd[`_CRMD_DA] && !csr_module.reg_crmd[`_CRMD_PG];
+		always_comb begin
+			mmu_req_o = '{
+				trans_en: pg_mode && !dmw0_en && !dmw1_en, //TODO: CACHEOP && (m1_ctrl_flow.decode_info.m2.cacheop_i)
+				vaddr:    m1_saddr,
+				dmw0_en:  dmw0_en ,
+				dmw1_en:  dmw1_en ,
+				default:  '0
+			};
+		end
 
 		// Exception defines here
 		excp_handler excp_handler_module(

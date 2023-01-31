@@ -42,7 +42,8 @@ module csr(
     output  logic  [31:0]  tid_o,                       //输出：定时器id
 
     // TLB
-    input tlb_entry_t tlb_entry_i
+    input tlb_entry_t tlb_entry_i,
+    input mmu_s_resp_t mmu_resp_i
 
     //todo: llbit
     //todo: tlb related addr translate
@@ -598,8 +599,8 @@ always_ff @(posedge clk) begin
         reg_tlbidx[`_TLBIDX_NE]    <= wr_data[`_TLBIDX_NE];
     end
     else if (decode_info_i.m2.tlbsrch_en) begin
-        if (tlb_resp_i.found) begin
-            reg_tlbidx[`_TLBIDX_INDEX] <= tlb_resp_i.index;
+        if (mmu_resp_i.found) begin
+            reg_tlbidx[`_TLBIDX_INDEX] <= mmu_resp_i.index;
             reg_tlbidx[`_TLBIDX_NE]    <= 1'b0;
         end
         else begin
@@ -702,14 +703,14 @@ always @(posedge clk) begin
     if (~rst_n) begin
         reg_asid[31:10] <= 22'h280; //ASIDBITS = 10
     end
-    else if (asid_wen) begin
-        reg_asid[`TLB_ASID] <= wr_data[`TLB_ASID];
+    else if (wen_asid) begin
+        reg_asid[`_ASID] <= wr_data[`_ASID];
     end
     else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
-        reg_asid[`TLB_ASID] <= tlb_entry_i.asid;
+        reg_asid[`_ASID] <= tlb_entry_i.asid;
     end
     else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
-        reg_asid[`TLB_ASID] <= 10'b0;
+        reg_asid[`_ASID] <= 10'b0;
     end
 end
 
