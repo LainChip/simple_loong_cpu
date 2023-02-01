@@ -10,6 +10,7 @@ module csr(
     input           rst_n,
     
     input   decode_info_t           decode_info_i,     //输入：解码信息
+    input   excp_flow_t             excp_i,
     input   logic                   stall_i,           //输入：流水线暂停
     input   logic   [25:0]          instr_i,           //输入：指令后26位
 
@@ -31,21 +32,29 @@ module csr(
     input   logic   [31:0]          bad_va_i,           //输入：地址相关例外出错的虚地址
     input   logic   [31:0]          instr_pc_i,         //输入：指令pc
     
+    output  logic                   lsu_clr_hint_o,
     output  logic                   do_redirect_o,      //输出：是否发生跳转
     output  logic   [31:0]          redirect_addr_o,    //输出：返回或跳转的地址
     output  logic                   m2_clr_exclude_self_o,
 
-    input   logic                   excp_tlbrefill_i,   //输入： tlbrefill异常
-    //todo：tlb related exceptions
-
     // timer
     output  logic  [63:0]  timer_data_o,                //输出：定时器值
-    output  logic  [31:0]  tid_o                        //输出：定时器id
+    output  logic  [31:0]  tid_o,                       //输出：定时器id
+
+    // TLB
+    input tlb_entry_t tlb_entry_i,
+    input mmu_s_resp_t mmu_resp_i
 
     //todo: llbit
     //todo: tlb related addr translate
 
+    `ifdef _DIFFTEST_ENABLE
+    ,input logic delay_csr_i
+    `endif
 );
+
+// DEBUG 
+logic estat_chg;
 
 // initial begin
 //     	$dumpfile("logs/vlt_dump.vcd");
@@ -55,8 +64,8 @@ module csr(
 
 logic   [13:0]          rd_addr_i;         //输入：读csr寄存器编号
 logic                   csr_write_en_i;     //输入：csr写使能
-logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号
-logic                   do_ertn_i;          //输入：例外返回
+logic   [13:0]          wr_addr_i;          //输入：写csr寄存器编号 
+logic                   ertn_i;          //输入：例外返回
 logic                   do_ertn;
 
 
@@ -71,7 +80,7 @@ always_comb begin
     rd_addr_i = instr_i[`_INSTR_CSR_NUM];
     wr_addr_i = instr_i[`_INSTR_CSR_NUM];
     csr_write_en_i = decode_info_i.m2.csr_write_en & (|instr_i[9:5]);
-    do_ertn_i = decode_info_i.m2.do_ertn;
+    ertn_i = decode_info_i.m2.do_ertn;
 end
 
 logic [31:0]    reg_crmd;
@@ -240,7 +249,7 @@ always_comb begin
         ADDR_CTAG          : begin
             read_reg_result = reg_ctag;
         end
-        ADDR_DMW1          : begin
+        ADDR_DMW0          : begin
             read_reg_result = reg_dmw0;
         end
         ADDR_DMW1          : begin
@@ -257,12 +266,14 @@ always_comb begin
             read_reg_result = '0;
         end
     endcase
-    if(decode_info_i.m2.do_rdcntid)begin
-        read_reg_result = tid_o;
-    end else if(decode_info_i.m2.rdcntv_type == `_RDCNTV_TYPE_LOW) begin
-        read_reg_result = timer_data_o[31:0];
-    end else if(decode_info_i.m2.rdcntv_type == `_RDCNTV_TYPE_HIGH) begin
-        read_reg_result = timer_data_o[63:32];
+    if(decode_info_i.is.reg_type == `_REG_TYPE_RDCNTID) begin
+        if(decode_info_i.general.inst25_0[4:0] == '0)begin
+            read_reg_result = tid_o;
+        end else if(decode_info_i.general.inst25_0[10]) begin
+            read_reg_result = timer_data_o[63:32];
+        end else begin
+            read_reg_result = timer_data_o[31:0];
+        end
     end
 end
 
@@ -302,7 +313,7 @@ wire wen_ticlr            = write_en & (wr_addr_i == ADDR_TICLR) ;
 wire wen_llbctl           = write_en & (wr_addr_i == ADDR_LLBCTL) ;
 wire wen_tlbrentry        = write_en & (wr_addr_i == ADDR_TLBRENTRY) ;
 wire wen_ctag             = write_en & (wr_addr_i == ADDR_CTAG) ;
-wire wen_dmw0             = write_en & (wr_addr_i == ADDR_DMW1) ;
+wire wen_dmw0             = write_en & (wr_addr_i == ADDR_DMW0) ;
 wire wen_dmw1             = write_en & (wr_addr_i == ADDR_DMW1) ;
 
 logic[31:0] wr_data_crmd        ;
@@ -360,11 +371,11 @@ always_comb begin
     wr_data_era        = (wen_era        & ~(|do_redirect_o)) ? wr_data : target_era ;//todo
     
     wr_data_eentry     = (wen_eentry     & ~(|do_redirect_o)) ? wr_data : reg_eentry ;
-    wr_data_tlbidx     = (wen_tlbidx     & ~(|do_redirect_o)) ? wr_data : reg_tlbidx ;//todo
-    wr_data_tlbehi     = (wen_tlbehi     & ~(|do_redirect_o)) ? wr_data : reg_tlbehi ;//todo
-    wr_data_tlbelo0    = (wen_tlbelo0    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo0 ;//todo
-    wr_data_tlbelo1    = (wen_tlbelo1    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo1 ;//todo
-    wr_data_asid       = (wen_asid       & ~(|do_redirect_o)) ? wr_data : reg_asid ;//todo
+    // wr_data_tlbidx     = (wen_tlbidx     & ~(|do_redirect_o)) ? wr_data : reg_tlbidx ;//todo
+    // wr_data_tlbehi     = (wen_tlbehi     & ~(|do_redirect_o)) ? wr_data : reg_tlbehi ;//todo
+    // wr_data_tlbelo0    = (wen_tlbelo0    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo0 ;//todo
+    // wr_data_tlbelo1    = (wen_tlbelo1    & ~(|do_redirect_o)) ? wr_data : reg_tlbelo1 ;//todo
+    // wr_data_asid       = (wen_asid       & ~(|do_redirect_o)) ? wr_data : reg_asid ;//todo
     wr_data_pgdl       = (wen_pgdl       & ~(|do_redirect_o)) ? wr_data : reg_pgdl ;//todo
     wr_data_pgdh       = (wen_pgdh       & ~(|do_redirect_o)) ? wr_data : reg_pgdh ;//todo
     wr_data_pgd        = (wen_pgd        & ~(|do_redirect_o)) ? wr_data : reg_pgd ;//todo
@@ -396,11 +407,11 @@ always_ff @(posedge clk) begin
         reg_era         <= 32'd0;
         
         reg_eentry      <= 32'd0;
-        reg_tlbidx      <= 32'd0;
-        reg_tlbehi      <= 32'd0;
-        reg_tlbelo0     <= 32'd0;
-        reg_tlbelo1     <= 32'd0;
-        reg_asid        <= 32'd0;//todo init asidbits
+        // reg_tlbidx      <= 32'd0;
+        // reg_tlbehi      <= 32'd0;
+        // reg_tlbelo0     <= 32'd0;
+        // reg_tlbelo1     <= 32'd0;
+        // reg_asid        <= 32'd0;//todo init asidbits
         reg_pgdl        <= 32'd0;
         reg_pgdh        <= 32'd0;
         reg_pgd         <= 32'd0;
@@ -428,11 +439,11 @@ always_ff @(posedge clk) begin
         reg_era         <= (wr_data_era & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_era & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         
         reg_eentry      <= (wr_data_eentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_eentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
-        reg_tlbidx      <= (wr_data_tlbidx & 32'b1011_1111_0000_0000_1111_1111_1111_1111) | (reg_tlbidx & ~32'b1011_1111_0000_0000_1111_1111_1111_1111);// tlb size define
-        reg_tlbehi      <= (wr_data_tlbehi & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_tlbehi & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
-        reg_tlbelo0     <= (wr_data_tlbelo0 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo0 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
-        reg_tlbelo1     <= (wr_data_tlbelo1 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo1 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
-        reg_asid        <= (wr_data_asid & 32'b0000_0000_0000_0000_0000_0011_1111_1111) | (reg_asid & ~32'b0000_0000_0000_0000_0000_0011_1111_1111);
+        // reg_tlbidx      <= (wr_data_tlbidx & 32'b1011_1111_0000_0000_1111_1111_1111_1111) | (reg_tlbidx & ~32'b1011_1111_0000_0000_1111_1111_1111_1111);// tlb size define
+        // reg_tlbehi      <= (wr_data_tlbehi & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_tlbehi & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
+        // reg_tlbelo0     <= (wr_data_tlbelo0 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo0 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
+        // reg_tlbelo1     <= (wr_data_tlbelo1 & 32'b1111_1111_1111_1111_1111_1111_0111_1111) | (reg_tlbelo1 & ~32'b1111_1111_1111_1111_1111_1111_0111_1111);//change with pa len
+        // reg_asid        <= (wr_data_asid & 32'b0000_0000_0000_0000_0000_0011_1111_1111) | (reg_asid & ~32'b0000_0000_0000_0000_0000_0011_1111_1111);
         reg_pgdl        <= (wr_data_pgdl & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdl & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
         reg_pgdh        <= (wr_data_pgdh & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdh & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
         reg_pgd         <= (wr_data_pgd & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgd & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
@@ -467,7 +478,7 @@ always_ff @(posedge clk) begin
         reg_crmd[ `_CRMD_DATM] <=  2'b0;
         reg_crmd[      31 : 9] <= 23'b0;
     end
-    else if(do_exception) begin
+    else if(do_exception | do_interrupt) begin
         reg_crmd[`_CRMD_PLV] <= 2'b0;
         reg_crmd[`_CRMD_IE] <= 1'b0;
         //todo tlbrefill
@@ -492,7 +503,7 @@ always_ff @(posedge clk) begin
     if (~rst_n) begin
         reg_prmd[31:3] <= 29'b0;
     end
-    else if (do_exception) begin
+    else if (do_exception | do_interrupt) begin
         reg_prmd[`_PRMD_PPLV] <= reg_crmd[`_CRMD_PLV];
         reg_prmd[ `_PRMD_PIE] <= reg_crmd[`_CRMD_IE ];
     end
@@ -506,28 +517,35 @@ end
 logic timer_en;
 always_ff @(posedge clk) begin
     if (~rst_n) begin
-        reg_estat <= 0;
+        reg_estat <= '0;
         timer_en <= 1'b0;
+        estat_chg <= '0;
     end
     else begin
         if (wen_ticlr && wr_data[`_TICLR_CLR]) begin
             reg_estat[11] <= 1'b0;
+            estat_chg <= '1;
         end
         else if (wen_tcfg) begin
             timer_en <= wr_data[`_TCFG_EN];
         end
         else if (timer_en && (reg_tval == 32'd0) && ~stall_i && decode_info_i.wb.valid) begin
             reg_estat[11] <= 1'b1;
+            estat_chg <= '1;
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
         end
-        reg_estat[9:2] <= interrupt_i;
-        if ((excp_trigger_i | (do_interrupt & do_redirect_o)) & (~stall_i) & decode_info_i.wb.valid) begin
+        else if (do_interrupt | do_exception) begin
             reg_estat[`_ESTAT_ECODE] <= ecode_selcted;
             reg_estat[`_ESTAT_ESUBCODE] <= esubcode_selected;
+            estat_chg <= '1;
         end
         else if (wen_estat) begin
             reg_estat[      1:0] <= wr_data[      1:0];
+            estat_chg <= '1;
+        end else begin
+            estat_chg <= '0;
         end
+        reg_estat[9:2] <= interrupt_i;
     end
 
 end
@@ -569,16 +587,144 @@ always_ff @(posedge clk) begin
     end
 end
 
+//tlbidx
+always_ff @(posedge clk) begin
+    if (~rst_n) begin
+        reg_tlbidx[23: 5] <= 19'b0;
+        reg_tlbidx[30]    <= 1'b0;
+    end
+    else if (wen_tlbidx) begin
+        reg_tlbidx[`_TLBIDX_INDEX] <= wr_data[`_TLBIDX_INDEX];
+        reg_tlbidx[`_TLBIDX_PS]    <= wr_data[`_TLBIDX_PS];
+        reg_tlbidx[`_TLBIDX_NE]    <= wr_data[`_TLBIDX_NE];
+    end
+    else if (decode_info_i.m2.tlbsrch_en) begin
+        if (mmu_resp_i.found) begin
+            reg_tlbidx[`_TLBIDX_INDEX] <= mmu_resp_i.index;
+            reg_tlbidx[`_TLBIDX_NE]    <= 1'b0;
+        end
+        else begin
+            reg_tlbidx[`_TLBIDX_NE] <= 1'b1;
+        end
+    end
+    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+        reg_tlbidx[`_TLBIDX_PS] <= tlb_entry_i.ps;
+        reg_tlbidx[`_TLBIDX_NE] <= ~tlb_entry_i.e;
+    end
+    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+        reg_tlbidx[`_TLBIDX_PS] <= 6'b0;
+        reg_tlbidx[`_TLBIDX_NE] <= ~tlb_entry_i.e;
+    end
+end
+
+//tlbehi
+always @(posedge clk) begin
+    if (~rst_n) begin
+        reg_tlbehi[12:0] <= 13'b0;
+    end
+    else if (wen_tlbehi) begin
+        reg_tlbehi[`_TLBEHI_VPPN] <= wr_data[`_TLBEHI_VPPN];
+    end
+    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+        reg_tlbehi[`_TLBEHI_VPPN] <= tlb_entry_i.vppn;
+    end
+    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+        reg_tlbehi[`_TLBEHI_VPPN] <= 19'b0;
+    end
+    else if (excp_i.tlb_refill & do_exception) begin
+        reg_tlbehi[`_TLBEHI_VPPN] <= bad_va_i[`_TLBEHI_VPPN];
+    end
+end
+
+//tlbelo0
+always @(posedge clk) begin
+    if (~rst_n) begin
+        reg_tlbelo0[7] <= 1'b0;
+    end
+    else if (wen_tlbelo0) begin
+        reg_tlbelo0[`_TLBELO_TLB_V]   <= wr_data[`_TLBELO_TLB_V];
+        reg_tlbelo0[`_TLBELO_TLB_D]   <= wr_data[`_TLBELO_TLB_D];
+        reg_tlbelo0[`_TLBELO_TLB_PLV] <= wr_data[`_TLBELO_TLB_PLV];
+        reg_tlbelo0[`_TLBELO_TLB_MAT] <= wr_data[`_TLBELO_TLB_MAT];
+        reg_tlbelo0[`_TLBELO_TLB_G]   <= wr_data[`_TLBELO_TLB_G];
+        reg_tlbelo0[`_TLBELO_TLB_PPN] <= wr_data[`_TLBELO_TLB_PPN];
+    end
+    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+        reg_tlbelo0[`_TLBELO_TLB_V]   <= tlb_entry_i.v0;
+        reg_tlbelo0[`_TLBELO_TLB_D]   <= tlb_entry_i.d0;
+        reg_tlbelo0[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv0;
+        reg_tlbelo0[`_TLBELO_TLB_MAT] <= tlb_entry_i.mat0;
+        reg_tlbelo0[`_TLBELO_TLB_G]   <= tlb_entry_i.g;
+        reg_tlbelo0[`_TLBELO_TLB_PPN] <= tlb_entry_i.ppn0;
+    end
+    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+        reg_tlbelo0[`_TLBELO_TLB_V]   <= 1'b0;
+        reg_tlbelo0[`_TLBELO_TLB_D]   <= 1'b0;
+        reg_tlbelo0[`_TLBELO_TLB_PLV] <= 2'b0;
+        reg_tlbelo0[`_TLBELO_TLB_MAT] <= 2'b0;
+        reg_tlbelo0[`_TLBELO_TLB_G]   <= 1'b0;
+        reg_tlbelo0[`_TLBELO_TLB_PPN] <= 24'b0;
+    end
+end
+
+//tlbelo1
+always @(posedge clk) begin
+    if (~rst_n) begin
+        reg_tlbelo1[7] <= 1'b0;
+    end
+    else if (wen_tlbelo1) begin
+        reg_tlbelo1[`_TLBELO_TLB_V]   <= wr_data[`_TLBELO_TLB_V];
+        reg_tlbelo1[`_TLBELO_TLB_D]   <= wr_data[`_TLBELO_TLB_D];
+        reg_tlbelo1[`_TLBELO_TLB_PLV] <= wr_data[`_TLBELO_TLB_PLV];
+        reg_tlbelo1[`_TLBELO_TLB_MAT] <= wr_data[`_TLBELO_TLB_MAT];
+        reg_tlbelo1[`_TLBELO_TLB_G]   <= wr_data[`_TLBELO_TLB_G];
+        reg_tlbelo1[`_TLBELO_TLB_PPN] <= wr_data[`_TLBELO_TLB_PPN];
+    end
+    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+        reg_tlbelo1[`_TLBELO_TLB_V]   <= tlb_entry_i.v1;
+        reg_tlbelo1[`_TLBELO_TLB_D]   <= tlb_entry_i.d1;
+        reg_tlbelo1[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv1;
+        reg_tlbelo1[`_TLBELO_TLB_MAT] <= tlb_entry_i.mat1;
+        reg_tlbelo1[`_TLBELO_TLB_G]   <= tlb_entry_i.g;
+        reg_tlbelo1[`_TLBELO_TLB_PPN] <= tlb_entry_i.ppn1;
+    end
+    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+        reg_tlbelo1[`_TLBELO_TLB_V]   <= 1'b0;
+        reg_tlbelo1[`_TLBELO_TLB_D]   <= 1'b0;
+        reg_tlbelo1[`_TLBELO_TLB_PLV] <= 2'b0;
+        reg_tlbelo1[`_TLBELO_TLB_MAT] <= 2'b0;
+        reg_tlbelo1[`_TLBELO_TLB_G]   <= 1'b0;
+        reg_tlbelo1[`_TLBELO_TLB_PPN] <= 24'b0;
+    end
+end
+
+//asid
+always @(posedge clk) begin
+    if (~rst_n) begin
+        reg_asid[31:10] <= 22'h280; //ASIDBITS = 10
+    end
+    else if (wen_asid) begin
+        reg_asid[`_ASID] <= wr_data[`_ASID];
+    end
+    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+        reg_asid[`_ASID] <= tlb_entry_i.asid;
+    end
+    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+        reg_asid[`_ASID] <= 10'b0;
+    end
+end
+
 always_comb begin
     tid_o = reg_tid;
     timer_data_o = reg_timer_64 + {{32{reg_cntc[31]}}, reg_cntc};
 end
 
-
+logic interrupt_need_handle;
 always_comb begin
+    lsu_clr_hint_o = 1'b0;
     do_ertn = 1'b0;
-    do_interrupt = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
-    // do_interrupt = '0;
+    interrupt_need_handle = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
+    do_interrupt        = 1'b0;
     do_redirect_o       = 1'b0;
     do_exception        = 1'b0;
     target_era          = reg_era;
@@ -589,12 +735,14 @@ always_comb begin
     exception_handler = reg_eentry;
     interrupt_handler = reg_eentry;
     // redirect_addr_o
-    if(do_interrupt) begin
+    if(interrupt_need_handle) begin
         redirect_addr_o = interrupt_handler;
+        lsu_clr_hint_o = 1'b1;
     end else if (excp_trigger_i)begin
         //todo: tlb exception
         redirect_addr_o = exception_handler;
-    end else if (do_ertn_i) begin
+        lsu_clr_hint_o = 1'b1;
+    end else if (ertn_i) begin
         redirect_addr_o = reg_era;
     end else begin
         redirect_addr_o = exception_handler;
@@ -608,18 +756,20 @@ always_comb begin
         va_error
         bad_va_selected 
     */
-    if(do_interrupt & (~stall_i) & decode_info_i.wb.valid) begin
-        ecode_selcted = 0;
-        esubcode_selected = 0;
+    if(interrupt_need_handle & (~stall_i) & decode_info_i.wb.valid) begin
+        ecode_selcted = '0;
+        esubcode_selected = '0;
         target_era = instr_pc_i;
         do_redirect_o = 1'b1;
-        do_exception  = 1'b1;
+        do_exception  = 1'b0;
+        do_interrupt  = 1'b1;
     end else if (excp_trigger_i & (~stall_i) & decode_info_i.wb.valid)begin
         ecode_selcted = ecode_i;
         esubcode_selected = esubcode_i;
         target_era = instr_pc_i;
         do_redirect_o = 1'b1;
         do_exception  = 1'b1;
+        do_interrupt  = 1'b0;
         if (   ecode_i == `_ECODE_ADEF 
             || ecode_i == `_ECODE_ADEM
             || ecode_i == `_ECODE_ALE
@@ -633,7 +783,7 @@ always_comb begin
             va_error = 1'b1;
             bad_va_selected = bad_va_i;
         end      
-    end else if (do_ertn_i & (~stall_i) & decode_info_i.wb.valid) begin
+    end else if (ertn_i & (~stall_i) & decode_info_i.wb.valid) begin
         do_redirect_o = 1'b1;
         do_ertn = 1'b1;
     end 
@@ -643,40 +793,150 @@ always_comb begin
     
 end
 
+// assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1) || (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) || (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_INVALID && ~excp_i.adef);
 assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1);
 
 `ifdef _DIFFTEST_ENABLE
 
+logic [31:0] delay_reg_crmd;
+always_ff @(posedge clk) begin
+    delay_reg_crmd <= reg_crmd;
+end
+logic [31:0] delay_reg_prmd;
+always_ff @(posedge clk) begin
+    delay_reg_prmd <= reg_prmd;
+end
+logic [31:0] delay_reg_euen;
+always_ff @(posedge clk) begin
+    delay_reg_euen <= reg_euen;
+end
+logic [31:0] delay_reg_ectl;
+always_ff @(posedge clk) begin
+    delay_reg_ectl <= reg_ectl;
+end
+logic [31:0] delay_reg_estat;
+always_ff @(posedge clk) begin
+    delay_reg_estat <= reg_estat;
+end
+logic [31:0] delay_reg_era;
+always_ff @(posedge clk) begin
+    delay_reg_era <= reg_era;
+end
+logic [31:0] delay_reg_badv;
+always_ff @(posedge clk) begin
+    delay_reg_badv <= reg_badv;
+end
+logic [31:0] delay_reg_eentry;
+always_ff @(posedge clk) begin
+    delay_reg_eentry <= reg_eentry;
+end
+logic [31:0] delay_reg_tlbidx;
+always_ff @(posedge clk) begin
+    delay_reg_tlbidx <= reg_tlbidx;
+end
+logic [31:0] delay_reg_tlbehi;
+always_ff @(posedge clk) begin
+    delay_reg_tlbehi <= reg_tlbehi;
+end
+logic [31:0] delay_reg_tlbelo0;
+always_ff @(posedge clk) begin
+    delay_reg_tlbelo0 <= reg_tlbelo0;
+end
+logic [31:0] delay_reg_tlbelo1;
+always_ff @(posedge clk) begin
+    delay_reg_tlbelo1 <= reg_tlbelo1;
+end
+logic [31:0] delay_reg_asid;
+always_ff @(posedge clk) begin
+    delay_reg_asid <= reg_asid;
+end
+logic [31:0] delay_reg_pgdl;
+always_ff @(posedge clk) begin
+    delay_reg_pgdl <= reg_pgdl;
+end
+logic [31:0] delay_reg_pgdh;
+always_ff @(posedge clk) begin
+    delay_reg_pgdh <= reg_pgdh;
+end
+logic [31:0] delay_reg_save0;
+always_ff @(posedge clk) begin
+    delay_reg_save0 <= reg_save0;
+end
+logic [31:0] delay_reg_save1;
+always_ff @(posedge clk) begin
+    delay_reg_save1 <= reg_save1;
+end
+logic [31:0] delay_reg_save2;
+always_ff @(posedge clk) begin
+    delay_reg_save2 <= reg_save2;
+end
+logic [31:0] delay_reg_save3;
+always_ff @(posedge clk) begin
+    delay_reg_save3 <= reg_save3;
+end
+logic [31:0] delay_reg_tid;
+always_ff @(posedge clk) begin
+    delay_reg_tid <= reg_tid;
+end
+logic [31:0] delay_reg_tcfg;
+always_ff @(posedge clk) begin
+    delay_reg_tcfg <= reg_tcfg;
+end
+logic [31:0] delay_reg_tval;
+always_ff @(posedge clk) begin
+    delay_reg_tval <= reg_tval;
+end
+logic [31:0] delay_reg_ticlr;
+always_ff @(posedge clk) begin
+    delay_reg_ticlr <= reg_ticlr;
+end
+logic [31:0] delay_reg_llbctl;
+always_ff @(posedge clk) begin
+    delay_reg_llbctl <= reg_llbctl;
+end
+logic [31:0] delay_reg_tlbrentry;
+always_ff @(posedge clk) begin
+    delay_reg_tlbrentry <= reg_tlbrentry;
+end
+logic [31:0] delay_reg_dmw0;
+always_ff @(posedge clk) begin
+    delay_reg_dmw0 <= reg_dmw0;
+end
+logic [31:0] delay_reg_dmw1;
+always_ff @(posedge clk) begin
+    delay_reg_dmw1 <= reg_dmw1;
+end
+
 DifftestCSRRegState DifftestCSRRegState(
     .clock              (clk               ),
     .coreid             (0                  ),
-    .crmd               (reg_crmd),
-    .prmd               (reg_prmd),
-    .euen               (reg_euen),
-    .ecfg               (reg_ectl),
-    .estat              (reg_estat),
-    .era                (reg_era),
-    .badv               (reg_badv),
-    .eentry             (reg_eentry),
-    .tlbidx             (reg_tlbidx),
-    .tlbehi             (reg_tlbehi),
-    .tlbelo0            (reg_tlbelo0),
-    .tlbelo1            (reg_tlbelo1),
-    .asid               (reg_asid),
-    .pgdl               (reg_pgdl),
-    .pgdh               (reg_pgdh),
-    .save0              (reg_save0),
-    .save1              (reg_save1),
-    .save2              (reg_save2),
-    .save3              (reg_save3),
-    .tid                (reg_tid),
-    .tcfg               (reg_tcfg),
-    .tval               (reg_tval),
-    .ticlr              (reg_ticlr),
-    .llbctl             (reg_llbctl),
-    .tlbrentry          (reg_tlbrentry),
-    .dmw0               (reg_dmw0),
-    .dmw1               (reg_dmw1)
+    .crmd               (delay_csr_i ? delay_reg_crmd : reg_crmd),
+    .prmd               (delay_csr_i ? delay_reg_prmd : reg_prmd),
+    .euen               (delay_csr_i ? delay_reg_euen : reg_euen),
+    .ecfg               (delay_csr_i ? delay_reg_ectl : reg_ectl),
+    .estat              (delay_csr_i ? delay_reg_estat : reg_estat),
+    .era                (delay_csr_i ? delay_reg_era : reg_era),
+    .badv               (delay_csr_i ? delay_reg_badv : reg_badv),
+    .eentry             (delay_csr_i ? delay_reg_eentry : reg_eentry),
+    .tlbidx             (delay_csr_i ? delay_reg_tlbidx : reg_tlbidx),
+    .tlbehi             (delay_csr_i ? delay_reg_tlbehi : reg_tlbehi),
+    .tlbelo0            (delay_csr_i ? delay_reg_tlbelo0 : reg_tlbelo0),
+    .tlbelo1            (delay_csr_i ? delay_reg_tlbelo1 : reg_tlbelo1),
+    .asid               (delay_csr_i ? delay_reg_asid : reg_asid),
+    .pgdl               (delay_csr_i ? delay_reg_pgdl : reg_pgdl),
+    .pgdh               (delay_csr_i ? delay_reg_pgdh : reg_pgdh),
+    .save0              (delay_csr_i ? delay_reg_save0 : reg_save0),
+    .save1              (delay_csr_i ? delay_reg_save1 : reg_save1),
+    .save2              (delay_csr_i ? delay_reg_save2 : reg_save2),
+    .save3              (delay_csr_i ? delay_reg_save3 : reg_save3),
+    .tid                (delay_csr_i ? delay_reg_tid : reg_tid),
+    .tcfg               (delay_csr_i ? delay_reg_tcfg : reg_tcfg),
+    .tval               (delay_csr_i ? delay_reg_tval : reg_tval),
+    .ticlr              (delay_csr_i ? delay_reg_ticlr : reg_ticlr),
+    .llbctl             (delay_csr_i ? delay_reg_llbctl : reg_llbctl),
+    .tlbrentry          (delay_csr_i ? delay_reg_tlbrentry : reg_tlbrentry),
+    .dmw0               (delay_csr_i ? delay_reg_dmw0 : reg_dmw0),
+    .dmw1               (delay_csr_i ? delay_reg_dmw1 : reg_dmw1)
 );
 
 logic[31:0] debug_pc_r,debug_pc_r_1,debug_inst_r,debug_inst_r_1;
@@ -686,6 +946,10 @@ always_ff @(posedge clk) begin
     debug_inst_r <= decode_info_i.wb.debug_inst;
     debug_exception_r <= do_exception & do_redirect_o;
     debug_ertn_r <= do_ertn;
+    // debug_pc_r_1 <= instr_pc_i;
+    // debug_inst_r_1 <= decode_info_i.wb.debug_inst;
+    // debug_exception_r_1 <= do_exception & do_redirect_o;
+    // debug_ertn_r_1 <= do_ertn;
     // debug_pc_r <= debug_pc_r_1;
     // debug_inst_r <= debug_inst_r_1;
     // debug_exception_r <= debug_exception_r_1;
@@ -702,7 +966,9 @@ DifftestExcpEvent DifftestExcpEvent(
     .clock              (clk           ),
     .coreid             (0              ),
     .excp_valid         (debug_exception_r),
+    // .excp_valid         ('0),
     .eret               (debug_ertn_r),
+    // .eret               ('0),
     .intrNo             (reg_estat[12:2]),
     .cause              (reg_estat[`_ESTAT_ECODE]),
     .exceptionPC        (debug_pc_r),

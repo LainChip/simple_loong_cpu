@@ -15,13 +15,13 @@ assign resp_o.found = (|matched);
 assign resp_o.index = matched_index;
 
 always_comb begin
-    resp_o.ps = '0;
-    resp_o.ppn = '0;
-    resp_o.v = '0;
-    resp_o.d = '0;
-    resp_o.mat = '0;
-    resp_o.plv = '0;
-    if(req_i.fetch) begin
+    // resp_o.ps = '0;
+    // resp_o.ppn = '0;
+    // resp_o.v = '0;
+    // resp_o.d = '0;
+    // resp_o.mat = '0;
+    // resp_o.plv = '0;
+    // if(req_i.fetch) begin
         if((matched_entry.ps == 6'd12) ? 
             req_i.odd_page :
             req_i.vppn[8] ) begin
@@ -39,7 +39,7 @@ always_comb begin
             resp_o.mat  = matched_entry.mat0;
             resp_o.plv  = matched_entry.plv0;
         end
-    end
+    // end
 end
 
 for (genvar i = 0; i < `_TLB_ENTRY_NUM; i = i + 1) begin

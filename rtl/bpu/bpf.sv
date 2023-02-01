@@ -28,6 +28,7 @@ module bpf (
 );
 
 	logic taken;
+
 	wire [25:0] offs_i = decode_i.general.inst25_0; 
 	wire [4:0] rj_index_i = decode_i.general.inst25_0[9:5];
 	wire [4:0] rd_index_i = decode_i.general.inst25_0[4:0];
@@ -78,9 +79,9 @@ module bpf (
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	// 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
-	assign update_o.br_target = csr_flush_i ? csr_target_i[31:2] : 
-								pc_i[2] == 0 && taken == 0 && predict_i.taken == 1 ? pc_i[31:2] + 1 : 
-								target[31:2];
+	assign update_o.br_target = csr_flush_i ? csr_target_i[31:0] : 
+								(pc_i[2] == 0 && taken == 0 && predict_i.taken == 1) ? {pc_i[31:2] + 1, 2'b00} : 
+								target[31:0];
 
 	assign update_o.btb_update = 1'b1;
 	always_comb begin : proc_br_type

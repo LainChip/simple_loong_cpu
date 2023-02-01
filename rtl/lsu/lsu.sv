@@ -9,19 +9,19 @@ module lsu (
 	input rst_n,  // Asynchronous reset active low
 	
 	// 控制信号
-	input decode_info_t [1:0] decode_info_i,
+	input decode_info_t  decode_info_i,
 	input logic request_valid_i,
 	
 	// 流水线数据输入输出
-	input logic[1:0][31:0] vaddr_i,
-	input logic[1:0][31:0] paddr_i, // M2 STAGE
-	input logic[1:0][31:0] w_data_i,  // M2 STAGE
+	input logic[31:0] vaddr_i,
+	input logic[31:0] paddr_i, // M2 STAGE
+	input logic[31:0] w_data_i,  // M2 STAGE
 	input logic request_clr_m2_i,
 	input logic request_clr_m1_i,
-	output logic[1:0][31:0] r_data_o,
+	output logic[31:0] r_data_o,
 
-	output logic[1:0][31:0] vaddr_o,
-	output logic[1:0][31:0] paddr_o,
+	output logic[31:0] vaddr_o,
+	output logic[31:0] paddr_o,
 
 	// 连接内存总线
 	output cache_bus_req_t bus_req_o,
@@ -33,11 +33,11 @@ module lsu (
 );
 
 	typedef struct packed{
-		logic mem_sel_1;
 		mem_type_t mem_type;
     	mem_write_t mem_write;
     	mem_valid_t mem_valid;
     	logic[31:0] mem_addr;
+		logic[31:0] mem_vaddr;
 	} inner_mem_req_t;
 
 	inner_mem_req_t mem_req_comb,mem_req_stage_1,mem_req_stage_2;
@@ -49,39 +49,32 @@ module lsu (
 	localparam STATE_DATA = 3'b100;
 
 	// 输出数据
-	assign r_data_o[0] = r_data;
-	assign r_data_o[1] = r_data;
+	assign r_data_o = r_data;
 
 	// 获取需要的控制信息，进行流水
 	always_comb begin
-		mem_req_comb.mem_addr = '0;
 		{mem_req_comb.mem_type,mem_req_comb.mem_write,mem_req_comb.mem_valid} =
-		{decode_info_i[0].m1.mem_type,decode_info_i[0].m1.mem_write,decode_info_i[0].m1.mem_valid & request_valid_i} | 
-		{decode_info_i[1].m1.mem_type,decode_info_i[1].m1.mem_write,decode_info_i[1].m1.mem_valid & request_valid_i};
-		if(decode_info_i[1].m1.mem_valid) begin
-			mem_req_comb.mem_addr = vaddr_i[1];
-		end else begin
-			mem_req_comb.mem_addr = vaddr_i[0];
-		end
-		mem_req_comb.mem_sel_1 = decode_info_i[1].m1.mem_valid;
+		{decode_info_i.m1.mem_type,decode_info_i.m1.mem_write,decode_info_i.m1.mem_valid & request_valid_i};
+		mem_req_comb.mem_addr = vaddr_i;
+		mem_req_comb.mem_vaddr = vaddr_i;
 	end
 	always_ff@(posedge clk) begin
 		if(~rst_n) begin
-			mem_req_stage_1 <= '0;
-			mem_req_stage_2 <= '0;
+			mem_req_stage_1.mem_valid <= '0;
+			mem_req_stage_2.mem_valid <= '0;
 		end else if(request_clr_m1_i) begin
-			mem_req_stage_1 <= '0;
-			mem_req_stage_2 <= '0;
+			mem_req_stage_1.mem_valid <= '0;
+			mem_req_stage_2.mem_valid <= '0;
 		end else if(request_clr_m2_i) begin
-			mem_req_stage_1 <= '0;
-			mem_req_stage_2 <= '0;
+			mem_req_stage_1.mem_valid <= '0;
+			mem_req_stage_2.mem_valid <= '0;
 		end else if(transfer_done) begin 
 			mem_req_stage_2.mem_valid <= '0;
 		end else if(~busy_o & ~stall_i) begin
 			mem_req_stage_1 <= mem_req_comb;
-			{mem_req_stage_2.mem_type,mem_req_stage_2.mem_write,mem_req_stage_2.mem_sel_1} <= 
-			{mem_req_stage_1.mem_type,mem_req_stage_1.mem_write,mem_req_stage_1.mem_sel_1};
-			mem_req_stage_2.mem_addr <= paddr_i[mem_req_stage_1.mem_sel_1];
+			{mem_req_stage_2.mem_type,mem_req_stage_2.mem_write,mem_req_stage_2.mem_vaddr} <= 
+			{mem_req_stage_1.mem_type,mem_req_stage_1.mem_write,mem_req_stage_1.mem_vaddr};
+			mem_req_stage_2.mem_addr <= paddr_i;
 			mem_req_stage_2.mem_valid <= mem_req_stage_1.mem_valid;
 		end
 	end
@@ -129,7 +122,7 @@ module lsu (
 		bus_req_o.cached = '0;
 		bus_req_o.addr = mem_req_stage_2.mem_addr;
 
-		bus_req_o.w_data = w_data_i[mem_req_stage_2.mem_sel_1] << {mem_req_stage_2.mem_addr[1:0],3'b000};
+		bus_req_o.w_data = w_data_i << {mem_req_stage_2.mem_addr[1:0],3'b000};
 		case(mem_req_stage_2.mem_type[1:0])
 			`_MEM_TYPE_WORD: begin
 				bus_req_o.data_strobe = 4'b1111;
@@ -177,6 +170,9 @@ module lsu (
 			end
 		endcase
 	end
+
+	assign vaddr_o = mem_req_stage_2.mem_vaddr;
+	assign paddr_o = mem_req_stage_2.mem_addr;
 
 	always_ff @(posedge clk) begin
 		if(transfer_done) begin

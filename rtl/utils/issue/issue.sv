@@ -93,6 +93,8 @@ module issue(
 			   inst_first.register_info.w_reg == inst_second.register_info.w_reg ) 
 			begin
 				return 1'b1;
+			end else begin
+				return 1'b0;
 			end
 		end
 	endfunction
@@ -105,7 +107,10 @@ module issue(
 		input inst_t inst_first,
 		input inst_t inst_second
 	);
-		return inst_first.decode_info.is.pipe_one_inst & inst_second.decode_info.is.pipe_one_inst;
+		return (inst_first.decode_info.is.pipe_one_inst & inst_second.decode_info.is.pipe_one_inst)
+		|| (inst_second.decode_info.is.pipe_one_inst)
+		// || (inst_second.decode_info.m2.exception_hint != '0)
+		;
 	endfunction
 
 	// 对于计分板的更新，输入中包含有对于每一级的暂停向量，以及跳转clr向量。
@@ -156,7 +161,9 @@ module issue(
 
 	// 计分板
 	scoreboard_info_t[31:0] scoreboard;
-
+	wire debug_second_inst_raw_conflict = raw_conflict(scoreboard, inst_i[1]);
+	wire debug_second_inst_data_conflict = second_inst_data_conflict(inst_i[0], inst_i[1]);
+	wire debug_second_inst_control_conflict = second_inst_control_conflict(inst_i[0], inst_i[1]);
 	// 分别判断两条指令可否发射
 	logic issue_first_inst;
 	assign issue_first_inst = inst_valid_i[0] & ~raw_conflict(scoreboard, inst_i[0])
