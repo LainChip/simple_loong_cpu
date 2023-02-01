@@ -23,12 +23,12 @@ module divider (
 );
     
     // for unit test: dump waves for gtkwave
-    `ifndef _DIFFTEST_ENABLED
-        initial begin
-        	$dumpfile("logs/vlt_dump.vcd");
-        	$dumpvars();
-        end
-    `endif
+    // `ifndef _DIFFTEST_ENABLED
+    //     initial begin
+    //     	$dumpfile("logs/vlt_dump.vcd");
+    //     	$dumpvars();
+    //     end
+    // `endif
     
     /*======= deal with operands' sign =======*/
     logic [31:0] dividend_absZ, divisor_absD;

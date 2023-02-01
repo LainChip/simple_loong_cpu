@@ -219,7 +219,7 @@ module backend_pipeline #(
     	.alu_res_o(alu_result)
 	);
 
-	if (~MAIN_PIPE) begin
+	if (~MAIN_PIPE) begin : mdu_module
 		// MDU here
 		mdu mdu_module (
 			.clk(clk),

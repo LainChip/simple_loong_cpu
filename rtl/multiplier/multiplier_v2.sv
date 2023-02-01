@@ -18,12 +18,12 @@ module multiplier_v2 (
     output [63:0] res_o
 );
     // for unit test: dump waves for gtkwave
-    `ifndef _DIFFTEST_ENABLE
-        initial begin
-        	$dumpfile("logs/vlt_dump.vcd");
-        	$dumpvars();
-        end
-    `endif
+    // `ifndef _DIFFTEST_ENABLE
+    //     initial begin
+    //     	$dumpfile("logs/vlt_dump.vcd");
+    //     	$dumpvars();
+    //     end
+    // `endif
 
     typedef struct packed {
         logic [16:0] booth_carry;

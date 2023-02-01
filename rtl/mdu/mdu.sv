@@ -19,12 +19,12 @@ module mdu (
 );
 
     // for unit test: dump waves for gtkwave
-    `ifndef _DIFFTEST_ENABLE
-        initial begin
-        	$dumpfile("logs/vlt_dump.vcd");
-        	$dumpvars();
-        end
-    `endif
+    // `ifndef _DIFFTEST_ENABLE
+    //     initial begin
+    //     	$dumpfile("logs/vlt_dump.vcd");
+    //     	$dumpvars();
+    //     end
+    // `endif
 
     typedef struct packed {
         alu_type_t alu_type;
