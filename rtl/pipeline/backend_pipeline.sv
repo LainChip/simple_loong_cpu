@@ -227,7 +227,7 @@ module backend_pipeline #(
 
     		.stall_i(stall_vec_i[2:1]),
 			.clr_i(clr_vec_i[2:0]),
-    		.div_busy_o(m2_stall_req_o),
+    		.div_busy_o(div_busy),
 
     		.decode_info_i(ex_ctrl_flow.decode_info),
     		.reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
