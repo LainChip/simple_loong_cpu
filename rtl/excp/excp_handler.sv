@@ -30,7 +30,7 @@ module excp_handler(
         end else if(decode_info_i.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) begin
             ecode_o = (decode_info_i.general.inst25_0[16]) ? 6'b001011 : 6'b001100;
             excp_trigger_o = '1;
-        end else if(decode_info_i.m2.exception_hint == `_EXCEPTION_HINT_INVALID) begin
+        end else if((decode_info_i.m2.exception_hint == `_EXCEPTION_HINT_INVALID) || (decode_info_i.m2.invtlb_en && decode_info_i.general.inst25_0[4:0] > 5'd6)) begin
             ecode_o = 6'hd; // INE
             excp_trigger_o = '1;
         end

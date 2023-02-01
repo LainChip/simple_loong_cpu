@@ -147,7 +147,7 @@ module backend_pipeline #(
 			m1_ctrl_flow <= '0;
 			m1_excp_flow <= '0;
 		end else if(~stall_vec_i[1]) begin
-			if(clr_vec_i[0]) begin
+			if(clr_vec_i[0] | stall_vec_i[0]) begin
 				m1_ctrl_flow <= '0;
 				m1_excp_flow <= '0;
 			end else begin
@@ -169,7 +169,7 @@ module backend_pipeline #(
 			m2_ctrl_flow <= '0;
 			m2_excp_flow <= '0;
 		end else if(~stall_vec_i[2]) begin
-			if(clr_vec_i[1]) begin
+			if(clr_vec_i[1] | stall_vec_i[1]) begin
 				m2_ctrl_flow <= '0;
 				m2_excp_flow <= '0;
 			end else begin
@@ -259,7 +259,7 @@ module backend_pipeline #(
 			.update_o(bpu_feedback_o),
 
 		);
-		assign ex_stall_req_o = ex_ctrl_flow.decode_info.m2.tlbsrch_en & (m1_ctrl_flow.decode_info.is.pipe_one_inst | (m2_ctrl_flow.decode_info.is.pipe_one_inst & stall_vec_i[2])); // ex级的TLBSRCH 需要等待 m1 m2处 可能对tlb存在修改的指令执行完成。
+		assign ex_stall_req_o = ex_ctrl_flow.decode_info.m2.tlbsrch_en & (m1_ctrl_flow.decode_info.is.pipe_one_inst | m2_ctrl_flow.decode_info.is.pipe_one_inst); // ex级的TLBSRCH 需要等待 m1 m2处 可能对tlb存在修改的指令执行完成。
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_raw.pc + 32'd4;
 	end else begin
@@ -343,6 +343,7 @@ module backend_pipeline #(
     		,.delay_csr_i(delay_csr_i)
     	`endif
 		);
+		assign m2_csr_vppn = csr_module.reg_tlbehi[31:13];
 
 		// Mem 1 部分，准备读取Tag和Data的地址，进行MMU比较。 （转发源）
 		// MMU connection here

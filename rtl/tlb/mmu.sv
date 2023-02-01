@@ -78,13 +78,13 @@ generate
         assign tlb_s_req[i].odd_page = mmu_s_req_i[i].vaddr[12];
         assign tlb_s_req[i].asid     = asid;
 
-        assign tlb_s_resp[i].found = mmu_s_resp_o[i].found;
-        assign tlb_s_resp[i].index = mmu_s_resp_o[i].index;
-        assign tlb_s_resp[i].ps    = mmu_s_resp_o[i].ps;
-        assign tlb_s_resp[i].v     = mmu_s_resp_o[i].v;
-        assign tlb_s_resp[i].d     = mmu_s_resp_o[i].d;
-        assign tlb_s_resp[i].mat   = mmu_s_resp_o[i].mat;
-        assign tlb_s_resp[i].plv   = mmu_s_resp_o[i].plv;
+        assign mmu_s_resp_o[i].found = tlb_s_resp[i].found;
+        assign mmu_s_resp_o[i].index = tlb_s_resp[i].index;
+        assign mmu_s_resp_o[i].ps    = tlb_s_resp[i].ps;
+        assign mmu_s_resp_o[i].v     = tlb_s_resp[i].v;
+        assign mmu_s_resp_o[i].d     = tlb_s_resp[i].d;
+        assign mmu_s_resp_o[i].mat   = tlb_s_resp[i].mat;
+        assign mmu_s_resp_o[i].plv   = tlb_s_resp[i].plv;
     end
 endgenerate
 

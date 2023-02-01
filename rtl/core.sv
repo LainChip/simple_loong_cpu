@@ -110,7 +110,7 @@ mmu #(
 	.timer_rand   (backend.pipeline_0.sp_inst_blk.csr_module.timer_data_o),
 
 	.asid         (backend.pipeline_0.sp_inst_blk.csr_module.reg_asid[`_ASID]),
-	.invtlb_asid  (backend.pipeline_0.m2_data_flow_forwarding.reg_data[0][`_ASID]),
+	.invtlb_asid  (backend.pipeline_0.m2_data_flow_forwarding.reg_data[1][`_ASID]),
 	.invtlb_vpn   (backend.pipeline_0.m2_data_flow_forwarding.reg_data[0][`_TLBEHI_VPPN]),
 	.csr_dmw0_i   (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0),
 	.csr_dmw1_i   (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1),

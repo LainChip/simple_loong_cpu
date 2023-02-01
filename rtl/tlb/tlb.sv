@@ -92,8 +92,8 @@ generate
                         tlb_entry[i].e <= 1'b0;
                     end
                 end else if(inv_req_i.op == 5'd6)begin
-                if( tlb_entry[i].g 
-                    ||  (tlb_entry[i].asid == inv_req_i.asid)
+                if( (tlb_entry[i].g 
+                    ||  (tlb_entry[i].asid == inv_req_i.asid))
                     &&  ((tlb_entry[i].ps == 6'd12) ? 
                         (tlb_entry[i].vppn == inv_req_i.vpn) :
                         (tlb_entry[i].vppn[18:10] == inv_req_i.vpn[18:10]))
