@@ -33,9 +33,6 @@
 `define _CSR_DMW1 (14'h181)
 `define _CSR_BRK (14'h100)
 `define _CSR_DISABLE_CACHE (14'h101)
-`define _RDCNTV_TYPE_NONE (2'd0)
-`define _RDCNTV_TYPE_LOW (2'd1)
-`define _RDCNTV_TYPE_HIGH (2'd2)
 `define _EXCEPTION_HINT_NONE (2'd0)
 `define _EXCEPTION_HINT_SYSCALL (2'd1)
 `define _EXCEPTION_HINT_INVALID (2'd2)
@@ -98,7 +95,6 @@
 `define _USE_M2 (1'b1)
 
 typedef logic[25 : 0] inst25_0_t;
-typedef logic[1 : 0] rdcntv_type_t;
 typedef logic[1 : 0] exception_hint_t;
 typedef logic[0 : 0] do_rdcntid_t;
 typedef logic[13 : 0] csr_num_t;
@@ -128,13 +124,10 @@ typedef logic[1 : 0] use_time_t;
 typedef logic[3 : 0] reg_type_t;
 
 typedef struct packed {
-    branch_type_t branch_type;
-    cmp_type_t cmp_type;
-    branch_link_t branch_link;
-    alu_type_t alu_type;
-    opd_type_t opd_type;
-    opd_unsigned_t opd_unsigned;
-}ex_t;
+    mem_type_t mem_type;
+    mem_write_t mem_write;
+    mem_valid_t mem_valid;
+}m1_t;
 
 typedef struct packed {
     debug_inst_t debug_inst;
@@ -147,17 +140,6 @@ typedef struct packed {
 }general_t;
 
 typedef struct packed {
-    rdcntv_type_t rdcntv_type;
-    exception_hint_t exception_hint;
-    do_rdcntid_t do_rdcntid;
-    csr_num_t csr_num;
-    csr_write_en_t csr_write_en;
-    tlbsrch_en_t tlbsrch_en;
-    tlbrd_en_t tlbrd_en;
-    do_ertn_t do_ertn;
-}m2_t;
-
-typedef struct packed {
     pipe_one_inst_t pipe_one_inst;
     pipe_two_inst_t pipe_two_inst;
     ready_time_t ready_time;
@@ -166,21 +148,34 @@ typedef struct packed {
 }is_t;
 
 typedef struct packed {
+    exception_hint_t exception_hint;
+    do_rdcntid_t do_rdcntid;
+    csr_num_t csr_num;
+    csr_write_en_t csr_write_en;
+    tlbsrch_en_t tlbsrch_en;
+    tlbrd_en_t tlbrd_en;
     tlbwr_en_t tlbwr_en;
     tlbfill_en_t tlbfill_en;
     invtlb_en_t invtlb_en;
-    mem_type_t mem_type;
-    mem_write_t mem_write;
-    mem_valid_t mem_valid;
-}m1_t;
+    do_ertn_t do_ertn;
+}m2_t;
 
 typedef struct packed {
-    ex_t ex;
+    branch_type_t branch_type;
+    cmp_type_t cmp_type;
+    branch_link_t branch_link;
+    alu_type_t alu_type;
+    opd_type_t opd_type;
+    opd_unsigned_t opd_unsigned;
+}ex_t;
+
+typedef struct packed {
+    m1_t m1;
     wb_t wb;
     general_t general;
-    m2_t m2;
     is_t is;
-    m1_t m1;
+    m2_t m2;
+    ex_t ex;
 }decode_info_t;
 
 `endif

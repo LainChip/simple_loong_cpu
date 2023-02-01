@@ -3,6 +3,8 @@
 `include "pipeline.svh"
 `include "lsu_types.svh"
 `include "bpu.svh"
+`include "csr.svh"
+`include "tlb.svh"
 
 module backend_pipeline #(
 	parameter bit MAIN_PIPE = 1'b1
@@ -315,6 +317,7 @@ module backend_pipeline #(
 			.vaddr_i(ex_vaddr),
 			.vaddr_o(m2_vaddr),
 			.paddr_i(m1_paddr),
+			.paddr_o(),
 			.w_data_i(m2_data_flow_forwarding.reg_data[0]),
 			.request_clr_m2_i(clr_vec_i[2] | m2_lsu_clr_hint),
 			.request_clr_m1_i(clr_vec_i[1]),
