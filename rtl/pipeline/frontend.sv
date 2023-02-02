@@ -26,7 +26,7 @@ module frontend(
     input cache_bus_resp_t bus_resp_i,        // cache的访问应答
 
 	// MMU 访问信号
-	output mmu_s_req_t mmu_req_o,
+	output logic[31:0] mmu_req_vpc_o,
 	input mmu_s_resp_t mmu_resp_i
 );
     // 这个function应该放在前端，在fetch阶段和写入fifo阶段之间，合成inst_t的阶段进行。
@@ -148,6 +148,10 @@ module frontend(
         .vpc_i(bpu_vpc),
         .valid_i(bpu_pc_valid),
         .attached_i(bpu_predict),
+
+        // TLB INTERFACE
+        .mmu_req_vpc_o,
+        .mmu_resp_i,
 
         .vpc_o(fetch_vpc),
         .ppc_o(/*NOT CONNECT*/),

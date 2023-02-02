@@ -21,6 +21,10 @@ module icache #(
 	input  logic [FETCH_SIZE - 1 : 0] valid_i,
 	input  logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_i,
 
+	// MMU 访问信号
+	output logic[31:0] mmu_req_vpc_o,
+	input mmu_s_resp_t mmu_resp_i,
+
 	output logic [31:0]vpc_o,
 	output logic [31:0]ppc_o,
 	output logic [FETCH_SIZE - 1 : 0] valid_o,
@@ -132,10 +136,6 @@ assign vpc_o = va;
 assign ppc_o = pa;
 assign valid_o = fetch_valid & {FETCH_SIZE{~stall}};
 assign attached_o = fetch_attached;
-assign fetch_excp_o.adef = fetch_excp_adef;
-
-// TLB 相关的逻辑
-assign page_index_raw = va_early[31:12];
 
 logic [WAY_CNT - 1 : 0] sel,data_we,tag_we;
 tag_t [WAY_CNT - 1 : 0] r_tag;
@@ -385,5 +385,15 @@ always_ff @(posedge clk) begin
         fsm_state <= fsm_state_next;
     end
 end
+
+// MMU 接入 及 MMU 对应异常
+assign mmu_req_vpc_o = va_early;
+
+// TLB 相关的逻辑
+assign page_index_raw = mmu_resp_i.paddr[31:12];
+
+// FETCH异常逻辑
+assign fetch_excp_o.adef = fetch_excp_adef;
+assign fetch_excp_o.
 
 endmodule

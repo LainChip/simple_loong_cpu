@@ -25,6 +25,10 @@ typedef struct packed{
 typedef struct packed {
 	logic adef;
 	// TODO TLB
+	logic tlbr;
+	logic pif;
+	// logic [1:0] found_plv; // lower means higher privilege
+	logic ppi;
 } fetch_excp_t;
 
 // 输入到后端的指令流信息
