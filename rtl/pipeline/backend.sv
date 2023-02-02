@@ -285,7 +285,7 @@ DifftestInstrCommit DifftestInstrCommit_0(
 DifftestInstrCommit DifftestInstrCommit_1(
     .clock              (clk           ),
     .coreid             ('0),
-    .index              (wb_ctrl_flow[0].revert ? 0:1),
+    .index              (wb_ctrl_flow[1].revert ? 0:1),
     .valid              (wb_ctrl_flow[1].decode_info.wb.valid),
     .pc                 (wb_data_flow[1].pc),
     .instr              (wb_ctrl_flow[1].decode_info.wb.debug_inst),
