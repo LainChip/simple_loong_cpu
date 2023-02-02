@@ -258,8 +258,8 @@ module backend_pipeline #(
 			.clk(clk),
     		.rst_n(rst_n),
 
-    		.stall_i(stall_vec_i[2:1]),
-			.clr_i(clr_vec_i[2:0]),
+    		.stall_i(stall_vec_i),	// 还是需要全部信号
+			.clr_i(clr_vec_i),
     		.div_busy_o(div_busy),
 
     		.decode_info_i(ex_ctrl_flow.decode_info),
@@ -427,5 +427,10 @@ module backend_pipeline #(
 
 	// 转发信号源生成
 	assign forwarding_data_o = {wb_data_flow.result,m2_data_flow_raw.result,m1_data_flow_raw.result};
+
+	wire [31:0] ex_pc = ex_data_flow_raw.pc;
+	wire [31:0] m1_pc = m1_data_flow_raw.pc;
+	wire [31:0] m2_pc = m2_data_flow_raw.pc;
+	wire [31:0] wb_pc = wb_data_flow.pc;
 
 endmodule : backend_pipeline
