@@ -113,17 +113,6 @@ module mdu (
     assign div_valid_m = mdu_stage_2.inst_valid & is_div & (mdu_stage_2.mdu_opd2 != 0) & ~busy;
     assign res_ready_m = busy;
     // stall signal from inside, while divider is still calculating
-    
-    // ---- block only for test
-    wire halfway_div = (div_valid_m & div_ready_s) | busy;
-    wire halfway_res = ~(res_valid_s & res_ready_m);
-    wire test_div_busy;
-    assign test_div_busy = halfway_div && halfway_res;
-    wire test_div_busy1 = 1 & 1;
-    wire test_div_busy2 = 1 & halfway_div;
-    wire test_div_busy3 = halfway_res & 1;
-    // ---- block only for test
-
     assign div_busy_o = ((div_valid_m & div_ready_s) | busy) & 
                          ~(res_valid_s & res_ready_m);
 
