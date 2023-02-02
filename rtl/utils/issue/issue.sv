@@ -107,7 +107,7 @@ module issue(
 		input inst_t inst_first,
 		input inst_t inst_second
 	);
-		return (inst_first.decode_info.is.pipe_one_inst & inst_second.decode_info.is.pipe_one_inst)
+		return (inst_first.decode_info.is.pipe_one_inst & inst_second.decode_info.is.pipe_one_inst) || (inst_first.decode_info.is.pipe_two_inst & inst_second.decode_info.is.pipe_two_inst)
 		|| (inst_second.decode_info.is.pipe_one_inst)
 		// || (inst_second.decode_info.m2.exception_hint != '0)
 		;
