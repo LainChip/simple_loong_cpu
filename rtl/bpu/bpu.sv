@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-01-30 15:22:29
+// Revise : 2023-01-31 16:00:37
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -16,17 +16,26 @@ module bpu (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
 	input stall_i,
-	input bpu_update_t update_i,
+	input bpu_update_t update_front_i,
+	input bpu_update_t update_back_i,
 	output bpu_predict_t predict_o,
 	output [31:0] pc_o,
 	output [1:0] pc_valid_o,
 	output stall_o
 );
 
-	// initial begin
-    // 	$dumpfile("logs/vlt_dump.vcd");
-    // 	$dumpvars();
-	// end
+	// ================== merge ========================
+	bpu_update_t update_i;
+	always_comb begin
+		if (update_back_i.flush) begin
+			update_i = update_back_i;
+		end else if (update_front_i.flush) begin
+			update_i = update_front_i;
+		end else begin
+			update_i = update_back_i;
+		end
+	end
+	// =================================================
 
 	reg [31:0] pc;
 	reg bpu_state;

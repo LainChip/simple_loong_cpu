@@ -330,4 +330,7 @@ module backend_pipeline #(
 	// 转发信号源生成
 	assign forwarding_data_o = {wb_data_flow.result,m2_data_flow_raw.result,m1_data_flow_raw.result};
 
+	// debug
+	wire [31:0] m2_pc = m2_data_flow_forwarding.pc;
+
 endmodule : backend_pipeline
