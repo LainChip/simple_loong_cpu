@@ -95,7 +95,7 @@ mmu #(
 	.clk(clk),
 	.rst_n(rst_n),
 	.stall_i(backend.pipeline_0.stall_vec_i[2]),
-	.mmu_s_req_i ({frontend.mmu_req_o  , backend.mmu_req_o  }),
+	.mmu_s_req_i ({'0/*TODO*/          , backend.mmu_req_o  }),
 	.mmu_s_resp_o({immu_resp           , dmmu_resp          }),
 
 	.decode_info_i(backend.pipeline_0.m2_ctrl_flow.decode_info),

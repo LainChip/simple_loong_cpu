@@ -50,13 +50,13 @@ module alu (
         endcase
     end
 
-    logic [63:0] product, productu;
+    // logic [63:0] product, productu;
     // logic unsigned [63:0] productu;  //效果一样
     // logic signed [63:0] product;
 
     always_comb begin
-        productu = alu_opd1 * alu_opd2;
-        product  = $signed(alu_opd1) * $signed(alu_opd2);
+        // productu = alu_opd1 * alu_opd2;
+        // product  = $signed(alu_opd1) * $signed(alu_opd2);
         // product  = $signed({{32{alu_opd1[31]}}, alu_opd1}) * $signed({{32{alu_opd2[31]}}, alu_opd});  // 效果一样
         case (alu_type)
             `_ALU_TYPE_ADD  : begin
@@ -95,38 +95,38 @@ module alu (
                     alu_res_o = $signed($signed(alu_opd1) >>> $signed(alu_opd2[4:0]));
                 end
             end
-            `_ALU_TYPE_MUL  : begin
-                alu_res_o = product[31:0];
-            end
-            `_ALU_TYPE_MULH : begin
-                if (opd_unsigned) begin
-                    alu_res_o = productu[63:32];
-                end else begin
-                    alu_res_o = product[63:32];
-                end
-            end
-            `_ALU_TYPE_DIV  : begin
-                if (alu_opd2 != 0) begin
-                    if (opd_unsigned) begin
-                        alu_res_o = alu_opd1 / alu_opd2;
-                    end else begin
-                        alu_res_o = $signed(alu_opd1) / $signed(alu_opd2);
-                    end
-                end else begin
-                    alu_res_o = -1;
-                end
-            end
-            `_ALU_TYPE_MOD  : begin
-                if (alu_opd2 != 0) begin
-                    if (opd_unsigned) begin
-                        alu_res_o = alu_opd1 % alu_opd2;
-                    end else begin
-                        alu_res_o = $signed(alu_opd1) % $signed(alu_opd2);
-                    end
-                end else begin
-                    alu_res_o = -1;
-                end
-            end
+            // `_ALU_TYPE_MUL  : begin
+            //     alu_res_o = product[31:0];
+            // end
+            // `_ALU_TYPE_MULH : begin
+            //     if (opd_unsigned) begin
+            //         alu_res_o = productu[63:32];
+            //     end else begin
+            //         alu_res_o = product[63:32];
+            //     end
+            // end
+            // `_ALU_TYPE_DIV  : begin
+            //     if (alu_opd2 != 0) begin
+            //         if (opd_unsigned) begin
+            //             alu_res_o = alu_opd1 / alu_opd2;
+            //         end else begin
+            //             alu_res_o = $signed(alu_opd1) / $signed(alu_opd2);
+            //         end
+            //     end else begin
+            //         alu_res_o = -1;
+            //     end
+            // end
+            // `_ALU_TYPE_MOD  : begin
+            //     if (alu_opd2 != 0) begin
+            //         if (opd_unsigned) begin
+            //             alu_res_o = alu_opd1 % alu_opd2;
+            //         end else begin
+            //             alu_res_o = $signed(alu_opd1) % $signed(alu_opd2);
+            //         end
+            //     end else begin
+            //         alu_res_o = -1;
+            //     end
+            // end
             `_ALU_TYPE_LUI  : begin
                 alu_res_o = alu_opd2;
             end

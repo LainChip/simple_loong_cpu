@@ -5,7 +5,9 @@
 `include "common.svh"
 `include "decoder.svh"
 
-module mdu (
+module mdu #(
+    parameter bit SIMPLIFIED_MODULE = 1'b1
+)(
     input clk,
     input rst_n,
     
@@ -67,16 +69,26 @@ module mdu (
 
     /*======= multiplier: start at stage_0 =======*/
     logic [63:0] multiply_res;
-    multiplier_v2 instance_multiplier_v2 (
-        .clk(clk),
-        .rst_n(rst_n),
-        .stall_i(stall_i | {2{div_busy_o}}),
+    if(SIMPLIFIED_MODULE) begin
+        wire[63:0] raw_res = mdu_stage_1.opd_unsigned ? (mdu_stage_1.mdu_opd1 * mdu_stage_1.mdu_opd2)
+                                                      : ($signed({{32{mdu_stage_1.mdu_opd1[31]}}, mdu_stage_1.mdu_opd1}) * $signed({{32{mdu_stage_1.mdu_opd2[31]}}, mdu_stage_1.mdu_opd2}));;
+        always_ff @(posedge clk) begin
+            if(~stall_i[1])
+                multiply_res <= raw_res;
+        end
+    end
+    else begin
+        multiplier_v2 instance_multiplier_v2 (
+            .clk(clk),
+            .rst_n(rst_n),
+            .stall_i(stall_i | {2{div_busy_o}}),
 
-        .mul_signed_i(~mdu_stage_0.opd_unsigned),
-        .X_i(mdu_stage_0.mdu_opd1),
-        .Y_i(mdu_stage_0.mdu_opd2),
-        .res_o(multiply_res)
-    );
+            .mul_signed_i(~mdu_stage_0.opd_unsigned),
+            .X_i(mdu_stage_0.mdu_opd1),
+            .Y_i(mdu_stage_0.mdu_opd2),
+            .res_o(multiply_res)
+        );
+    end
     
 
     /*======= divider: start at stage_2 =======*/

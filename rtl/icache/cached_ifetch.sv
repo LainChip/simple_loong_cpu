@@ -390,10 +390,10 @@ end
 assign mmu_req_vpc_o = va_early;
 
 // TLB 相关的逻辑
-assign page_index_raw = mmu_resp_i.paddr[31:12];
+assign page_index_raw = va_early[31:12];
+// assign page_index_raw = mmu_resp_i.paddr[31:12];
 
 // FETCH异常逻辑
 assign fetch_excp_o.adef = fetch_excp_adef;
-assign fetch_excp_o.
 
 endmodule
