@@ -45,7 +45,7 @@ module mdu (
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             mdu_stage_1 <= '0;
-        end else if (~stall_i[1] & ~div_busy_o) begin
+        end else if (~stall_i[1]) begin
             if (clr_i[0]) begin
                 mdu_stage_1 <= '0;                
             end else begin
@@ -57,7 +57,7 @@ module mdu (
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             mdu_stage_2 <= '0;
-        end else if (~stall_i[2] & ~div_busy_o) begin
+        end else if (~stall_i[2]) begin
             if (clr_i[1]) begin
                 mdu_stage_2 <= '0;                
             end else begin
@@ -72,7 +72,7 @@ module mdu (
     multiplier_v2 instance_multiplier_v2 (
         .clk(clk),
         .rst_n(rst_n),
-        .stall_i(stall_i[2:1] | {2{div_busy_o}}),
+        .stall_i(stall_i[2:1]),
 
         .mul_signed_i(~mdu_stage_0.opd_unsigned),
         .X_i(mdu_stage_0.mdu_opd1),
