@@ -96,6 +96,12 @@
             "stage":"m2",
             "default_value":0,
             "invalid_value":0
+        },
+        "priv_inst":{
+            "length":1,
+            "stage":"m2",
+            "default_value":0,
+            "invalid_value":0
         }
     },
     "inst": {
@@ -115,7 +121,8 @@
             "opcode":"0000011001001000001110",
             "reg_type":"`_REG_TYPE_I",
             "do_ertn":1,
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
         "csrwrxchg": {
             "opcode": "00000100",
@@ -124,38 +131,44 @@
             "use_time":"{`_USE_M2,`_USE_M2}",
             "ready_time":"`_READY_M2",
             "wb_sel":"`_REG_WB_CSR",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
         "tlbsrch": {
             "opcode": "0000011001001000001010",
             "tlbsrch_en":1,
             "reg_type":"`_REG_TYPE_RW",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
         "tlbrd": {
             "opcode": "0000011001001000001011",
             "tlbrd_en":1,
             "reg_type":"`_REG_TYPE_RW",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
         "tlbwr": {
             "opcode": "0000011001001000001100",
             "tlbwr_en":1,
             "reg_type":"`_REG_TYPE_RW",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
         "tlbfill": {
             "opcode": "0000011001001000001101",
             "tlbfill_en":1,
             "reg_type":"`_REG_TYPE_RW",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
         "invtlb":{
             "opcode":"00000110010010011",
             "invtlb_en":1,
             "reg_type":"`_REG_TYPE_INVTLB",
             "use_time":"{`_USE_M2,`_USE_M2}",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
 
         "rdcnt.w": {
@@ -163,12 +176,14 @@
             "reg_type":"`_REG_TYPE_RDCNTID",
             "ready_time":"`_READY_M2",
             "wb_sel":"`_REG_WB_CSR",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         },
         "idle":{
             "opcode":"00000110010010001",
             "reg_type":"`_REG_TYPE_I",
-            "pipe_one_inst": 1
+            "pipe_one_inst": 1,
+            "priv_inst": 1
         }
     }
 }

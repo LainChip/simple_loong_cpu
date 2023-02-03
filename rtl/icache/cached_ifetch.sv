@@ -38,7 +38,8 @@ module icache #(
 	input  logic clr_i,
 
 	output cache_bus_req_t bus_req_o,
-	input cache_bus_resp_t bus_resp_i
+	input cache_bus_resp_t bus_resp_i,
+    input trans_en_i
 );
 
 // 当FIFO没有就绪时候（已满），将stall拉高
@@ -50,6 +51,9 @@ typedef struct packed {
 } tag_t;
 
 // 第二阶段的信息
+logic[1:0]  plv;
+mmu_s_resp_t mmu_resp;
+logic trans_en;
 logic[31:0] va,pa;
 logic valid_req;
 logic[FETCH_SIZE - 1 : 0] fetch_valid;
@@ -58,7 +62,7 @@ logic inv,fetched,uncached,cache_op,transfer_done;
 logic[1:0] cache_op_type;
 
 // 第二阶段的异常
-logic fetch_excp, fetch_excp_adef;
+logic fetch_excp, fetch_excp_adef, fetch_excp_tlbr, fetch_excp_pif, fetch_excp_ppi;
 
 // 第一阶段的信息
 logic[31:0] va_early;
@@ -115,7 +119,10 @@ always_ff @(posedge clk) begin
         cache_op_early <= cacheop_valid_i;
         
         va <= va_early;
-        fetch_excp <= fetch_excp_adef_early;
+        mmu_resp <= mmu_resp_i;
+        trans_en <= trans_en_i;
+ 
+        // fetch_excp <= fetch_excp_adef_early;
         fetch_excp_adef <= fetch_excp_adef_early;
         pa <= {page_index_raw,va_early[11:0]};
         fetch_valid <= fetch_valid_early;
@@ -390,10 +397,13 @@ end
 assign mmu_req_vpc_o = va_early;
 
 // TLB 相关的逻辑
-assign page_index_raw = va_early[31:12];
-// assign page_index_raw = mmu_resp_i.paddr[31:12];
+// assign page_index_raw = va_early[31:12];
+assign page_index_raw = mmu_resp_i.paddr[31:12];
 
 // FETCH异常逻辑
-assign fetch_excp_o.adef = fetch_excp_adef;
-
+assign fetch_excp_o.adef = fetch_excp_adef || (va[31] && (plv == 2'd3) && trans_en);
+assign fetch_excp_o.tlbr = !mmu_resp.found && trans_en;
+assign fetch_excp_o.pif = mmu_resp.found && !mmu_resp.v && trans_en;
+assign fetch_excp_o.ppi = (plv > mmu_resp.plv) && trans_en && mmu_resp.v;
+assign fetch_excp = |fetch_excp_o;
 endmodule

@@ -10,7 +10,18 @@ module csr(
     input           rst_n,
     
     input   decode_info_t           decode_info_i,     //输入：解码信息
+    
+    // FROM EXCP MODULE
+    input   logic   [5:0]           ecode_i,            //输入：两条流水线的例外一级码
+    input   logic   [8:0]           esubcode_i,         //输入：两条流水线的例外二级码
+    input   logic                   excp_trigger_i,     //输入：是否发生异常
+    input   logic   [31:0]          bad_va_i,           //输入：地址相关例外出错的虚地址
+    input   logic                   tlbrefill_i,
+    input   logic                   ipe_i,              //输入：当前特权指令无效
+
+    input   logic                   va_error_i,
     input   excp_flow_t             excp_i,
+    
     input   logic                   stall_i,           //输入：流水线暂停
     input   logic   [25:0]          instr_i,           //输入：指令后26位
 
@@ -26,10 +37,6 @@ module csr(
     input   logic   [7:0]           interrupt_i,        //输入：中断信号
 
     //for exception
-    input   logic   [5:0]           ecode_i,            //输入：两条流水线的例外一级码
-    input   logic   [8:0]           esubcode_i,         //输入：两条流水线的例外二级码
-    input   logic                   excp_trigger_i,     //输入：是否发生异常
-    input   logic   [31:0]          bad_va_i,           //输入：地址相关例外出错的虚地址
     input   logic   [31:0]          instr_pc_i,         //输入：指令pc
     
     output  logic                   lsu_clr_hint_o,
@@ -74,7 +81,7 @@ logic [31:0]    exception_handler;
 logic [31:0]    interrupt_handler;
 logic [31:0]    tlbrefill_handler;//todo
 logic do_interrupt;
-logic do_exception;
+logic do_exception,do_tlbrefill,do_ertn_tlbrefill;
 
 always_comb begin
     rd_addr_i = instr_i[`_INSTR_CSR_NUM];
@@ -282,7 +289,7 @@ logic [31:0] wr_data;
 assign wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : ((wr_data_i & wr_mask_i) | (read_reg_result & ~wr_mask_i));
 logic write_en;
 
-assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i;
+assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i & ~ipe_i;
 
 wire wen_crmd             = write_en & (wr_addr_i == ADDR_CRMD) ;
 wire wen_prmd             = write_en & (wr_addr_i == ADDR_PRMD) ;
@@ -481,12 +488,19 @@ always_ff @(posedge clk) begin
     else if(do_exception | do_interrupt) begin
         reg_crmd[`_CRMD_PLV] <= 2'b0;
         reg_crmd[`_CRMD_IE] <= 1'b0;
-        //todo tlbrefill
+        if(do_tlbrefill) begin
+            reg_crmd[`DA] <= 1'b1;
+            reg_crmd[`PG] <= 1'b0;
+        end
     end
     else if(do_ertn) begin
         reg_crmd[`_CRMD_PLV] <= reg_prmd[`_PRMD_PPLV];
         reg_crmd[`_CRMD_IE] <= reg_prmd[`_PRMD_PIE];
         //todo tlbrefill
+        if(do_ertn_tlbrefill) begin
+            reg_crmd[`DA] <= 1'b0;
+            reg_crmd[`PG] <= 1'b1;
+        end
     end
     else if(wen_crmd) begin
         reg_crmd[ `_CRMD_PLV] <= wr_data[ `_CRMD_PLV];
@@ -721,6 +735,7 @@ end
 
 logic interrupt_need_handle;
 always_comb begin
+    do_ertn_tlbrefill = reg_estat[`_ESTAT_ECODE] == 6'h3f;
     lsu_clr_hint_o = 1'b0;
     do_ertn = 1'b0;
     interrupt_need_handle = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
@@ -770,14 +785,16 @@ always_comb begin
         do_redirect_o = 1'b1;
         do_exception  = 1'b1;
         do_interrupt  = 1'b0;
-        if (   ecode_i == `_ECODE_ADEF 
-            || ecode_i == `_ECODE_ADEM
-            || ecode_i == `_ECODE_ALE
-            || ecode_i == `_ECODE_PIL
-            || ecode_i == `_ECODE_PIS
-            || ecode_i == `_ECODE_PIF
-            || ecode_i == `_ECODE_PME
-            || ecode_i == `_ECODE_PPI  
+        if (
+            //    ecode_i == `_ECODE_ADEF 
+            // || ecode_i == `_ECODE_ADEM
+            // || ecode_i == `_ECODE_ALE
+            // || ecode_i == `_ECODE_PIL
+            // || ecode_i == `_ECODE_PIS
+            // || ecode_i == `_ECODE_PIF
+            // || ecode_i == `_ECODE_PME
+            // || ecode_i == `_ECODE_PPI  
+            va_error_i
         //todo: tlbrefill
         ) begin
             va_error = 1'b1;

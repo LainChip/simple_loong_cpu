@@ -53,11 +53,17 @@ typedef struct packed {
 
 // 异常流
 typedef struct packed {
-	logic adef;
 	logic adem;
 	logic ale;
 
-	logic tlb_refill;
+	// FRONTEND
+	logic adef;
+	logic itlbr;
+	logic pif;
+	logic ippi;
+
+	logic ipe;
+
 } excp_flow_t;
 
 // 管线中的数据flow类型，目前未进行精简。 对于管线二，可以精简其寄存器部分。

@@ -22,6 +22,7 @@ priv_req_t   	 priv_req;
 priv_resp_t      priv_resp;
 cache_bus_req_t	 ibus_req , dbus_req;
 cache_bus_resp_t ibus_resp, dbus_resp;
+mmu_s_req_t      immu_req;
 mmu_s_resp_t     immu_resp, dmmu_resp;
 tlb_entry_t      r_tlbentry;
 
@@ -56,10 +57,27 @@ frontend frontend(
     .bus_resp_i(ibus_resp),      // cache的访问应答
 
 	// MMU
+	// .mmu_req_vpc_o(),
 	.mmu_resp_i(immu_resp)
 );
 
-    // backend
+assign frontend.icache_module.plv = backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV];
+logic dmw0_en,dmw1_en;
+assign dmw0_en = ((backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_PLV0] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)
+               || (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_PLV3] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) 
+			  && (frontend.mmu_req_vpc_o[31:29] == backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_VSEG]);
+assign dmw1_en = ((backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_PLV0] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)
+               || (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_PLV3] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) 
+			  && (frontend.mmu_req_vpc_o[31:29] == backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_VSEG]);
+assign immu_req = '{
+	trans_en: backend.pipeline_0.sp_inst_blk.pg_mode && !dmw0_en && !dmw1_en, //TODO: CACHEOP && (m1_ctrl_flow.decode_info.m2.cacheop_i)
+	vaddr:    frontend.mmu_req_vpc_o,
+	dmw0_en:  dmw0_en ,
+	dmw1_en:  dmw1_en ,
+	default:  '0
+};
+
+// backend
 backend backend(
 	.clk(clk),
 	.rst_n(rst_n),
@@ -95,7 +113,7 @@ mmu #(
 	.clk(clk),
 	.rst_n(rst_n),
 	.stall_i(backend.pipeline_0.stall_vec_i[2]),
-	.mmu_s_req_i ({'0/*TODO*/          , backend.mmu_req_o  }),
+	.mmu_s_req_i ({immu_req            , backend.mmu_req_o  }),
 	.mmu_s_resp_o({immu_resp           , dmmu_resp          }),
 
 	.decode_info_i(backend.pipeline_0.m2_ctrl_flow.decode_info),

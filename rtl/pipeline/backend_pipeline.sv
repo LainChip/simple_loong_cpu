@@ -83,8 +83,9 @@ module backend_pipeline #(
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_csr_jump_target, m2_vaddr;
 	
 	mmu_s_resp_t m2_mmu_resp;
+	logic m2_trans_en;
 	logic m2_csr_jump_req,m2_lsu_clr_hint;
-	logic m1_lsu_ale;
+	logic m1_lsu_ale,m1_trans_en;
 
 	logic div_busy, lsu_busy;
 
@@ -184,6 +185,7 @@ module backend_pipeline #(
 				m2_excp_flow <= '0;
 			end else begin
 				m2_mmu_resp <= mmu_resp_i;
+				m2_trans_en <= m1_trans_en;
 				m2_ctrl_flow <= m1_ctrl_flow;
 				m2_excp_flow.adef <= m1_excp_flow.adef;
 				m2_excp_flow.ale  <= m1_lsu_ale;
@@ -380,15 +382,18 @@ module backend_pipeline #(
 		logic da_mode,pg_mode,dmw0_en,dmw1_en;
 		assign pg_mode = !csr_module.reg_crmd[`_CRMD_DA] && csr_module.reg_crmd[`_CRMD_PG];
 		assign da_mode = csr_module.reg_crmd[`_CRMD_DA] && !csr_module.reg_crmd[`_CRMD_PG];
+		assign dmw0_en = ((csr_module.reg_dmw0[`_DMW_PLV0] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd0) || (csr_module.reg_dmw0[`_DMW_PLV3] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) && (m1_saddr[31:29] == csr_module.reg_dmw0[`_DMW_VSEG]);
+		assign dmw1_en = ((csr_module.reg_dmw1[`_DMW_PLV0] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd0) || (csr_module.reg_dmw1[`_DMW_PLV3] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) && (m1_saddr[31:29] == csr_module.reg_dmw1[`_DMW_VSEG]);
 		always_comb begin
 			mmu_req_o = '{
-				trans_en: pg_mode && !dmw0_en && !dmw1_en, //TODO: CACHEOP && (m1_ctrl_flow.decode_info.m2.cacheop_i)
+				trans_en: m1_trans_en, //TODO: CACHEOP && (m1_ctrl_flow.decode_info.m2.cacheop_i)
 				vaddr:    m1_saddr,
 				dmw0_en:  dmw0_en ,
 				dmw1_en:  dmw1_en ,
 				default:  '0
 			};
 		end
+		assign m1_trans_en = pg_mode && !dmw0_en && !dmw1_en;
 
 		// Exception defines here
 		excp_handler excp_handler_module(
