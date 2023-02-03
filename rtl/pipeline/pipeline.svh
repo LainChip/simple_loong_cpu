@@ -62,8 +62,6 @@ typedef struct packed {
 	logic pif;
 	logic ippi;
 
-	logic ipe;
-
 } excp_flow_t;
 
 // 管线中的数据flow类型，目前未进行精简。 对于管线二，可以精简其寄存器部分。

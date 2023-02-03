@@ -38,8 +38,8 @@ module icache #(
 	input  logic clr_i,
 
 	output cache_bus_req_t bus_req_o,
-	input cache_bus_resp_t bus_resp_i,
-    input trans_en_i
+	input cache_bus_resp_t bus_resp_i
+    // input trans_en_i
 );
 
 // 当FIFO没有就绪时候（已满），将stall拉高
@@ -53,7 +53,7 @@ typedef struct packed {
 // 第二阶段的信息
 logic[1:0]  plv;
 mmu_s_resp_t mmu_resp;
-logic trans_en;
+logic trans_en,trans_en_i;
 logic[31:0] va,pa;
 logic valid_req;
 logic[FETCH_SIZE - 1 : 0] fetch_valid;

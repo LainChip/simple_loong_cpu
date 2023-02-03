@@ -1,7 +1,7 @@
 `ifndef _TLB_HEADER
 `define _TLB_HEADER
 
-`define _TLB_ENTRY_NUM (16)
+`define _TLB_ENTRY_NUM (32)
 `define _TLB_PORT (2)
 
 typedef struct packed {  

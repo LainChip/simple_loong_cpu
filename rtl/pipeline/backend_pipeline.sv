@@ -77,7 +77,8 @@ module backend_pipeline #(
 	logic [31:0] alu_result;
 	logic [31:0] bpf_result;
 	logic [31:0] ex_vaddr;
-	logic [31:0] m1_saddr,m1_paddr,m1_word_shift;
+	logic [31:0] m1_saddr,m1_paddr;
+	logic [1:0]  m1_word_shift,m2_plv;
 	logic [31:0] m2_paddr;
 
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_csr_jump_target, m2_vaddr;
@@ -85,7 +86,7 @@ module backend_pipeline #(
 	mmu_s_resp_t m2_mmu_resp;
 	logic m2_trans_en;
 	logic m2_csr_jump_req,m2_lsu_clr_hint;
-	logic m1_lsu_ale,m1_trans_en;
+	logic m1_lsu_ale,m1_lsu_adem,m1_trans_en;
 
 	logic div_busy, lsu_busy;
 
@@ -161,7 +162,10 @@ module backend_pipeline #(
 				m1_excp_flow <= '0;
 			end else begin
 				m1_ctrl_flow <= ex_ctrl_flow;
-				m1_excp_flow.adef <= ex_ctrl_flow.fetch_excp.adef; 
+				m1_excp_flow.adef  <= ex_ctrl_flow.fetch_excp.adef;
+				m1_excp_flow.itlbr <= ex_ctrl_flow.fetch_excp.tlbr;
+				m1_excp_flow.pif   <= ex_ctrl_flow.fetch_excp.pif;
+				m1_excp_flow.ippi  <= ex_ctrl_flow.fetch_excp.ppi;
 			end
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
@@ -187,8 +191,12 @@ module backend_pipeline #(
 				m2_mmu_resp <= mmu_resp_i;
 				m2_trans_en <= m1_trans_en;
 				m2_ctrl_flow <= m1_ctrl_flow;
-				m2_excp_flow.adef <= m1_excp_flow.adef;
-				m2_excp_flow.ale  <= m1_lsu_ale;
+				m2_excp_flow.adem  <= m1_lsu_adem;
+				m2_excp_flow.ale   <= m1_lsu_ale;
+				m2_excp_flow.adef  <= m1_excp_flow.adef;
+				m2_excp_flow.itlbr <= m1_excp_flow.itlbr;
+				m2_excp_flow.pif   <= m1_excp_flow.pif;
+				m2_excp_flow.ippi  <= m1_excp_flow.ippi;
 			end
 		end else begin
 			// 在暂停的情况下，需要依据管线的整体暂停情况，对转发向量进行处理
@@ -288,7 +296,8 @@ module backend_pipeline #(
 			.predict_i(ex_ctrl_flow.bpu_predict),
 			.update_o(bpu_feedback_o),
 		);
-		assign ex_stall_req_o = ex_ctrl_flow.decode_info.m2.tlbsrch_en & (m1_ctrl_flow.decode_info.is.pipe_one_inst | m2_ctrl_flow.decode_info.is.pipe_one_inst); // ex级的TLBSRCH 需要等待 m1 m2处 可能对tlb存在修改的指令执行完成。
+		// assign ex_stall_req_o = ex_ctrl_flow.decode_info.m2.tlbsrch_en & (m1_ctrl_flow.decode_info.is.pipe_one_inst | m2_ctrl_flow.decode_info.is.pipe_one_inst); // ex级的TLBSRCH 需要等待 m1 m2处 可能对tlb存在修改的指令执行完成。
+		assign ex_stall_req_o = '0;
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_raw.pc + 32'd4;
 	end else begin
@@ -308,6 +317,7 @@ module backend_pipeline #(
 		// 地址检查
 		assign m1_lsu_ale = ((|m1_word_shift) & m1_ctrl_flow.decode_info.m1.mem_type[0] & ~m1_ctrl_flow.decode_info.m1.mem_type[1]) 
 		|| ((m1_word_shift[0]) & ~m1_ctrl_flow.decode_info.m1.mem_type[0] & m1_ctrl_flow.decode_info.m1.mem_type[1]);
+		assign m1_lsu_adem = m1_trans_en && (m2_plv == 2'd3) && m1_ctrl_flow.decode_info.m1.mem_valid && m1_saddr[31];
 
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
 		// Mem connection here
@@ -398,14 +408,24 @@ module backend_pipeline #(
 		// Exception defines here
 		excp_handler excp_handler_module(
 			.decode_info_i(m2_ctrl_flow.decode_info),
-			.excp_i(m2_excp_flow),
 			.vpc_i(m2_data_flow_forwarding.pc),
 			.vlsu_i(m2_vaddr),
+			.excp_i(m2_excp_flow),
+			.trans_en_i(m2_trans_en),
+			.mmu_resp_i(m2_mmu_resp),
+			.plv_i(m2_plv),
+
+
 			.ecode_o(ecode),
 			.esubcode_o(esubcode),
 			.excp_trigger_o(excp_trigger),
 			.bad_va_o(bad_va)
 		);
+		assign csr_module.va_error_i = excp_handler_module.va_error_o;
+		assign csr_module.tlbrefill_i = excp_handler_module.tlbrefill_o;
+		assign csr_module.tlbehi_update_i = excp_handler_module.tlbehi_update_o;
+		assign csr_module.ipe_i = excp_handler_module.ipe_o;
+		assign m2_plv = csr_module.reg_crmd[`_CRMD_PLV];
 		assign m2_clr_req_o = m2_csr_jump_req & ~stall_vec_i[2];
 	end else begin
 		assign m2_lsu_read = '0;
