@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpf_front.sv
 // Create : 2023-01-31 14:22:04
-// Revise : 2023-01-31 14:57:40
+// Revise : 2023-02-03 15:46:35
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -16,7 +16,7 @@ module bpf_front (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
 	input [31:0] pc_i,
-	input decode_info_t [0:1] decode_i,
+	input decode_info_t [1:0] decode_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
 	output bpu_predict_t predict_o
