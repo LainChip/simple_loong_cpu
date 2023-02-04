@@ -81,7 +81,7 @@ module excp_handler(
             bad_va_o = vlsu_i;
             va_error_o = '1;
         end else 
-        if(trans_en_i && !mmu_resp_i.found && decode_info_i.m1.mem_valid) begin // DTLBR
+        if(trans_en_i && !mmu_resp_i.found && (decode_info_i.m1.mem_valid || decode_info_i.m2.cacop)) begin // DTLBR
             ecode_o = `_ECODE_TLBR;
             excp_trigger_o = '1;
             bad_va_o = vlsu_i;
@@ -89,7 +89,7 @@ module excp_handler(
             tlbrefill_o = '1;
             tlbehi_update_o = '1;
         end else 
-        if(trans_en_i && !mmu_resp_i.v && decode_info_i.m1.mem_valid) begin // PIS / PIL
+        if(trans_en_i && !mmu_resp_i.v && (decode_info_i.m1.mem_valid || decode_info_i.m2.cacop)) begin // PIS / PIL
             ecode_o = decode_info_i.m1.mem_write ? `_ECODE_PIS : `_ECODE_PIL;
             excp_trigger_o = '1;
             bad_va_o = vlsu_i; 

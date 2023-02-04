@@ -319,6 +319,14 @@ module backend_pipeline #(
 		|| ((m1_word_shift[0]) & ~m1_ctrl_flow.decode_info.m1.mem_type[0] & m1_ctrl_flow.decode_info.m1.mem_type[1]);
 		assign m1_lsu_adem = m1_trans_en && (m2_plv == 2'd3) && m1_ctrl_flow.decode_info.m1.mem_valid && m1_saddr[31];
 
+		// CACHE 指令
+		logic m2_icache_op_valid,ex_dcache_op_valid;
+		logic[1:0] m2_icache_op,ex_dcache_op;
+		assign ex_dcache_op_valid = ex_ctrl_flow.decode_info.m2.cacop && (ex_ctrl_flow.decode_info.general.inst25_0[2:0] == 3'd1);
+		assign ex_dcache_op = ex_ctrl_flow.decode_info.general.inst25_0[4:3];
+		assign m2_icache_op_valid = ~stall_vec_i[2] && m2_ctrl_flow.decode_info.m2.cacop && (m2_ctrl_flow.decode_info.general.inst25_0[2:0] == 3'd0) && ~m2_lsu_clr_hint;
+		assign m2_icache_op = m2_ctrl_flow.decode_info.general.inst25_0[4:3];
+
 		// Mem 2 部分，TLB结果返回paddr，比较Tag，产生结果，对CSR堆进行控制。 
 		// Mem connection here
 		lsu lsu_module(

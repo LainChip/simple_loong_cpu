@@ -133,6 +133,24 @@ module frontend(
     // 暂停以及清零控制逻辑
     assign frontend_clr = bpu_feedback_i.flush;
     assign bpu_stall = ~icache_ready | bpu_stall_req;
+
+    // CACHE 指令逻辑
+    logic icacheop_valid_i,icacheop_valid;
+    logic[1:0] icacheop_i,icacheop;
+    logic[31:0] icacheop_addr_i,icacheop_addr;
+    logic icacheop_ready;
+    always_ff @(posedge clk) begin
+        if(~rst_n) begin
+            icacheop_valid <= '0;
+        end else if(icacheop_valid_i) begin
+            icacheop_valid <= '1;
+            icacheop <= icacheop_i;
+            icacheop_addr <= icacheop_addr_i;
+        end else if(icacheop_ready) begin
+            icacheop_valid <= '0;
+        end
+    end
+
     // I CACHE 模块
     icache #(
         .FETCH_SIZE(2),
@@ -141,11 +159,11 @@ module frontend(
         .clk,    // Clock
         .rst_n,  // Asynchronous reset active low
         
-        .cacheop_i('0 /*TODO*/),
-        .cacheop_valid_i('0 /*TODO*/),
-        .cacheop_ready_o(/*NOT CONNECT TODO*/),
+        .cacheop_i(icacheop),
+        .cacheop_valid_i(icacheop_valid),
+        .cacheop_ready_o(icacheop_ready),
 
-        .vpc_i(bpu_vpc),
+        .vpc_i(icacheop_valid ? icacheop_addr : bpu_vpc),
         .valid_i(bpu_pc_valid),
         .attached_i(bpu_predict),
 

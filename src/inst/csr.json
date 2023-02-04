@@ -108,6 +108,12 @@
             "stage":"m2",
             "default_value":0,
             "invalid_value":0
+        },
+        "wait":{
+            "length":1,
+            "stage":"m2",
+            "default_value":0,
+            "invalid_value":0
         }
     },
     "inst": {
@@ -195,7 +201,8 @@
             "opcode":"00000110010010001",
             "reg_type":"`_REG_TYPE_I",
             "pipe_one_inst": 1,
-            "priv_inst": 1
+            "priv_inst": 1,
+            "wait": 1
         }
     }
 }

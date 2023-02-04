@@ -99,7 +99,7 @@ logic handling;
 
 assign stall = ~ready_i | handling;
 assign ready_o = ~stall & ~cacheop_valid_i;
-
+assign cacheop_ready_o = ~stall;
 // 地址及控制信息流水
 always_ff @(posedge clk) begin
     if(clr_i) begin
@@ -111,10 +111,10 @@ always_ff @(posedge clk) begin
         // valid_o <= '0;
     end else if(~stall) begin
         va_early <= vpc_i;
-        fetch_excp_adef_early <= |vpc_i[1:0];
-        fetch_valid_early <= valid_i;
+        fetch_excp_adef_early <= (|vpc_i[1:0]) && ~cacheop_valid_i;
+        fetch_valid_early <= valid_i & {FETCH_SIZE{~cacheop_valid_i}};
         fetch_attached_early <= attached_i;
-        valid_req_early <= ((|valid_i) & ready_o) | cacheop_valid_i;
+        valid_req_early <= ((|valid_i) & ready_o) & ~cacheop_valid_i;
         cache_op_type_early <= cacheop_i;
         cache_op_early <= cacheop_valid_i;
         
@@ -130,7 +130,8 @@ always_ff @(posedge clk) begin
         valid_req <= valid_req_early/*& TODO TLB VALID | cacheop */;
         cache_op_type <= cache_op_type_early;
         cache_op <= cache_op_early;
-        uncached <= 1'b0 /*TODO TLB UNCACHED*/;
+        // uncached <= '1;
+        uncached <= ~mmu_resp_i.mat[0];
 
         // vpc_o <= va;
         // ppc_o <= pa;
@@ -257,8 +258,8 @@ always_comb begin
     fsm_state_next = fsm_state;
     case(fsm_state)
         STATE_NORM: begin
-            if(cache_op) begin
-                if(cache_op_type[1]) begin // HIT INVALIDATE
+            if(~fetched & cache_op) begin
+                if(cache_op_type == 2'b10) begin // HIT INVALIDATE
                     if(~inv) begin
                         fsm_state_next = STATE_INVA;
                     end
@@ -353,7 +354,7 @@ end
 always_comb begin
 	bus_req_o.valid = fsm_state == STATE_ADDR;
 	bus_req_o.write = '0;
-	bus_req_o.burst = ~uncached;
+	bus_req_o.burst = '1;
 	bus_req_o.cached = ~uncached;
 	bus_req_o.addr = {pa[31:4], 4'b0000};
 
@@ -401,9 +402,9 @@ assign mmu_req_vpc_o = va_early;
 assign page_index_raw = mmu_resp_i.paddr[31:12];
 
 // FETCH异常逻辑
-assign fetch_excp_o.adef = fetch_excp_adef || (va[31] && (plv == 2'd3) && trans_en);
-assign fetch_excp_o.tlbr = !mmu_resp.found && trans_en;
-assign fetch_excp_o.pif = mmu_resp.found && !mmu_resp.v && trans_en;
-assign fetch_excp_o.ppi = (plv > mmu_resp.plv) && trans_en && mmu_resp.v;
+assign fetch_excp_o.adef = fetch_excp_adef || (va[31] && (plv == 2'd3) && trans_en && ~cache_op);
+assign fetch_excp_o.tlbr = !mmu_resp.found && trans_en && ~cache_op;
+assign fetch_excp_o.pif = mmu_resp.found && !mmu_resp.v && trans_en && ~cache_op;
+assign fetch_excp_o.ppi = (plv > mmu_resp.plv) && trans_en && mmu_resp.v && ~cache_op;
 assign fetch_excp = |fetch_excp_o;
 endmodule

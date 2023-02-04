@@ -79,6 +79,11 @@ assign i_trans_en = backend.pipeline_0.sp_inst_blk.pg_mode && !dmw0_en && !dmw1_
 assign frontend.icache_module.plv = backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV];
 assign frontend.icache_module.trans_en_i = i_trans_en;
 
+// cacop
+assign frontend.icacheop_valid_i = backend.pipeline_0.sp_inst_blk.m2_icache_op_valid;
+assign frontend.icacheop_i = backend.pipeline_0.sp_inst_blk.m2_icache_op;
+assign frontend.icacheop_addr_i = backend.pipeline_0.m2_vaddr;
+
 // backend
 backend backend(
 	.clk(clk),
@@ -117,6 +122,8 @@ mmu #(
 	.stall_i(backend.pipeline_0.stall_vec_i[2]),
 	.mmu_s_req_i ({immu_req            , backend.mmu_req_o  }),
 	.mmu_s_resp_o({immu_resp           , dmmu_resp          }),
+	.mmu_raw_mat_i({backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATF],
+					backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATM]}),
 
 	.decode_info_i(backend.pipeline_0.m2_ctrl_flow.decode_info),
 	.tlbehi_i     (backend.pipeline_0.sp_inst_blk.csr_module.reg_tlbehi),
