@@ -89,7 +89,21 @@ module frontend(
         return ret;
     endfunction
 
-
+    // IDLE WAIT逻辑
+    // 当出现idle指令的时候，刷新整条流水线到idle + 4的位置，并在前端停住整条流水线，以降低执行功耗。
+    logic wait_i,int_i;
+    logic idle_lock;
+    always @(posedge clk) begin
+        if (~rst_n) begin
+            idle_lock <= 1'b0;
+        end
+        else if (wait_i && !int_i) begin
+            idle_lock <= 1'b1;
+        end
+        else if (int_i) begin
+            idle_lock <= 1'b0;
+        end
+    end
     fetch_excp_t fetch_excp;
     bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict;
     bpu_predict_t bpu_predict,fetch_predict;
@@ -114,7 +128,7 @@ module frontend(
         .stall_o(bpu_stall_req)
     );
 
-    assign bpu_pc_valid = {~frontend_clr & rst_n , ~frontend_clr & ~bpu_vpc[2] & rst_n};
+    assign bpu_pc_valid = {~frontend_clr & rst_n & ~idle_lock, ~frontend_clr & ~bpu_vpc[2] & rst_n & ~idle_lock};
 
 
     // bpu inst_bpu
@@ -132,7 +146,7 @@ module frontend(
 
     // 暂停以及清零控制逻辑
     assign frontend_clr = bpu_feedback_i.flush;
-    assign bpu_stall = ~icache_ready | bpu_stall_req;
+    assign bpu_stall = ~icache_ready | bpu_stall_req | idle_lock;
 
     // CACHE 指令逻辑
     logic icacheop_valid_i,icacheop_valid;

@@ -116,7 +116,7 @@ class decoder_parser:
         inst_list_dict_order.sort(key=cmp_to_key(self.dict_order_cmp))
         str_builder += self.gen_blank(depth) + "always_comb begin\n"
         depth += 1
-        str_builder += self.gen_blank(depth) + "casez(inst_i)\n"
+        str_builder += self.gen_blank(depth) + "unique casez(inst_i)\n"
         depth += 1
         opcode_len = 0
         while len(inst_list_dict_order) != 0 and opcode_len != 32:

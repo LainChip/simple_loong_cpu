@@ -291,7 +291,7 @@ logic [31:0] wr_data;
 assign wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : ((wr_data_i & wr_mask_i) | (read_reg_result & ~wr_mask_i));
 logic write_en;
 
-assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i & ~ipe_i;
+assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i & ~ipe_i & ~do_interrupt;
 
 wire wen_crmd             = write_en & (wr_addr_i == ADDR_CRMD) ;
 wire wen_prmd             = write_en & (wr_addr_i == ADDR_PRMD) ;
@@ -360,8 +360,6 @@ logic[31:0] wr_data_dmw1        ;
 
 logic [5:0] ecode_selcted;
 logic [8:0] esubcode_selected;
-logic [7:0] hard_interrupt;
-assign hard_interrupt = interrupt_i[7:0];
 logic       timer_interrupt;//to assign
 logic       ipi_interrupt;//to assign
 logic       va_error;
@@ -529,7 +527,7 @@ always_ff @(posedge clk) begin
         else if (wen_tcfg) begin
             timer_en <= wr_data[`_TCFG_EN];
         end
-        else if (timer_en && (reg_tval == 32'd0) && ~stall_i && decode_info_i.wb.valid) begin
+        else if (timer_en && (reg_tval == 32'd0)) begin
             reg_estat[11] <= 1'b1;
             estat_chg <= '1;
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
@@ -569,7 +567,7 @@ end
 always_ff @(posedge clk) begin
     if(wen_tcfg) begin
         reg_tval <= {wr_data[`_TCFG_INITVAL], 2'b0};
-    end else if(timer_en && ~stall_i && decode_info_i.wb.valid) begin
+    end else if(timer_en) begin
         if(reg_tval != 32'd0)begin
             reg_tval <= reg_tval - 32'd1;
         end else if(reg_tval == 32'b0) begin
@@ -812,7 +810,12 @@ always_comb begin
 end
 
 // assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1) || (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_SYSCALL) || (m2_ctrl_flow.decode_info.m2.exception_hint == `_EXCEPTION_HINT_INVALID && ~excp_i.adef);
-assign m2_clr_exclude_self_o = (m2_ctrl_flow.decode_info.m2.do_ertn == 1'b1) || (do_refetch);
+assign m2_clr_exclude_self_o = do_ertn || do_refetch;
+
+// WAIT LOGIC
+logic wait_valid,int_valid;
+assign wait_valid = ~stall_i & decode_info_i.m2.wait_hint;
+assign int_valid = (|(reg_ectl[`_ECTL_LIE] & reg_estat[`_ESTAT_IS])) & reg_crmd[`_CRMD_IE];
 
 `ifdef _DIFFTEST_ENABLE
 

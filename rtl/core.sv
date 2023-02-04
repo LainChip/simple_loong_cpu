@@ -84,6 +84,10 @@ assign frontend.icacheop_valid_i = backend.pipeline_0.sp_inst_blk.m2_icache_op_v
 assign frontend.icacheop_i = backend.pipeline_0.sp_inst_blk.m2_icache_op;
 assign frontend.icacheop_addr_i = backend.pipeline_0.m2_vaddr;
 
+// wait
+assign frontend.wait_i = backend.pipeline_0.sp_inst_blk.csr_module.wait_valid;
+assign frontend.int_i  = backend.pipeline_0.sp_inst_blk.csr_module.int_valid;
+
 // backend
 backend backend(
 	.clk(clk),

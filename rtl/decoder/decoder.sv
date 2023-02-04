@@ -8,7 +8,7 @@ module decoder(
 );
 
     always_comb begin
-        casez(inst_i)
+        unique casez(inst_i)
             32'b010011??????????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
                 decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
