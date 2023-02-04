@@ -50,10 +50,13 @@ module csr(
 
     // TLB
     input tlb_entry_t tlb_entry_i,
-    input mmu_s_resp_t mmu_resp_i
+    input mmu_s_resp_t mmu_resp_i,
 
     //todo: llbit
     //todo: tlb related addr translate
+    input  logic llbit_set_i,
+    input  logic llbit_i,
+    output logic llbit_o,
 
     `ifdef _DIFFTEST_ENABLE
     ,input logic delay_csr_i
@@ -118,7 +121,8 @@ logic [31:0]    reg_tcfg;
 logic [31:0]    reg_tval;
 logic [31:0]    reg_cntc;
 logic [31:0]    reg_ticlr;
-logic [31:0]    reg_llbctl;
+logic [31:1]    reg_llbctl;
+logic llbit;
 logic [31:0]    reg_tlbrentry;
 logic [31:0]    reg_ctag;
 logic [31:0]    reg_dmw0;
@@ -250,7 +254,7 @@ always_comb begin
             read_reg_result = reg_ticlr;
         end
         ADDR_LLBCTL        : begin
-            read_reg_result = reg_llbctl;
+            read_reg_result = {reg_llbctl,llbit};
         end
         ADDR_TLBRENTRY     : begin  
             read_reg_result = reg_tlbrentry;
@@ -351,7 +355,7 @@ logic[31:0] wr_data_tcfg        ;
 logic[31:0] wr_data_tval        ;
 logic[31:0] wr_data_cntc        ;
 logic[31:0] wr_data_ticlr       ;
-logic[31:0] wr_data_llbctl      ;
+// logic[31:0] wr_data_llbctl      ;
 logic[31:0] wr_data_tlbrentry   ;
 logic[31:0] wr_data_ctag        ;
 logic[31:0] wr_data_dmw0        ;
@@ -387,7 +391,7 @@ always_comb begin
     wr_data_tcfg       = (wen_tcfg ) ? wr_data : reg_tcfg ;//todo
     wr_data_cntc       = (wen_cntc ) ? wr_data : reg_cntc ;//todo
     wr_data_ticlr      = (wen_ticlr ) ? wr_data : reg_ticlr ;//todo
-    wr_data_llbctl     = (wen_llbctl) ? wr_data : reg_llbctl ;//todo
+    // wr_data_llbctl     = (wen_llbctl) ? wr_data : reg_llbctl ;//todo
     wr_data_tlbrentry  = (wen_tlbrentry) ? wr_data : reg_tlbrentry ;//todo
     wr_data_ctag       = (wen_ctag ) ? wr_data : reg_ctag ;//todo
     wr_data_dmw0       = (wen_dmw0 ) ? wr_data : reg_dmw0 ;//todo
@@ -420,10 +424,10 @@ always_ff @(posedge clk) begin
         reg_save3       <= 32'd0;
         reg_tid         <= 32'd0;
         reg_tcfg        <= 32'd0;
-        //reg_tval        <= 32'd0;
+        // reg_tval        <= 32'd0;
         reg_cntc        <= 32'd0;
         reg_ticlr       <= 32'd0;
-        reg_llbctl      <= 32'd0;
+        // reg_llbctl      <= 32'd0;
         reg_tlbrentry   <= 32'd0;
         reg_ctag        <= 32'd0;
         reg_dmw0        <= 32'd0;
@@ -448,7 +452,7 @@ always_ff @(posedge clk) begin
         reg_tcfg        <= (wr_data_tcfg & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_tcfg & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);//change with n?
         reg_cntc        <= (wr_data_cntc & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_cntc & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_ticlr       <= (wr_data_ticlr & 32'b0000_0000_0000_0000_0000_0000_0000_0000) | (reg_ticlr & ~32'b0000_0000_0000_0000_0000_0000_0000_0000); // w1 to read about timer
-        reg_llbctl      <= (wr_data_llbctl & 32'b0000_0000_0000_0000_0000_0000_0000_0100) | (reg_llbctl & ~32'b0000_0000_0000_0000_0000_0000_0000_0100);//w1 to read about llbit
+        // reg_llbctl      <= (wr_data_llbctl & 32'b0000_0000_0000_0000_0000_0000_0000_0100) | (reg_llbctl & ~32'b0000_0000_0000_0000_0000_0000_0000_0100);//w1 to read about llbit
         reg_tlbrentry   <= (wr_data_tlbrentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_tlbrentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
         reg_ctag        <= (wr_data_ctag & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_ctag & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);//todo
         reg_dmw0        <= (wr_data_dmw0 & 32'b1110_1110_0000_0000_0000_0000_0011_1001) | (reg_dmw0 & ~32'b1110_1110_0000_0000_0000_0000_0011_1001);
@@ -616,7 +620,7 @@ always_ff @(posedge clk) begin
 end
 
 //tlbehi
-always @(posedge clk) begin
+always_ff @(posedge clk) begin
     if (~rst_n) begin
         reg_tlbehi[12:0] <= 13'b0;
     end
@@ -635,7 +639,7 @@ always @(posedge clk) begin
 end
 
 //tlbelo0
-always @(posedge clk) begin
+always_ff @(posedge clk) begin
     if (~rst_n) begin
         reg_tlbelo0[7] <= 1'b0;
     end
@@ -666,7 +670,7 @@ always @(posedge clk) begin
 end
 
 //tlbelo1
-always @(posedge clk) begin
+always_ff @(posedge clk) begin
     if (~rst_n) begin
         reg_tlbelo1[7] <= 1'b0;
     end
@@ -697,7 +701,7 @@ always @(posedge clk) begin
 end
 
 //asid
-always @(posedge clk) begin
+always_ff @(posedge clk) begin
     if (~rst_n) begin
         reg_asid[31:10] <= 22'h280; //ASIDBITS = 10
     end
@@ -711,6 +715,32 @@ always @(posedge clk) begin
         reg_asid[`_ASID] <= 10'b0;
     end
 end
+
+//llbctl
+always_ff @(posedge clk) begin
+    if(~rst_n) begin
+        reg_llbctl[`_LLBCT_KLO] <= 1'b0;
+        reg_llbctl[31:3] <= 29'b0;
+        llbit <= '0;
+    end 
+    else if(do_ertn) begin
+        if(reg_llbctl[`_LLBCT_KLO]) begin
+            reg_llbctl[`_LLBCT_KLO] <= 1'b0;
+        end else begin
+            llbit <= '0;
+        end
+    end
+    else if(wen_llbctl) begin
+        reg_llbctl[`_LLBCT_KLO] <= wr_data[`_LLBCT_KLO];
+        if (wr_data[`_LLBCT_WCLLB] == 1'b1) begin
+            llbit <= 1'b0;
+        end
+    end
+    else if(llbit_set_i && ~stall_i && ~lsu_clr_hint_o) begin
+        llbit <= llbit_i;
+    end
+end
+assign llbit_o = llbit;
 
 always_comb begin
     tid_o = reg_tid;
@@ -913,7 +943,7 @@ always_ff @(posedge clk) begin
 end
 logic [31:0] delay_reg_llbctl;
 always_ff @(posedge clk) begin
-    delay_reg_llbctl <= reg_llbctl;
+    delay_reg_llbctl <= {reg_llbctl,llbit};
 end
 logic [31:0] delay_reg_tlbrentry;
 always_ff @(posedge clk) begin
@@ -954,7 +984,7 @@ DifftestCSRRegState DifftestCSRRegState(
     .tcfg               (delay_csr_i ? delay_reg_tcfg : reg_tcfg),
     .tval               (delay_csr_i ? delay_reg_tval : reg_tval),
     .ticlr              (delay_csr_i ? delay_reg_ticlr : reg_ticlr),
-    .llbctl             (delay_csr_i ? delay_reg_llbctl : reg_llbctl),
+    .llbctl             (delay_csr_i ? delay_reg_llbctl : {reg_llbctl,llbit}),
     .tlbrentry          (delay_csr_i ? delay_reg_tlbrentry : reg_tlbrentry),
     .dmw0               (delay_csr_i ? delay_reg_dmw0 : reg_dmw0),
     .dmw1               (delay_csr_i ? delay_reg_dmw1 : reg_dmw1)

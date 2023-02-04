@@ -80,6 +80,7 @@ module backend_pipeline #(
 	logic [31:0] m1_saddr,m1_paddr;
 	logic [1:0]  m1_word_shift,m2_plv;
 	logic [31:0] m2_paddr;
+	logic llbit;
 
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_csr_jump_target, m2_vaddr;
 	
@@ -312,7 +313,9 @@ module backend_pipeline #(
 
 	if(MAIN_PIPE) begin	: sp_inst_blk
 		// AGU here
-		assign ex_vaddr = ex_data_flow_forwarding.reg_data[1] + {{20{ex_ctrl_flow.decode_info.general.inst25_0[21]}},ex_ctrl_flow.decode_info.general.inst25_0[21:10]};
+		assign ex_vaddr = ex_ctrl_flow.decode_info.m2.llsc ? 
+		ex_data_flow_forwarding.reg_data[1] + {{16{ex_ctrl_flow.decode_info.general.inst25_0[23]}},ex_ctrl_flow.decode_info.general.inst25_0[23:10],2'b00}:
+		ex_data_flow_forwarding.reg_data[1] + {{20{ex_ctrl_flow.decode_info.general.inst25_0[21]}},ex_ctrl_flow.decode_info.general.inst25_0[21:10]};
 
 		// 地址检查
 		assign m1_lsu_ale = ((|m1_word_shift) & m1_ctrl_flow.decode_info.m1.mem_type[0] & ~m1_ctrl_flow.decode_info.m1.mem_type[1]) 
@@ -339,7 +342,7 @@ module backend_pipeline #(
 			.paddr_i(m1_paddr),
 			.paddr_o(),
 			.w_data_i(m2_data_flow_forwarding.reg_data[0]),
-			.request_clr_m2_i(clr_vec_i[2] | m2_lsu_clr_hint),
+			.request_clr_m2_i(clr_vec_i[2] || m2_lsu_clr_hint || (m2_ctrl_flow.decode_info.m2.llsc && m2_ctrl_flow.decode_info.m1.mem_write && !llbit)),
 			.request_clr_m1_i(clr_vec_i[1]),
 			.r_data_o(m2_lsu_read),
 
@@ -384,6 +387,9 @@ module backend_pipeline #(
 			.tid_o(tid_o),                        //输出：定时器id
 			//todo: llbit
 			//todo: tlb related addr translate
+			.llbit_set_i(m2_ctrl_flow.decode_info.m2.llsc && m2_ctrl_flow.decode_info.wb.valid),
+			.llbit_o(llbit),
+			.llbit_i(~m2_ctrl_flow.decode_info.m1.mem_write),
 
 			// TLB 连线
 			.tlb_entry_i(tlb_entry_i),
@@ -449,7 +455,7 @@ module backend_pipeline #(
 	assign m2_data_flow_forwarding.result = (m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_ALU || 
 											 m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_BPF) ? m2_data_flow_raw.result:
 											m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_LSU   ? m2_lsu_read : 
-											m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_MDU   ? m2_mdu_res  : m2_csr_read;
+											m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_MDU   ? (MAIN_PIPE ? {31'd0,llbit} :  m2_mdu_res)  : m2_csr_read;
 	assign m2_data_flow_forwarding.pc = m2_data_flow_raw.pc;
 	// WB部分，选择写回源进行写回。（转发源）
 	assign reg_w_addr_o = wb_ctrl_flow.w_reg;
