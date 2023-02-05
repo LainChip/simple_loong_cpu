@@ -66,7 +66,7 @@ module csr(
 
 // DEBUG 
 logic estat_chg;
-logic not_allowed_int; // 从stall中恢复的M2级指令不可以接受中断
+// logic not_allowed_int; // 从stall中恢复的M2级指令不可以接受中断
 
 // initial begin
 //     	$dumpfile("logs/vlt_dump.vcd");
@@ -774,7 +774,7 @@ always_comb begin
     tlbrefill_handler = reg_tlbrentry;
     redirect_addr_o = exception_handler;
     // redirect_addr_o
-    if(interrupt_need_handle && !not_allowed_int) begin
+    if(interrupt_need_handle/* && !not_allowed_int*/) begin
         redirect_addr_o = interrupt_handler;
         lsu_clr_hint_o = 1'b1;
     end else if (excp_trigger_i)begin
@@ -799,7 +799,7 @@ always_comb begin
         va_error
         bad_va_selected 
     */
-    if(interrupt_need_handle && (~stall_i) && decode_info_i.wb.valid && !not_allowed_int) begin
+    if(interrupt_need_handle && (~stall_i) && decode_info_i.wb.valid/* && !not_allowed_int*/) begin
         ecode_selcted = '0;
         esubcode_selected = '0;
         target_era = instr_pc_i;
@@ -850,9 +850,9 @@ logic wait_valid,int_valid;
 assign wait_valid = ~stall_i & decode_info_i.m2.wait_hint;
 assign int_valid = (|(reg_ectl[`_ECTL_LIE] & reg_estat[`_ESTAT_IS])) & reg_crmd[`_CRMD_IE];
 
-always_ff @(posedge clk) begin
-    not_allowed_int <= stall_i;
-end
+// always_ff @(posedge clk) begin
+//     not_allowed_int <= stall_i;
+// end
 
 `ifdef _DIFFTEST_ENABLE
 

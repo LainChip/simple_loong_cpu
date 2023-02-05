@@ -87,7 +87,7 @@ module lsu (
 		fsm_state_next = fsm_state;
 		case(fsm_state)
 			STATE_IDLE:begin
-				if(mem_req_stage_2.mem_valid & ~request_clr_m2_i & ~stall_i) begin
+				if(mem_req_stage_2.mem_valid & ~request_clr_m2_i) begin
 					fsm_state_next = STATE_ADDR;
 				end
 			end
