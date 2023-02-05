@@ -35,6 +35,7 @@ module csr(
 
     //for interrupt
     input   logic   [7:0]           interrupt_i,        //输入：中断信号
+    // input   logic                   not_allowed_int_i,  //LSU已经进入处理状态机，M2指令不可撤回
 
     //for exception
     input   logic   [31:0]          instr_pc_i,         //输入：指令pc
@@ -65,6 +66,7 @@ module csr(
 
 // DEBUG 
 logic estat_chg;
+logic not_allowed_int; // 从stall中恢复的M2级指令不可以接受中断
 
 // initial begin
 //     	$dumpfile("logs/vlt_dump.vcd");
@@ -531,7 +533,7 @@ always_ff @(posedge clk) begin
         else if (wen_tcfg) begin
             timer_en <= wr_data[`_TCFG_EN];
         end
-        else if (timer_en && (reg_tval == 32'd0)) begin
+        else if (timer_en && (reg_tval == 32'd0) && ~stall_i) begin
             reg_estat[11] <= 1'b1;
             estat_chg <= '1;
             timer_en      <= reg_tcfg[`_TCFG_PERIODIC];
@@ -547,7 +549,10 @@ always_ff @(posedge clk) begin
         end else begin
             estat_chg <= '0;
         end
-        reg_estat[9:2] <= interrupt_i;
+
+        if(~stall_i) begin
+            reg_estat[9:2] <= interrupt_i;
+        end
     end
 
 end
@@ -574,7 +579,7 @@ always_ff @(posedge clk) begin
     end else if(timer_en) begin
         if(reg_tval != 32'd0)begin
             reg_tval <= reg_tval - 32'd1;
-        end else if(reg_tval == 32'b0) begin
+        end else if(reg_tval == 32'b0 && ~stall_i) begin
             reg_tval <= reg_tcfg[`_TCFG_PERIODIC] ? {reg_tcfg[`_TCFG_INITVAL], 2'b0} : 32'hffffffff;
         end
     end 
@@ -769,7 +774,7 @@ always_comb begin
     tlbrefill_handler = reg_tlbrentry;
     redirect_addr_o = exception_handler;
     // redirect_addr_o
-    if(interrupt_need_handle) begin
+    if(interrupt_need_handle && !not_allowed_int) begin
         redirect_addr_o = interrupt_handler;
         lsu_clr_hint_o = 1'b1;
     end else if (excp_trigger_i)begin
@@ -794,12 +799,11 @@ always_comb begin
         va_error
         bad_va_selected 
     */
-    if(interrupt_need_handle & (~stall_i) & decode_info_i.wb.valid) begin
+    if(interrupt_need_handle && (~stall_i) && decode_info_i.wb.valid && !not_allowed_int) begin
         ecode_selcted = '0;
         esubcode_selected = '0;
         target_era = instr_pc_i;
         do_redirect_o = 1'b1;
-        do_exception  = 1'b0;
         do_interrupt  = 1'b1;
     end else if (excp_trigger_i & (~stall_i) & decode_info_i.wb.valid)begin
         ecode_selcted = ecode_i;
@@ -807,7 +811,6 @@ always_comb begin
         target_era = instr_pc_i;
         do_redirect_o = 1'b1;
         do_exception  = 1'b1;
-        do_interrupt  = 1'b0;
         tlbehi_update = tlbehi_update_i;
         if (
             //    ecode_i == `_ECODE_ADEF 
@@ -846,6 +849,10 @@ assign m2_clr_exclude_self_o = do_ertn || do_refetch;
 logic wait_valid,int_valid;
 assign wait_valid = ~stall_i & decode_info_i.m2.wait_hint;
 assign int_valid = (|(reg_ectl[`_ECTL_LIE] & reg_estat[`_ESTAT_IS])) & reg_crmd[`_CRMD_IE];
+
+always_ff @(posedge clk) begin
+    not_allowed_int <= stall_i;
+end
 
 `ifdef _DIFFTEST_ENABLE
 

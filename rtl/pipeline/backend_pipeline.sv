@@ -345,7 +345,7 @@ module backend_pipeline #(
 			.paddr_o(m2_paddr),
 			.w_data_i(m2_data_flow_forwarding.reg_data[0]),
 			.w_data_o(m2_wdata),
-			.request_clr_m2_i(clr_vec_i[2] || m2_lsu_clr_hint || (m2_ctrl_flow.decode_info.m2.llsc && m2_ctrl_flow.decode_info.m1.mem_write && !llbit)),
+			.request_clr_m2_i(clr_vec_i[2] || m2_lsu_clr_hint || (m2_ctrl_flow.decode_info.wb.valid && m2_ctrl_flow.decode_info.m2.llsc && m2_ctrl_flow.decode_info.m1.mem_write && !llbit)),
 			.request_clr_m1_i(clr_vec_i[1]),
 			.r_data_o(m2_lsu_read),
 
