@@ -194,8 +194,7 @@
             "reg_type":"`_REG_TYPE_RDCNTID",
             "ready_time":"`_READY_M2",
             "wb_sel":"`_REG_WB_CSR",
-            "pipe_one_inst": 1,
-            "priv_inst": 1
+            "pipe_one_inst": 1
         },
         "idle":{
             "opcode":"00000110010010001",
