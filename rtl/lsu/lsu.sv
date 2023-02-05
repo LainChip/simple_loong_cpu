@@ -16,6 +16,7 @@ module lsu (
 	input logic[31:0] vaddr_i,
 	input logic[31:0] paddr_i, // M2 STAGE
 	input logic[31:0] w_data_i,  // M2 STAGE
+	output logic[31:0] w_data_o,
 	input logic request_clr_m2_i,
 	input logic request_clr_m1_i,
 	output logic[31:0] r_data_o,
@@ -173,6 +174,7 @@ module lsu (
 
 	assign vaddr_o = mem_req_stage_2.mem_vaddr;
 	assign paddr_o = mem_req_stage_2.mem_addr;
+	assign w_data_o = bus_req_o.w_data & {{8{bus_req_o.data_strobe[3]}},{8{bus_req_o.data_strobe[2]}},{8{bus_req_o.data_strobe[1]}},{8{bus_req_o.data_strobe[0]}}};
 
 	always_ff @(posedge clk) begin
 		if(transfer_done) begin

@@ -56,7 +56,7 @@ module bpf (
 				`_CMP_LEQ: taken = $signed(rj_i) <= $signed(rd_i);
 				`_CMP_GEQ: taken = $signed(rj_i) >= $signed(rd_i);
 				`_CMP_LTU: taken = rj_i < rd_i;
-				`_CMP_GEU: taken = rj_i > rd_i;
+				`_CMP_GEU: taken = rj_i >= rd_i;
 				default : taken = 1'b0;
 			endcase
 		end else if (branch_type_i != `_BRANCH_INVALID) begin

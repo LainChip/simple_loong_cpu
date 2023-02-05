@@ -314,20 +314,20 @@ DifftestTrapEvent DifftestTrapEvent(
 DifftestStoreEvent DifftestStoreEvent(
     .clock              (clk           ),
     .coreid             (0              ),
-    .index              (0              ),
-    .valid              ('0/*TODO*/),
-    .storePAddr         ('0/*TODO*/),
-    .storeVAddr         ('0/*TODO*/),
-    .storeData          ('0/*TODO*/)
+    .index              (wb_ctrl_flow[0].revert ? 1:0),
+    .valid              (wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_write),
+    .storePAddr         (pipeline_0.wb_paddr),
+    .storeVAddr         (pipeline_0.wb_vaddr),
+    .storeData          (pipeline_0.wb_wdata)
 );
 
 DifftestLoadEvent DifftestLoadEvent(
     .clock              (clk           ),
     .coreid             (0              ),
-    .index              (0              ),
-    .valid              ('0/*TODO*/),
-    .paddr              ('0/*TODO*/),
-    .vaddr              ('0/*TODO*/)
+    .index              (wb_ctrl_flow[0].revert ? 1:0),
+    .valid              (wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && !wb_ctrl_flow[0].decode_info.m1.mem_write),
+    .paddr              (pipeline_0.wb_paddr),
+    .vaddr              (pipeline_0.wb_vaddr)
 );
 
 DifftestGRegState DifftestGRegState(

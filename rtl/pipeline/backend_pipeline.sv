@@ -79,11 +79,10 @@ module backend_pipeline #(
 	logic [31:0] ex_vaddr;
 	logic [31:0] m1_saddr,m1_paddr;
 	logic [1:0]  m1_word_shift,m2_plv;
-	logic [31:0] m2_paddr;
 	logic llbit;
 
-	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_csr_jump_target, m2_vaddr;
-	
+	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_csr_jump_target, m2_vaddr, m2_paddr, m2_wdata;
+	logic [31:0] wb_vaddr,wb_paddr,wb_wdata;
 	mmu_s_resp_t m2_mmu_resp;
 	logic m2_trans_en;
 	logic m2_csr_jump_req,m2_lsu_clr_hint;
@@ -237,7 +236,6 @@ module backend_pipeline #(
 				m1_saddr <= ex_vaddr;
 			end
 			m1_word_shift <= ex_vaddr[1:0];
-			m2_paddr <= m1_paddr;
 		end else begin
 			m1_data_flow_raw <= m1_data_flow_forwarding;
 		end
@@ -252,6 +250,9 @@ module backend_pipeline #(
 	end
 	always_ff @(posedge clk) begin
 		wb_data_flow <= m2_data_flow_forwarding;
+		wb_vaddr <= m2_vaddr;
+		wb_paddr <= m2_paddr;
+		wb_wdata <= m2_wdata;
 	end
 
 	// Excute 部分，对计算和跳转指令进行执行，对访存地址进行计算并完成第一阶段TLB比较 
@@ -340,8 +341,9 @@ module backend_pipeline #(
 			.vaddr_i(ex_vaddr),
 			.vaddr_o(m2_vaddr),
 			.paddr_i(m1_paddr),
-			.paddr_o(),
+			.paddr_o(m2_paddr),
 			.w_data_i(m2_data_flow_forwarding.reg_data[0]),
+			.w_data_o(m2_wdata),
 			.request_clr_m2_i(clr_vec_i[2] || m2_lsu_clr_hint || (m2_ctrl_flow.decode_info.m2.llsc && m2_ctrl_flow.decode_info.m1.mem_write && !llbit)),
 			.request_clr_m1_i(clr_vec_i[1]),
 			.r_data_o(m2_lsu_read),

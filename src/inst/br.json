@@ -92,7 +92,7 @@
             "branch_type": "`_BRANCH_CONDITION",
             "reg_type": "`_REG_TYPE_RR",
             "use_time": "{`_USE_EX, `_USE_EX}",
-            "cmp_type": "`_CMP_GER",
+            "cmp_type": "`_CMP_GEQ",
             "pipe_one_inst": 1
         },
         "bltu": {
