@@ -137,6 +137,18 @@
             "cacop": 1,
             "pipe_one_inst": 1,
             "refetch":1
+        },
+        "dbar":{
+            "opcode":"00111000011100100",
+            "reg_type":"`_REG_TYPE_I",
+            "pipe_one_inst": 1,
+            "refetch":1
+        },
+        "ibar":{
+            "opcode":"00111000011100101",
+            "reg_type":"`_REG_TYPE_I",
+            "pipe_one_inst": 1,
+            "refetch":1
         }
     }
 }

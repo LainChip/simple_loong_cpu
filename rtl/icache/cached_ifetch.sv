@@ -6,7 +6,7 @@ module icache #(
 	parameter int FETCH_SIZE = 2,               // 只可选择 1 / 2 / 4
 	parameter int ATTACHED_INFO_WIDTH = 32,     // 用于捆绑bpu输出的信息，跟随指令流水
     // parameter int LANE_SIZE = 4,             // 指示一条cache line中存有几条指令 -- fixed为4,不可配置
-    parameter int WAY_CNT = 4,                  // 指示cache的组相联度
+    parameter int WAY_CNT = 2,                  // 指示cache的组相联度
     parameter bit BUFFERED_DECODER = 1'b1,
     parameter bit ENABLE_PLRU = 1'b0
 )(

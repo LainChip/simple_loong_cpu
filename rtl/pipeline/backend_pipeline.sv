@@ -79,7 +79,7 @@ module backend_pipeline #(
 	logic [31:0] ex_vaddr;
 	logic [31:0] m1_saddr,m1_paddr;
 	logic [1:0]  m1_word_shift,m2_plv;
-	logic llbit;
+	logic llbit,wb_llbit;
 
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_csr_jump_target, m2_vaddr, m2_paddr, m2_wdata;
 	logic [31:0] wb_vaddr,wb_paddr,wb_wdata;
@@ -253,6 +253,7 @@ module backend_pipeline #(
 		wb_vaddr <= m2_vaddr;
 		wb_paddr <= m2_paddr;
 		wb_wdata <= m2_wdata;
+		wb_llbit <= llbit;
 	end
 
 	// Excute 部分，对计算和跳转指令进行执行，对访存地址进行计算并完成第一阶段TLB比较 

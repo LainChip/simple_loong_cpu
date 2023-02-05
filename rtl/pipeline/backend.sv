@@ -311,21 +311,37 @@ DifftestTrapEvent DifftestTrapEvent(
     .instrCnt           ('0/*TODO*/)
 );
 
-DifftestStoreEvent DifftestStoreEvent(
+DifftestStoreEvent DifftestStoreEvent_0(
     .clock              (clk           ),
     .coreid             (0              ),
-    .index              (wb_ctrl_flow[0].revert ? 1:0),
-    .valid              (wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_write),
+    .index              (0),
+    .valid              (!wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && wb_ctrl_flow[0].decode_info.m1.mem_write && (!wb_ctrl_flow[0].decode_info.m2.llsc || pipeline_0.wb_llbit)),
     .storePAddr         (pipeline_0.wb_paddr),
     .storeVAddr         (pipeline_0.wb_vaddr),
     .storeData          (pipeline_0.wb_wdata)
 );
-
-DifftestLoadEvent DifftestLoadEvent(
+DifftestStoreEvent DifftestStoreEvent_1(
     .clock              (clk           ),
     .coreid             (0              ),
-    .index              (wb_ctrl_flow[0].revert ? 1:0),
-    .valid              (wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && !wb_ctrl_flow[0].decode_info.m1.mem_write),
+    .index              (1),
+    .valid              (wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && wb_ctrl_flow[0].decode_info.m1.mem_write && (!wb_ctrl_flow[0].decode_info.m2.llsc || pipeline_0.wb_llbit)),
+    .storePAddr         (pipeline_0.wb_paddr),
+    .storeVAddr         (pipeline_0.wb_vaddr),
+    .storeData          (pipeline_0.wb_wdata)
+);
+DifftestLoadEvent DifftestLoadEvent_0(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (0),
+    .valid              (!wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && !wb_ctrl_flow[0].decode_info.m1.mem_write),
+    .paddr              (pipeline_0.wb_paddr),
+    .vaddr              (pipeline_0.wb_vaddr)
+);
+DifftestLoadEvent DifftestLoadEvent_1(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (1),
+    .valid              (wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && !wb_ctrl_flow[0].decode_info.m1.mem_write),
     .paddr              (pipeline_0.wb_paddr),
     .vaddr              (pipeline_0.wb_vaddr)
 );
