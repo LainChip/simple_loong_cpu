@@ -221,7 +221,7 @@ always_comb begin
             read_reg_result = reg_pgdh;
         end
         ADDR_PGD           : begin
-            read_reg_result = reg_pgd;
+            read_reg_result = reg_badv[31] ? reg_pgdh : reg_pgdl;
         end
         ADDR_CPUID         : begin
             read_reg_result = reg_cpuid;
@@ -416,7 +416,7 @@ always_ff @(posedge clk) begin
         // reg_asid        <= 32'd0;//todo init asidbits
         reg_pgdl        <= 32'd0;
         reg_pgdh        <= 32'd0;
-        reg_pgd         <= 32'd0;
+        // reg_pgd         <= 32'd0;
         reg_cpuid       <= 32'd0;
         reg_save0       <= 32'd0;
         reg_save1       <= 32'd0;
@@ -442,7 +442,7 @@ always_ff @(posedge clk) begin
         reg_eentry      <= (wr_data_eentry & 32'b1111_1111_1111_1111_1111_1111_1100_0000) | (reg_eentry & ~32'b1111_1111_1111_1111_1111_1111_1100_0000);
         reg_pgdl        <= (wr_data_pgdl & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdl & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
         reg_pgdh        <= (wr_data_pgdh & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgdh & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
-        reg_pgd         <= (wr_data_pgd & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgd & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
+        // reg_pgd         <= (wr_data_pgd & 32'b1111_1111_1111_1111_1111_0000_0000_0000) | (reg_pgd & ~32'b1111_1111_1111_1111_1111_0000_0000_0000);
         reg_cpuid       <= (wr_data_cpuid & 32'b0000_0000_0000_0000_0000_0000_0000_0000) | (reg_cpuid & ~32'b0000_0000_0000_0000_0000_0000_0000_0000);
         reg_save0       <= (wr_data_save0 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_save0 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
         reg_save1       <= (wr_data_save1 & 32'b1111_1111_1111_1111_1111_1111_1111_1111) | (reg_save1 & ~32'b1111_1111_1111_1111_1111_1111_1111_1111);
