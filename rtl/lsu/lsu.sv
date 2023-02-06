@@ -167,7 +167,7 @@ module lsu (
 						r_data_handled = {{24{(bus_resp_i.r_data[7 ] & ~mem_req_stage_2.mem_type[2])}},bus_resp_i.r_data[7 :0]};
 			end
 			default: begin
-				bus_req_o.data_strobe = 4'b0000;
+				r_data_handled = bus_resp_i.r_data;
 			end
 		endcase
 	end
