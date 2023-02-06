@@ -11,8 +11,8 @@ module mdu #(
     input clk,
     input rst_n,
     
-    input [1:0] stall_i,    // stall_i : [0] for m1, [1] for m2
-    input [2:0] clr_i,      // clr_i   : [0] for ex, [1] for m1, [2] for m2
+    input [2:0] stall_i,    // [0] for m1, [1] for m1, [2] for m2
+    input [2:0] clr_i,      // [0] for ex, [1] for m1, [2] for m2
     output div_busy_o,
 
     input decode_info_t decode_info_i,
@@ -32,6 +32,7 @@ module mdu #(
         alu_type_t alu_type;
         opd_unsigned_t opd_unsigned;
         logic [31:0] mdu_opd1, mdu_opd2;
+        logic inst_valid;
     } mdu_flow_t;
 
     mdu_flow_t mdu_stage_0, mdu_stage_1, mdu_stage_2;
@@ -41,11 +42,12 @@ module mdu #(
     assign mdu_stage_0.opd_unsigned = decode_info_i.ex.opd_unsigned;
     assign mdu_stage_0.mdu_opd1 = reg_fetch_i[0];
     assign mdu_stage_0.mdu_opd2 = reg_fetch_i[1];
+    assign mdu_stage_0.inst_valid = decode_info_i.wb.valid & ~stall_i[0];
 
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             mdu_stage_1 <= '0;
-        end else if (~stall_i[0] & ~div_busy_o) begin
+        end else if (~stall_i[1]) begin
             if (clr_i[0]) begin
                 mdu_stage_1 <= '0;                
             end else begin
@@ -57,7 +59,7 @@ module mdu #(
     always_ff @(posedge clk) begin
         if (~rst_n) begin
             mdu_stage_2 <= '0;
-        end else if (~stall_i[1] & ~div_busy_o) begin
+        end else if (~stall_i[2]) begin
             if (clr_i[1]) begin
                 mdu_stage_2 <= '0;                
             end else begin
@@ -120,20 +122,9 @@ module mdu #(
         end
     end
     
-    assign div_valid_m = is_div & (mdu_stage_2.mdu_opd2 != 0) & ~busy;
+    assign div_valid_m = mdu_stage_2.inst_valid & is_div & (mdu_stage_2.mdu_opd2 != 0) & ~busy;
     assign res_ready_m = busy;
     // stall signal from inside, while divider is still calculating
-    
-    // ---- block only for test
-    wire halfway_div = (div_valid_m & div_ready_s) | busy;
-    wire halfway_res = ~(res_valid_s & res_ready_m);
-    wire test_div_busy;
-    assign test_div_busy = halfway_div && halfway_res;
-    wire test_div_busy1 = 1 & 1;
-    wire test_div_busy2 = 1 & halfway_div;
-    wire test_div_busy3 = halfway_res & 1;
-    // ---- block only for test
-
     assign div_busy_o = ((div_valid_m & div_ready_s) | busy) & 
                          ~(res_valid_s & res_ready_m);
 
