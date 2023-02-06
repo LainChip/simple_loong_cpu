@@ -306,6 +306,12 @@ module backend_pipeline #(
 		assign ex_stall_req_o = '0;
 		assign ex_clr_req_o = bpu_feedback_o.flush;
 		assign bpf_result = ex_data_flow_raw.pc + 32'd4;
+
+		(* mark_debug="true" *) wire[3:0] debug_ex_forwarding_source_0 = ex_ctrl_flow.forwarding_info[0].ex_forward_source;
+		(* mark_debug="true" *) wire[3:0] debug_ex_forwarding_source_1 = ex_ctrl_flow.forwarding_info[1].ex_forward_source;
+		(* mark_debug="true" *) wire[31:0] debug_ex_reg_raw_0 = ex_data_flow_raw.reg_data[0];
+		(* mark_debug="true" *) wire[31:0] debug_ex_reg_raw_1 = ex_data_flow_raw.reg_data[1];
+
 	end else begin
 		assign ex_stall_req_o = '0;
 		assign ex_clr_req_o = 0;

@@ -74,9 +74,9 @@ module reg_file #(
     endgenerate
 
     always_ff @(posedge clk) begin
-      // if(~rst_n) begin
-      //   regs <= '0;
-      // end else
+      if(~rst_n) begin
+        regs <= '0;
+      end else
       begin
         regs <= regs_update;
       end

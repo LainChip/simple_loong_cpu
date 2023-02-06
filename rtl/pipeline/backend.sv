@@ -109,7 +109,8 @@ module backend(
 	for(genvar pipe_id = 0 ; pipe_id < 2; pipe_id += 1) begin
 		inst_t inst_sel;
 		assign inst_sel = inst_i[revert ^ pipe_id[0]];
-		forwarding_info_t[1:0] forwarding_info_sel = forwarding_info[revert ^ pipe_id];
+		forwarding_info_t[1:0] forwarding_info_sel;
+		assign forwarding_info_sel = forwarding_info[revert ^ pipe_id];
 		always_comb begin
 			ctrl_flow[pipe_id].decode_info = inst_sel.decode_info;
 			ctrl_flow[pipe_id].bpu_predict = inst_sel.bpu_predict;
