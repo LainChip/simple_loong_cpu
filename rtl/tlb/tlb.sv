@@ -29,7 +29,9 @@ tlb_entry_t [TLB_ENTRY_NUM-1 : 0] tlb_entry;
 //search
 generate
     for(genvar i = 0; i < TLB_PORT; ++i) begin
-        tlb_lookup tlb_lookup_data(
+        tlb_lookup #(
+            .TLB_ENTRY_NUM(TLB_ENTRY_NUM)
+        )tlb_lookup_data(
             .tlb_entry_i(tlb_entry),
             .req_i(s_req_i[i]),
             .resp_o(s_resp_o[i])
