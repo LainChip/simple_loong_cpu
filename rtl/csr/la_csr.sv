@@ -5,7 +5,7 @@
 
 //`ifdef __CSR_VER_1
 
-module csr(
+module la_csr(
     input           clk,
     input           rst_n,
     
@@ -112,7 +112,7 @@ logic [31:0]    reg_tlbelo1;
 logic [31:0]    reg_asid;
 logic [31:0]    reg_pgdl;
 logic [31:0]    reg_pgdh;
-logic [31:0]    reg_pgd;
+// logic [31:0]    reg_pgd;
 logic [31:0]    reg_cpuid;
 logic [31:0]    reg_save0;
 logic [31:0]    reg_save1;
@@ -123,53 +123,53 @@ logic [31:0]    reg_tcfg;
 logic [31:0]    reg_tval;
 logic [31:0]    reg_cntc;
 logic [31:0]    reg_ticlr;
-logic [31:1]    reg_llbctl;
+logic [31:2]    reg_llbctl;
 logic llbit;
 logic [31:0]    reg_tlbrentry;
 logic [31:0]    reg_ctag;
 logic [31:0]    reg_dmw0;
 logic [31:0]    reg_dmw1;
-logic [31:0]    reg_brk;
-logic [31:0]    reg_disable_cache;
+// logic [31:0]    reg_brk;
+// logic [31:0]    reg_disable_cache;
 
 logic [63:0]    reg_timer_64;
 
 
 
-parameter logic [13:0] ADDR_CRMD             = 13'd0;
-parameter logic [13:0] ADDR_PRMD             = 13'd1;
-parameter logic [13:0] ADDR_EUEN             = 13'd2;
-parameter logic [13:0] ADDR_ECTL             = 13'd4;
-parameter logic [13:0] ADDR_ESTAT            = 13'd5;
-parameter logic [13:0] ADDR_ERA              = 13'd6;
-parameter logic [13:0] ADDR_BADV             = 13'd7;
-parameter logic [13:0] ADDR_EENTRY           = 13'd12;
-parameter logic [13:0] ADDR_TLBIDX           = 13'd16;
-parameter logic [13:0] ADDR_TLBEHI           = 13'd17;
-parameter logic [13:0] ADDR_TLBELO0          = 13'd18;
-parameter logic [13:0] ADDR_TLBELO1          = 13'd19;
-parameter logic [13:0] ADDR_ASID             = 13'd24;
-parameter logic [13:0] ADDR_PGDL             = 13'd25;
-parameter logic [13:0] ADDR_PGDH             = 13'd26;
-parameter logic [13:0] ADDR_PGD              = 13'd27;
-parameter logic [13:0] ADDR_CPUID            = 13'd32;
-parameter logic [13:0] ADDR_SAVE0            = 13'd48;
-parameter logic [13:0] ADDR_SAVE1            = 13'd49;
-parameter logic [13:0] ADDR_SAVE2            = 13'd50;
-parameter logic [13:0] ADDR_SAVE3            = 13'd51;
-parameter logic [13:0] ADDR_TID              = 13'd64;
-parameter logic [13:0] ADDR_TCFG             = 13'd65;
-parameter logic [13:0] ADDR_TVAL             = 13'd66;
-parameter logic [13:0] ADDR_CNTC             = 13'd67;
-parameter logic [13:0] ADDR_TICLR            = 13'd68;
-parameter logic [13:0] ADDR_LLBCTL           = 13'd96;
-parameter logic [13:0] ADDR_TLBRENTRY        = 13'd136;
-parameter logic [13:0] ADDR_CTAG             = 13'd152;
-parameter logic [13:0] ADDR_DMW0             = 13'd384;
-parameter logic [13:0] ADDR_DMW1             = 13'd385;
+parameter logic [13:0] ADDR_CRMD             = 14'd0;
+parameter logic [13:0] ADDR_PRMD             = 14'd1;
+parameter logic [13:0] ADDR_EUEN             = 14'd2;
+parameter logic [13:0] ADDR_ECTL             = 14'd4;
+parameter logic [13:0] ADDR_ESTAT            = 14'd5;
+parameter logic [13:0] ADDR_ERA              = 14'd6;
+parameter logic [13:0] ADDR_BADV             = 14'd7;
+parameter logic [13:0] ADDR_EENTRY           = 14'd12;
+parameter logic [13:0] ADDR_TLBIDX           = 14'd16;
+parameter logic [13:0] ADDR_TLBEHI           = 14'd17;
+parameter logic [13:0] ADDR_TLBELO0          = 14'd18;
+parameter logic [13:0] ADDR_TLBELO1          = 14'd19;
+parameter logic [13:0] ADDR_ASID             = 14'd24;
+parameter logic [13:0] ADDR_PGDL             = 14'd25;
+parameter logic [13:0] ADDR_PGDH             = 14'd26;
+parameter logic [13:0] ADDR_PGD              = 14'd27;
+parameter logic [13:0] ADDR_CPUID            = 14'd32;
+parameter logic [13:0] ADDR_SAVE0            = 14'd48;
+parameter logic [13:0] ADDR_SAVE1            = 14'd49;
+parameter logic [13:0] ADDR_SAVE2            = 14'd50;
+parameter logic [13:0] ADDR_SAVE3            = 14'd51;
+parameter logic [13:0] ADDR_TID              = 14'd64;
+parameter logic [13:0] ADDR_TCFG             = 14'd65;
+parameter logic [13:0] ADDR_TVAL             = 14'd66;
+parameter logic [13:0] ADDR_CNTC             = 14'd67;
+parameter logic [13:0] ADDR_TICLR            = 14'd68;
+parameter logic [13:0] ADDR_LLBCTL           = 14'd96;
+parameter logic [13:0] ADDR_TLBRENTRY        = 14'd136;
+parameter logic [13:0] ADDR_CTAG             = 14'd152;
+parameter logic [13:0] ADDR_DMW0             = 14'd384;
+parameter logic [13:0] ADDR_DMW1             = 14'd385;
 
-parameter logic [13:0] ADDR_BRK              = 13'd256;
-parameter logic [13:0] ADDR_DISABLE_CACHE    = 13'd257;
+parameter logic [13:0] ADDR_BRK              = 14'd256;
+parameter logic [13:0] ADDR_DISABLE_CACHE    = 14'd257;
 
 //Read
 logic [31:0] read_reg_result;
@@ -256,7 +256,7 @@ always_comb begin
             read_reg_result = reg_ticlr;
         end
         ADDR_LLBCTL        : begin
-            read_reg_result = {reg_llbctl,llbit};
+            read_reg_result = {reg_llbctl,1'b0,llbit};
         end
         ADDR_TLBRENTRY     : begin  
             read_reg_result = reg_tlbrentry;
@@ -271,12 +271,12 @@ always_comb begin
             read_reg_result = reg_dmw1;
         end
 
-        ADDR_BRK           : begin
-            read_reg_result = reg_brk;
-        end
-        ADDR_DISABLE_CACHE : begin
-            read_reg_result = reg_disable_cache;
-        end
+        // ADDR_BRK           : begin
+        //     read_reg_result = reg_brk;
+        // end
+        // ADDR_DISABLE_CACHE : begin
+        //     read_reg_result = reg_disable_cache;
+        // end
         default: begin
             read_reg_result = '0;
         end
@@ -383,7 +383,7 @@ always_comb begin
     wr_data_eentry     = (wen_eentry) ? wr_data : reg_eentry ;
     wr_data_pgdl       = (wen_pgdl ) ? wr_data : reg_pgdl ;//todo
     wr_data_pgdh       = (wen_pgdh ) ? wr_data : reg_pgdh ;//todo
-    wr_data_pgd        = (wen_pgd  ) ? wr_data : reg_pgd ;//todo
+    // wr_data_pgd        = (wen_pgd  ) ? wr_data : reg_pgd ;//todo
     wr_data_cpuid      = (wen_cpuid ) ? wr_data : reg_cpuid ;
     wr_data_save0      = (wen_save0 ) ? wr_data : reg_save0 ;
     wr_data_save1      = (wen_save1 ) ? wr_data : reg_save1 ;
@@ -662,7 +662,7 @@ always_ff @(posedge clk) begin
         reg_tlbelo0[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv0;
         reg_tlbelo0[`_TLBELO_TLB_MAT] <= tlb_entry_i.mat0;
         reg_tlbelo0[`_TLBELO_TLB_G]   <= tlb_entry_i.g;
-        reg_tlbelo0[`_TLBELO_TLB_PPN] <= tlb_entry_i.ppn0;
+        reg_tlbelo0[`_TLBELO_TLB_PPN] <= {4'b0000,tlb_entry_i.ppn0};
     end
     else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
         reg_tlbelo0[`_TLBELO_TLB_V]   <= 1'b0;
@@ -693,7 +693,7 @@ always_ff @(posedge clk) begin
         reg_tlbelo1[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv1;
         reg_tlbelo1[`_TLBELO_TLB_MAT] <= tlb_entry_i.mat1;
         reg_tlbelo1[`_TLBELO_TLB_G]   <= tlb_entry_i.g;
-        reg_tlbelo1[`_TLBELO_TLB_PPN] <= tlb_entry_i.ppn1;
+        reg_tlbelo1[`_TLBELO_TLB_PPN] <= {4'b0000,tlb_entry_i.ppn1};
     end
     else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
         reg_tlbelo1[`_TLBELO_TLB_V]   <= 1'b0;
@@ -838,7 +838,7 @@ always_comb begin
     if(~ipe_i && decode_info_i.m2.refetch && ~do_redirect_o && (~stall_i) && decode_info_i.wb.valid) begin
         do_redirect_o = 1'b1;
         do_refetch = 1'b1;
-        redirect_addr_o = instr_pc_i + 3'd4;
+        redirect_addr_o = instr_pc_i + 32'd4;
     end
 end
 
@@ -950,7 +950,7 @@ always_ff @(posedge clk) begin
 end
 logic [31:0] delay_reg_llbctl;
 always_ff @(posedge clk) begin
-    delay_reg_llbctl <= {reg_llbctl,llbit};
+    delay_reg_llbctl <= {reg_llbctl,1'b0,llbit};
 end
 logic [31:0] delay_reg_tlbrentry;
 always_ff @(posedge clk) begin
@@ -991,7 +991,7 @@ DifftestCSRRegState DifftestCSRRegState(
     .tcfg               (delay_csr_i ? delay_reg_tcfg : reg_tcfg),
     .tval               (delay_csr_i ? delay_reg_tval : reg_tval),
     .ticlr              (delay_csr_i ? delay_reg_ticlr : reg_ticlr),
-    .llbctl             (delay_csr_i ? delay_reg_llbctl : {reg_llbctl,llbit}),
+    .llbctl             (delay_csr_i ? delay_reg_llbctl : {reg_llbctl,1'b0,llbit}),
     .tlbrentry          (delay_csr_i ? delay_reg_tlbrentry : reg_tlbrentry),
     .dmw0               (delay_csr_i ? delay_reg_dmw0 : reg_dmw0),
     .dmw1               (delay_csr_i ? delay_reg_dmw1 : reg_dmw1)
@@ -1035,6 +1035,6 @@ DifftestExcpEvent DifftestExcpEvent(
 
 `endif
 
-endmodule : csr
+endmodule : la_csr
 
 //`endif

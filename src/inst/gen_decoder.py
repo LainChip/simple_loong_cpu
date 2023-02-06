@@ -138,7 +138,8 @@ class decoder_parser:
                         signal_value = str(self.signal_list[signal][1]) + "\'d" + str(signal_value)
                         
                     str_builder += self.gen_blank(depth) + 'decode_info_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
-                str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in inst]) + '}; //' + inst + '\n'
+                # str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in inst]) + '}; //' + inst + '\n'
+                str_builder += self.gen_blank(depth) + 'inst_string_o = \'0; //' + inst + '\n' 
                 depth -= 1
                 str_builder += self.gen_blank(depth) + "end\n"
         str_builder += self.gen_blank(depth) + "default: begin\n"

@@ -43,7 +43,7 @@ module bpf (
 					     branch_type_i == `_BRANCH_INDIRECT  		  ? rj_i + (offs_16) :
 					     branch_type_i == `_BRANCH_CONDITION && taken ? pc_i + (offs_16) :
 								   						       			// pc_i + 4;
-								   						       			{pc_i[31:3] + 1, 3'b000};
+								   						       			{pc_i[31:3] + 29'd1, 3'b000};
 	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
 	
 	always_comb begin : proc_taken
@@ -80,7 +80,7 @@ module bpf (
 	assign update_o.pc = pc_i[31:2];
 	// 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
 	assign update_o.br_target = csr_flush_i ? csr_target_i[31:0] : 
-								(pc_i[2] == 0 && taken == 0 && predict_i.taken == 1) ? {pc_i[31:2] + 1, 2'b00} : 
+								(pc_i[2] == '0 && taken == '0 && predict_i.taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} : 
 								target[31:0];
 
 	assign update_o.btb_update = 1'b1;

@@ -223,6 +223,8 @@ module backend(
     `endif
 	);
 
+	assign backend_stall_o = 1'b0;
+
 	// 暂停及清零控制器
 	always_comb begin
 		// 对于暂停的控制，如果某一流水线级请求暂停，则此流水线级 以及之前的所有流水线级 都需要暂停
@@ -255,16 +257,27 @@ module backend(
 	end
 	assign revert_vector = revert_vector_pipe[0] | revert_vector_pipe[1];
 
+ctrl_flow_t [1:0]wb_ctrl_flow;
+data_flow_t [1:0]wb_data_flow;
+assign wb_ctrl_flow = {pipeline_1.wb_ctrl_flow,pipeline_0.wb_ctrl_flow};
+assign wb_data_flow = {pipeline_1.wb_data_flow,pipeline_0.wb_data_flow};
+(* mark_debug="true" *) logic [31:0] commit_pc_0,commit_instr_0,commit_result_0;
+(* mark_debug="true" *) logic [31:0] commit_pc_1,commit_instr_1,commit_result_1;
+(* mark_debug="true" *) logic commit_valid_0,commit_valid_1;
+assign commit_pc_0 = wb_data_flow[0].pc;
+assign commit_pc_1 = wb_data_flow[1].pc;
+assign commit_instr_0 = wb_ctrl_flow[0].decode_info.wb.debug_inst;
+assign commit_instr_1 = wb_ctrl_flow[1].decode_info.wb.debug_inst;
+assign commit_valid_0 = wb_ctrl_flow[0].decode_info.wb.valid;
+assign commit_valid_1 = wb_ctrl_flow[1].decode_info.wb.valid;
+assign commit_result_0 = wb_data_flow[0].result;
+assign commit_result_1 = wb_data_flow[1].result;
 `ifdef _DIFFTEST_ENABLE
 logic[63:0] timer_64_diff;
 always_ff @(posedge clk) begin
 	timer_64_diff <= pipeline_0.timer_data_o;
 end
 logic [4:0] debug_rand_index;
-ctrl_flow_t [1:0]wb_ctrl_flow;
-data_flow_t [1:0]wb_data_flow;
-assign wb_ctrl_flow = {pipeline_1.wb_ctrl_flow,pipeline_0.wb_ctrl_flow};
-assign wb_data_flow = {pipeline_1.wb_data_flow,pipeline_0.wb_data_flow};
 DifftestInstrCommit DifftestInstrCommit_0(
     .clock              (clk           ),
     .coreid             ('0),

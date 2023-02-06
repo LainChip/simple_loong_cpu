@@ -71,7 +71,7 @@ module issue(
 			if(inst.decode_info.is.use_time[i] == `_USE_EX) begin
 				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (scoreboard_entry[i].forwarding_ready[0]));
 			end else /*if(inst.decode_info.is.use_time[i] == `_USE_M2)*/begin
-				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (scoreboard_entry[i].forwarding_ready));
+				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (|scoreboard_entry[i].forwarding_ready));
 			end
 		end
 		return ret;
@@ -138,19 +138,19 @@ module issue(
 		ret.inst_pos = {old_scoreboard_entry.inst_pos[1:0],1'b0};
 		ret.forwarding_ready = {1'b0,old_scoreboard_entry.forwarding_ready[2:1]};
 		// 清零更新逻辑
-		if(old_scoreboard_entry.inst_pos & clr_vec[old_scoreboard_entry.pipe_sel]) begin
+		if(|(old_scoreboard_entry.inst_pos & clr_vec[old_scoreboard_entry.pipe_sel])) begin
 			ret.inst_pos = {old_scoreboard_entry.inst_pos[1:0],1'b0};
 			ret.forwarding_ready = '0;
 		end
 		// 暂停更新逻辑
-		if(old_scoreboard_entry.inst_pos & stall_vec[old_scoreboard_entry.pipe_sel]) begin
+		if(|(old_scoreboard_entry.inst_pos & stall_vec[old_scoreboard_entry.pipe_sel])) begin
 			ret.inst_pos = old_scoreboard_entry.inst_pos;
 			ret.forwarding_ready = old_scoreboard_entry.forwarding_ready;
 		end
 
 		// 发射更新逻辑 优先级最高
 		for(integer i = 0 ; i < 2 ; i += 1) begin
-			if((inst[i].register_info.w_reg == entry_id) && issue[i]) begin
+			if((inst[i].register_info.w_reg == entry_id[4:0]) && issue[i]) begin
 				ret.pipe_sel = i[0] ^ revert;
 				ret.inst_pos = 3'b001;
 				ret.forwarding_ready = {1'b1,inst[i].decode_info.is.ready_time == `_READY_EX,inst[i].decode_info.is.ready_time == `_READY_EX};

@@ -7,7 +7,7 @@
 
 `ifdef __ALU_VER_1
 
-module alu (
+module simple_alu (
     input  decode_info_t decode_info_i,
     input   [1:0][31:0] reg_fetch_i,
     input   [31:0] pc_i,

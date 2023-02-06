@@ -53,7 +53,7 @@ module multi_channel_fifo #(
 					port_read_index[i] <= i[$clog2(BANK) - 1 : 0];
 				end else begin
 					if(read_ready_i)
-						port_read_index[i] <= port_read_index[i] - read_num_i;
+						port_read_index[i] <= port_read_index[i] - read_num_i[$clog2(BANK) - 1 : 0];
 				end
 			end
 			always_ff @(posedge clk) begin : proc_port_write_index
@@ -61,7 +61,7 @@ module multi_channel_fifo #(
 					port_write_index[i] <= i[$clog2(BANK) - 1 : 0];
 				end else begin
 					if(write_valid_i & write_ready_o)
-						port_write_index[i] <= port_write_index[i] - write_num_i;
+						port_write_index[i] <= port_write_index[i] - write_num_i[$clog2(BANK) - 1 : 0];
 				end
 			end
 
@@ -99,7 +99,7 @@ module multi_channel_fifo #(
 					read_index[i] <= i[$clog2(BANK) - 1 : 0];
 				end else begin
 					if(read_ready_i)
-						read_index[i] <= read_index[i] + read_num_i;
+						read_index[i] <= read_index[i] + read_num_i[$clog2(BANK) - 1 : 0];
 				end
 			end
 			assign read_data_o[i] = data_out[read_index[i]];

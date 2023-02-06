@@ -118,6 +118,7 @@ module core_top_sv(
     assign awcache = mem_bus.aw_cache;
     assign awprot = mem_bus.aw_prot;
     assign awvalid = mem_bus.aw_valid;
+    assign wid   = '0;
     assign wdata = mem_bus.w_data;
     assign wstrb = mem_bus.w_strb;
     assign wlast = mem_bus.w_last;

@@ -258,7 +258,7 @@ module backend_pipeline #(
 
 	// Excute 部分，对计算和跳转指令进行执行，对访存地址进行计算并完成第一阶段TLB比较 
 	// ALU here
-	alu alu_module (
+	simple_alu alu_module (
     	.decode_info_i(ex_ctrl_flow.decode_info),
     	.reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
     	.pc_i(ex_data_flow_forwarding.pc),
@@ -279,6 +279,9 @@ module backend_pipeline #(
     		.reg_fetch_i({ex_data_flow_forwarding.reg_data[0],ex_data_flow_forwarding.reg_data[1]}),
     		.mdu_res_o(m2_mdu_res)
 		);
+	end else begin
+		assign div_busy = '0;
+		assign m2_mdu_res = '0;
 	end
 
 	assign ex_data_flow_forwarding.result = ex_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_BPF ? bpf_result : alu_result;
@@ -360,7 +363,7 @@ module backend_pipeline #(
 		logic [8:0]  esubcode;
 		logic        excp_trigger;
 		logic [31:0] bad_va;
-		csr csr_module(
+		la_csr csr_module(
 			.clk,
 			.rst_n,
 			.decode_info_i(m2_ctrl_flow.decode_info),     //输入：解码信息
@@ -449,6 +452,7 @@ module backend_pipeline #(
 		assign m2_csr_read = '0;
 		assign m2_clr_req_o = '0;
 		assign m2_clr_exclude_self_o = '0;
+		assign lsu_busy = '0;
 	end
 
 	assign m2_stall_req_o = div_busy | lsu_busy;	// 虽然mdu和lsu分属两条管线，不会撞车；但这样应该更清楚些
