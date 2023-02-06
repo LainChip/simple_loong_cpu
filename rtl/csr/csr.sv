@@ -57,7 +57,7 @@ module csr(
     //todo: tlb related addr translate
     input  logic llbit_set_i,
     input  logic llbit_i,
-    output logic llbit_o,
+    output logic llbit_o
 
     `ifdef _DIFFTEST_ENABLE
     ,input logic delay_csr_i

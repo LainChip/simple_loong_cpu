@@ -13,11 +13,11 @@ module mdu #(
     
     input [2:0] stall_i,    // [0] for m1, [1] for m1, [2] for m2
     input [2:0] clr_i,      // [0] for ex, [1] for m1, [2] for m2
-    output div_busy_o,
+    output logic div_busy_o,
 
     input decode_info_t decode_info_i,
     input [1:0][31:0] reg_fetch_i,
-    output [31:0] mdu_res_o
+    output logic [31:0] mdu_res_o
 );
 
     // for unit test: dump waves for gtkwave

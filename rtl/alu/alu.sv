@@ -11,7 +11,7 @@ module alu (
     input  decode_info_t decode_info_i,
     input   [1:0][31:0] reg_fetch_i,
     input   [31:0] pc_i,
-    output  [31:0] alu_res_o
+    output logic [31:0] alu_res_o
 );
 
     alu_type_t alu_type;

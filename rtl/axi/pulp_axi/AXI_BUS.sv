@@ -17,9 +17,9 @@
 
 /// An AXI4 interface.
 interface AXI_BUS #(
-  parameter int unsigned AXI_ADDR_WIDTH = 0,
-  parameter int unsigned AXI_DATA_WIDTH = 0,
-  parameter int unsigned AXI_ID_WIDTH   = 0,
+  parameter int unsigned AXI_ADDR_WIDTH = 32,
+  parameter int unsigned AXI_DATA_WIDTH = 32,
+  parameter int unsigned AXI_ID_WIDTH   = 4,
   parameter int unsigned AXI_USER_WIDTH = 0
 );
 

@@ -3,6 +3,7 @@
 `include "pipeline.svh"
 `include "lsu_types.svh"
 `include "bpu.svh"
+`include "tlb.svh"
 
 module backend(
 	input clk,

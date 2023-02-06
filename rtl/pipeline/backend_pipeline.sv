@@ -297,7 +297,7 @@ module backend_pipeline #(
 			.csr_target_i(m2_csr_jump_target),
 			.decode_i(ex_ctrl_flow.decode_info),
 			.predict_i(ex_ctrl_flow.bpu_predict),
-			.update_o(bpu_feedback_o),
+			.update_o(bpu_feedback_o)
 		);
 		// assign ex_stall_req_o = ex_ctrl_flow.decode_info.m2.tlbsrch_en & (m1_ctrl_flow.decode_info.is.pipe_one_inst | m2_ctrl_flow.decode_info.is.pipe_one_inst); // ex级的TLBSRCH 需要等待 m1 m2处 可能对tlb存在修改的指令执行完成。
 		assign ex_stall_req_o = '0;
