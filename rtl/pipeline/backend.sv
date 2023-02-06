@@ -263,7 +263,7 @@ assign wb_ctrl_flow = {pipeline_1.wb_ctrl_flow,pipeline_0.wb_ctrl_flow};
 assign wb_data_flow = {pipeline_1.wb_data_flow,pipeline_0.wb_data_flow};
 (* mark_debug="true" *) logic [31:0] commit_pc_0,commit_instr_0,commit_result_0;
 (* mark_debug="true" *) logic [31:0] commit_pc_1,commit_instr_1,commit_result_1;
-(* mark_debug="true" *) logic commit_valid_0,commit_valid_1;
+(* mark_debug="true" *) logic commit_valid_0,commit_valid_1,inst_valid_0,inst_valid_1,inst_issue_0,inst_issue_1;
 assign commit_pc_0 = wb_data_flow[0].pc;
 assign commit_pc_1 = wb_data_flow[1].pc;
 assign commit_instr_0 = wb_ctrl_flow[0].decode_info.wb.debug_inst;
@@ -272,6 +272,10 @@ assign commit_valid_0 = wb_ctrl_flow[0].decode_info.wb.valid;
 assign commit_valid_1 = wb_ctrl_flow[1].decode_info.wb.valid;
 assign commit_result_0 = wb_data_flow[0].result;
 assign commit_result_1 = wb_data_flow[1].result;
+assign inst_issue_0 = issue[0];
+assign inst_issue_1 = issue[1];
+assign inst_valid_0 = inst_valid_i[0];
+assign inst_valid_1 = inst_valid_i[1];
 `ifdef _DIFFTEST_ENABLE
 logic[63:0] timer_64_diff;
 always_ff @(posedge clk) begin

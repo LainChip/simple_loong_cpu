@@ -30,7 +30,7 @@ module icache #(
 	output logic [FETCH_SIZE - 1 : 0] valid_o,
 	output logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_o,
     output logic [FETCH_SIZE - 1 : 0][31:0] inst_o,
-    output fetch_excp_t fetch_excp_o,
+    (* mark_debug="true" *) output fetch_excp_t fetch_excp_o,
 	// output decode_info_t [FETCH_SIZE - 1 : 0] decode_output_o,
 
 	input  logic ready_i, // FROM QUEUE
@@ -54,15 +54,15 @@ typedef struct packed {
 logic[1:0]  plv;
 mmu_s_resp_t mmu_resp;
 logic trans_en,trans_en_i;
-logic[31:0] va,pa;
+(* mark_debug="true" *) logic[31:0] va,pa;
 logic valid_req;
-logic[FETCH_SIZE - 1 : 0] fetch_valid;
+(* mark_debug="true" *) logic[FETCH_SIZE - 1 : 0] fetch_valid;
 logic[ATTACHED_INFO_WIDTH - 1 : 0] fetch_attached;
-logic inv,fetched,uncached,cache_op,transfer_done;
+(* mark_debug="true" *) logic inv,fetched,uncached,cache_op,transfer_done;
 logic[1:0] cache_op_type;
 
 // 第二阶段的异常
-logic fetch_excp, fetch_excp_adef, fetch_excp_tlbr, fetch_excp_pif, fetch_excp_ppi;
+(* mark_debug="true" *) logic fetch_excp, fetch_excp_adef, fetch_excp_tlbr, fetch_excp_pif, fetch_excp_ppi;
 
 // 第一阶段的信息
 logic[31:0] va_early;
@@ -75,7 +75,7 @@ logic[1:0] cache_op_type_early;
 logic fetch_excp_adef_early;
 
 // FSM 控制信号 (独热码)
-logic [5:0] fsm_state,fsm_state_next;
+(* mark_debug="true" *) logic [5:0] fsm_state,fsm_state_next;
 localparam logic[5:0] STATE_NORM = 6'b000001;
 localparam logic[5:0] STATE_INVA = 6'b000010;
 localparam logic[5:0] STATE_ADDR = 6'b000100;
@@ -339,8 +339,8 @@ always_comb begin
     end else if(fsm_state == STATE_FETC) begin
         datapath_addr = {va[11:4],fetch_cnt[1:0]};
         if(ENABLE_PLRU) begin
-            data_we |= sel_vec[va[11:4]] & {WAY_CNT{bus_resp_i.data_ok}};
-            tag_we  |= sel_vec[va[11:4]] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/;
+            data_we |= sel_vec[va[11:4]] & {WAY_CNT{bus_resp_i.data_ok}} & ~uncached;
+            tag_we  |= sel_vec[va[11:4]] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/ & ~uncached;
         end else begin
             data_we[lfsr_sel_vec] = 1'b1;
             tag_we[lfsr_sel_vec]  = 1'b1;

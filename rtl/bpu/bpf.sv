@@ -39,11 +39,11 @@ module bpf (
 	wire [31:0] offs_26 = {{4{offs_i[9]}},offs_i[9:0], offs_i[25:10], 2'b00};
 	wire [31:0] offs_16 = {{14{offs_i[25]}}, offs_i[25:10], 2'b00};
 
-	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE 		  ? pc_i + (offs_26) :
-					     branch_type_i == `_BRANCH_INDIRECT  		  ? rj_i + (offs_16) :
-					     branch_type_i == `_BRANCH_CONDITION && taken ? pc_i + (offs_16) :
+	(* mark_debug="true" *) wire [31:0] target = (branch_type_i == `_BRANCH_IMMEDIATE) 		    ? (pc_i + (offs_26)) :(
+					     						 (branch_type_i == `_BRANCH_INDIRECT)  		    ? (rj_i + (offs_16)) :(
+					     						 (branch_type_i == `_BRANCH_CONDITION && taken) ? (pc_i + (offs_16)) :(
 								   						       			// pc_i + 4;
-								   						       			{pc_i[31:3] + 29'd1, 3'b000};
+								   						       			{pc_i[31:3] + 29'd1, 3'b000})));
 	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
 	
 	always_comb begin : proc_taken
