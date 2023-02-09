@@ -109,6 +109,7 @@ module issue(
 	);
 		return (inst_first.decode_info.is.pipe_one_inst & inst_second.decode_info.is.pipe_one_inst) || (inst_first.decode_info.is.pipe_two_inst & inst_second.decode_info.is.pipe_two_inst)
 		|| (inst_second.decode_info.is.pipe_one_inst)
+		|| (inst_first.decode_info.m2.wait_hint)
 		// || (inst_second.decode_info.m2.exception_hint != '0)
 		;
 	endfunction

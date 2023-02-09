@@ -75,7 +75,7 @@ module mdu #(
         wire[63:0] raw_res = mdu_stage_1.opd_unsigned ? (mdu_stage_1.mdu_opd1 * mdu_stage_1.mdu_opd2)
                                                       : ($signed({{32{mdu_stage_1.mdu_opd1[31]}}, mdu_stage_1.mdu_opd1}) * $signed({{32{mdu_stage_1.mdu_opd2[31]}}, mdu_stage_1.mdu_opd2}));;
         always_ff @(posedge clk) begin
-            if(~stall_i[1])
+            if(~stall_i[2])
                 multiply_res <= raw_res;
         end
     end

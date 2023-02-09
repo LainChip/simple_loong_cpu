@@ -149,7 +149,6 @@ generate
                 mmu_s_resp_o[i].paddr = {csr_dmw1_i[`_DMW_PSEG], mmu_s_req_i[i].vaddr[28:0]};
                 mmu_s_resp_o[i].mat = csr_dmw1_i[`_DMW_MAT];
             end
-
             if(mmu_s_req_i[i].trans_en)begin
                 mmu_s_resp_o[i].mat = tlb_s_resp[i].mat;
                 if(tlb_s_resp[i].ps == 6'd12)begin

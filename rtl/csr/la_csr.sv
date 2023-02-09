@@ -567,7 +567,7 @@ always_ff @(posedge clk) begin
     else if (wen_badv) begin
         reg_badv <= wr_data;
     end
-    else if (va_error) begin
+    else if (va_error && do_exception) begin
         reg_badv <= bad_va_selected;
     end
 end
@@ -605,7 +605,7 @@ always_ff @(posedge clk) begin
         reg_tlbidx[`_TLBIDX_PS]    <= wr_data[`_TLBIDX_PS];
         reg_tlbidx[`_TLBIDX_NE]    <= wr_data[`_TLBIDX_NE];
     end
-    else if (decode_info_i.m2.tlbsrch_en) begin
+    else if (decode_info_i.m2.tlbsrch_en && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         if (mmu_resp_i.found) begin
             reg_tlbidx[`_TLBIDX_INDEX] <= mmu_resp_i.index;
             reg_tlbidx[`_TLBIDX_NE]    <= 1'b0;
@@ -614,11 +614,11 @@ always_ff @(posedge clk) begin
             reg_tlbidx[`_TLBIDX_NE] <= 1'b1;
         end
     end
-    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbidx[`_TLBIDX_PS] <= tlb_entry_i.ps;
         reg_tlbidx[`_TLBIDX_NE] <= ~tlb_entry_i.e;
     end
-    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && ~tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbidx[`_TLBIDX_PS] <= 6'b0;
         reg_tlbidx[`_TLBIDX_NE] <= ~tlb_entry_i.e;
     end
@@ -632,13 +632,13 @@ always_ff @(posedge clk) begin
     else if (wen_tlbehi) begin
         reg_tlbehi[`_TLBEHI_VPPN] <= wr_data[`_TLBEHI_VPPN];
     end
-    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbehi[`_TLBEHI_VPPN] <= tlb_entry_i.vppn;
     end
-    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && ~tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbehi[`_TLBEHI_VPPN] <= 19'b0;
     end
-    else if (tlbehi_update) begin
+    else if (tlbehi_update && do_exception) begin
         reg_tlbehi[`_TLBEHI_VPPN] <= bad_va_i[`_TLBEHI_VPPN];
     end
 end
@@ -647,6 +647,7 @@ end
 always_ff @(posedge clk) begin
     if (~rst_n) begin
         reg_tlbelo0[7] <= 1'b0;
+        reg_tlbelo0[31:28] <= '0;
     end
     else if (wen_tlbelo0) begin
         reg_tlbelo0[`_TLBELO_TLB_V]   <= wr_data[`_TLBELO_TLB_V];
@@ -654,9 +655,9 @@ always_ff @(posedge clk) begin
         reg_tlbelo0[`_TLBELO_TLB_PLV] <= wr_data[`_TLBELO_TLB_PLV];
         reg_tlbelo0[`_TLBELO_TLB_MAT] <= wr_data[`_TLBELO_TLB_MAT];
         reg_tlbelo0[`_TLBELO_TLB_G]   <= wr_data[`_TLBELO_TLB_G];
-        reg_tlbelo0[`_TLBELO_TLB_PPN] <= wr_data[`_TLBELO_TLB_PPN];
+        reg_tlbelo0[`_TLBELO_TLB_PPN_EN] <= wr_data[`_TLBELO_TLB_PPN_EN];
     end
-    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbelo0[`_TLBELO_TLB_V]   <= tlb_entry_i.v0;
         reg_tlbelo0[`_TLBELO_TLB_D]   <= tlb_entry_i.d0;
         reg_tlbelo0[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv0;
@@ -664,7 +665,7 @@ always_ff @(posedge clk) begin
         reg_tlbelo0[`_TLBELO_TLB_G]   <= tlb_entry_i.g;
         reg_tlbelo0[`_TLBELO_TLB_PPN] <= {4'b0000,tlb_entry_i.ppn0};
     end
-    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && ~tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbelo0[`_TLBELO_TLB_V]   <= 1'b0;
         reg_tlbelo0[`_TLBELO_TLB_D]   <= 1'b0;
         reg_tlbelo0[`_TLBELO_TLB_PLV] <= 2'b0;
@@ -685,9 +686,9 @@ always_ff @(posedge clk) begin
         reg_tlbelo1[`_TLBELO_TLB_PLV] <= wr_data[`_TLBELO_TLB_PLV];
         reg_tlbelo1[`_TLBELO_TLB_MAT] <= wr_data[`_TLBELO_TLB_MAT];
         reg_tlbelo1[`_TLBELO_TLB_G]   <= wr_data[`_TLBELO_TLB_G];
-        reg_tlbelo1[`_TLBELO_TLB_PPN] <= wr_data[`_TLBELO_TLB_PPN];
+        reg_tlbelo1[`_TLBELO_TLB_PPN_EN] <= wr_data[`_TLBELO_TLB_PPN_EN];
     end
-    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbelo1[`_TLBELO_TLB_V]   <= tlb_entry_i.v1;
         reg_tlbelo1[`_TLBELO_TLB_D]   <= tlb_entry_i.d1;
         reg_tlbelo1[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv1;
@@ -695,7 +696,7 @@ always_ff @(posedge clk) begin
         reg_tlbelo1[`_TLBELO_TLB_G]   <= tlb_entry_i.g;
         reg_tlbelo1[`_TLBELO_TLB_PPN] <= {4'b0000,tlb_entry_i.ppn1};
     end
-    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && ~tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_tlbelo1[`_TLBELO_TLB_V]   <= 1'b0;
         reg_tlbelo1[`_TLBELO_TLB_D]   <= 1'b0;
         reg_tlbelo1[`_TLBELO_TLB_PLV] <= 2'b0;
@@ -713,10 +714,10 @@ always_ff @(posedge clk) begin
     else if (wen_asid) begin
         reg_asid[`_ASID] <= wr_data[`_ASID];
     end
-    else if (decode_info_i.m2.tlbrd_en & tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_asid[`_ASID] <= tlb_entry_i.asid;
     end
-    else if (decode_info_i.m2.tlbrd_en & ~tlb_entry_i.e) begin
+    else if (decode_info_i.m2.tlbrd_en && ~tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         reg_asid[`_ASID] <= 10'b0;
     end
 end
@@ -741,7 +742,7 @@ always_ff @(posedge clk) begin
             llbit <= 1'b0;
         end
     end
-    else if(llbit_set_i && ~stall_i && ~lsu_clr_hint_o) begin
+    else if(llbit_set_i && ~stall_i && ~lsu_clr_hint_o && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
         llbit <= llbit_i;
     end
 end
@@ -847,7 +848,7 @@ assign m2_clr_exclude_self_o = do_ertn || do_refetch;
 
 // WAIT LOGIC
 logic wait_valid,int_valid;
-assign wait_valid = ~stall_i & decode_info_i.m2.wait_hint;
+assign wait_valid = decode_info_i.m2.wait_hint && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid;
 assign int_valid = (|(reg_ectl[`_ECTL_LIE] & reg_estat[`_ESTAT_IS])) & reg_crmd[`_CRMD_IE];
 
 // always_ff @(posedge clk) begin

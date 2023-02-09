@@ -186,7 +186,7 @@ for (genvar way_id = 0 ; way_id < WAY_CNT; way_id += 1) begin : way
     end
 
     // 路选择逻辑
-    assign sel[way_id] = (page_index == r_tag[way_id].page_index) & r_tag[way_id].valid;
+    assign sel[way_id] = (page_index == r_tag[way_id].page_index) && r_tag[way_id].valid;
 end
 
 // 输出逻辑
@@ -402,7 +402,7 @@ assign mmu_req_vpc_o = va_early;
 assign page_index_raw = mmu_resp_i.paddr[31:12];
 
 // FETCH异常逻辑
-assign fetch_excp_o.adef = fetch_excp_adef || (va[31] && (plv == 2'd3) && trans_en && ~cache_op);
+assign fetch_excp_o.adef = fetch_excp_adef || (va[31] && (plv == 2'd3) && ~cache_op);
 assign fetch_excp_o.tlbr = !mmu_resp.found && trans_en && ~cache_op;
 assign fetch_excp_o.pif = mmu_resp.found && !mmu_resp.v && trans_en && ~cache_op;
 assign fetch_excp_o.ppi = (plv > mmu_resp.plv) && trans_en && mmu_resp.v && ~cache_op;

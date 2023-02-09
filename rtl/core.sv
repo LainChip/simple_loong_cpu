@@ -61,7 +61,7 @@ frontend frontend(
 	.mmu_resp_i(immu_resp)
 );
 
-logic dmw0_en,dmw1_en,i_trans_en;
+(* mark_debug="true" *) logic pg_mode,da_mode,dmw0_en,dmw1_en,i_trans_en;
 assign dmw0_en = ((backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_PLV0] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)
                || (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_PLV3] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) 
 			  && (frontend.mmu_req_vpc_o[31:29] == backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_VSEG]);
@@ -75,7 +75,7 @@ assign immu_req = '{
 	dmw1_en:  dmw1_en ,
 	default:  '0
 };
-assign i_trans_en = backend.pipeline_0.sp_inst_blk.pg_mode && !dmw0_en && !dmw1_en;
+assign i_trans_en = !backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DA] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PG] && !dmw0_en && !dmw1_en;
 assign frontend.icache_module.plv = backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV];
 assign frontend.icache_module.trans_en_i = i_trans_en;
 

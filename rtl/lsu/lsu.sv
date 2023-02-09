@@ -29,7 +29,7 @@ module lsu (
 	input cache_bus_resp_t bus_resp_i,
 
 	// 握手信号
-	output busy_o,
+	output logic busy_o,
 	input stall_i
 );
 
@@ -43,7 +43,7 @@ module lsu (
 
 	inner_mem_req_t mem_req_comb,mem_req_stage_1,mem_req_stage_2;
 	logic[31:0] r_data_handled,r_data;
-	logic[2:0] fsm_state,fsm_state_next;
+	(* mark_debug="true" *) logic[2:0] fsm_state,fsm_state_next;
 	logic transfer_done;
 	localparam STATE_IDLE = 3'b001;
 	localparam STATE_ADDR = 3'b010;
@@ -63,7 +63,9 @@ module lsu (
 		if(~rst_n) begin
 			mem_req_stage_1.mem_valid <= '0;
 			mem_req_stage_2.mem_valid <= '0;
-		end else if(request_clr_m1_i) begin
+		end else if(request_clr_m1_i && (stall_i || busy_o)) begin
+			mem_req_stage_1.mem_valid <= '0;
+		end else if(request_clr_m1_i && !(stall_i || busy_o)) begin
 			mem_req_stage_1.mem_valid <= '0;
 			mem_req_stage_2.mem_valid <= '0;
 		end else if(request_clr_m2_i) begin
@@ -82,7 +84,7 @@ module lsu (
 
 	// 核心状态机，从总线获取读取数据，或写入数据 并返回
 	assign transfer_done = ((mem_req_stage_2.mem_write & bus_req_o.data_last) | 
-				(~mem_req_stage_2.mem_write & bus_resp_i.data_last)) & bus_resp_i.data_ok & bus_req_o.data_ok;
+				          (~mem_req_stage_2.mem_write & bus_resp_i.data_last)) & bus_resp_i.data_ok & bus_req_o.data_ok;
 	always_comb begin
 		fsm_state_next = fsm_state;
 		case(fsm_state)

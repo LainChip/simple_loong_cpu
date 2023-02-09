@@ -32,7 +32,7 @@ module axi_converter#(
         logic[`_CACHE_BUS_DATA_LEN - 1:0] w_data; // cache请求的写数据
 	}inner_data_info_t;
 
-	inner_data_info_t sel_data_comb,sel_data_r;
+	inner_data_info_t sel_data_comb;
 	logic sel_data_ready;
 
 	localparam STATE_IDLE = 4'b0001;
@@ -123,26 +123,26 @@ module axi_converter#(
 			end
 		end
 	end
-	always_ff @(posedge clk) begin : proc_sel_data_ready
-		if(~rst_n | take) begin
-			sel_data_ready <= '0;
-		end else if(~sel_data_ready | axi_bus_if.w_ready) begin
-			sel_data_ready <= sel_data_comb.data_ok;
-		end
-	end
-	always_ff @(posedge clk) begin : proc_sel_data_r
-		if(~rst_n) begin
-			sel_data_r <= '0;
-		end else if(~sel_data_ready | axi_bus_if.w_ready) begin
-			sel_data_r <= sel_data_comb;
-		end
-	end
+	// always_ff @(posedge clk) begin : proc_sel_data_ready
+	// 	if(~rst_n || take) begin
+	// 		sel_data_ready <= '0;
+	// 	end else if(!sel_data_ready || (axi_bus_if.w_ready && sel_req_r.write)) begin
+	// 		sel_data_ready <= sel_data_comb.data_ok;
+	// 	end
+	// end
+	// always_ff @(posedge clk) begin : proc_sel_data_r
+	// 	if(~rst_n) begin
+	// 		sel_data_r <= '0;
+	// 	end else if(~sel_data_ready | axi_bus_if.w_ready) begin
+	// 		sel_data_r <= sel_data_comb;
+	// 	end
+	// end
 
 	// 对数据信号握手进行回复
 	generate
 		for(genvar i = 0 ; i < CACHE_PORT_NUM ; i += 1) begin
-			assign resp_o[i].data_ok = (((~sel_data_ready | axi_bus_if.w_ready) & (sel_req_r.write)) | (axi_bus_if.r_valid & (~sel_req_r.write))) & arr_sel_r[i] ;
-			assign resp_o[i].data_last = axi_bus_if.r_last & arr_sel_r[i] & (~sel_req_r.write);
+			assign resp_o[i].data_ok = (((axi_bus_if.w_ready) & (sel_req_r.write)) | ((axi_bus_if.r_valid) & (~sel_req_r.write))) & arr_sel_r[i] & (fsm_state == STATE_DATA);
+			assign resp_o[i].data_last = axi_bus_if.r_last & arr_sel_r[i] & (~sel_req_r.write) & (fsm_state == STATE_DATA);
 			assign resp_o[i].r_data = axi_bus_if.r_data;
 		end
 	endgenerate
@@ -176,12 +176,12 @@ module axi_converter#(
 		axi_bus_if.aw_atop = '0;
 		axi_bus_if.aw_valid = fsm_state[1] & (sel_req_r.write);
 
-		axi_bus_if.w_data = sel_data_r.w_data;
-		axi_bus_if.w_strb = sel_data_r.data_strobe;
-		axi_bus_if.w_valid = sel_data_ready & (sel_req_r.write);
-		axi_bus_if.w_last = sel_data_r.data_last;
+		axi_bus_if.w_data = sel_data_comb.w_data;
+		axi_bus_if.w_strb = sel_data_comb.data_strobe;
+		axi_bus_if.w_valid = sel_data_comb.data_ok & (sel_req_r.write) & (fsm_state == STATE_DATA);
+		axi_bus_if.w_last = sel_data_comb.data_last;
 
-		axi_bus_if.r_ready = sel_data_ready & (~sel_req_r.write);
+		axi_bus_if.r_ready = sel_data_comb.data_ok & (~sel_req_r.write) & (fsm_state == STATE_DATA);
 		axi_bus_if.b_ready = fsm_state[3] & (sel_req_r.write);
 	end
 

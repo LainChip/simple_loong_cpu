@@ -429,7 +429,7 @@ module backend_pipeline #(
 				default:  '0
 			};
 		end
-		assign m1_trans_en = pg_mode && !dmw0_en && !dmw1_en;
+		assign m1_trans_en = pg_mode && !dmw0_en && !dmw1_en && !(m1_ctrl_flow.decode_info.m2.cacop && (m1_ctrl_flow.decode_info.general.inst25_0[4:3] == 2'b0 || m1_ctrl_flow.decode_info.general.inst25_0[4:3] == 2'b1));
 
 		// Exception defines here
 		excp_handler excp_handler_module(
@@ -485,4 +485,4 @@ module backend_pipeline #(
 	wire [31:0] m2_pc = m2_data_flow_raw.pc;
 	wire [31:0] wb_pc = wb_data_flow.pc;
 
-endmodule : backend_pipeline
+endmodule
