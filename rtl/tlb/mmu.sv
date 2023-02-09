@@ -11,7 +11,7 @@ module mmu #(
 )(
     input                                   clk          ,
     input                                   rst_n        ,
-    input                                   stall_i      ,
+    input                                   inst_valid_i ,
     input logic [TLB_PORT - 1 : 0][1:0]     mmu_raw_mat_i,
     input  mmu_s_req_t  [TLB_PORT - 1 : 0]  mmu_s_req_i  ,
     output mmu_s_resp_t [TLB_PORT - 1 : 0]  mmu_s_resp_o ,
@@ -22,7 +22,7 @@ module mmu #(
     input [31:0]                            tlbelo0_i    ,
     input [31:0]                            tlbelo1_i    ,
     input [31:0]                            tlbidx_i     ,
-    input [31:0]                            ecode_i      ,
+    input [ 5:0]                            ecode_i      ,
 
     output tlb_entry_t                      tlb_entry_o  ,
 
@@ -90,7 +90,7 @@ generate
     end
 endgenerate
 
-assign tlb_w_req.we = (decode_info_i.m2.tlbfill_en | decode_info_i.m2.tlbwr_en) & ~stall_i;
+assign tlb_w_req.we = (decode_info_i.m2.tlbfill_en | decode_info_i.m2.tlbwr_en) && inst_valid_i;
 assign tlb_w_req.index = ({5{decode_info_i.m2.tlbfill_en}} & rand_index) 
                | ({5{decode_info_i.m2.tlbwr_en}} & tlbidx_i[`_TLBIDX_INDEX]);
 assign tlb_w_req.vppn  = tlbehi_i[`_TLBEHI_VPPN];
@@ -116,7 +116,7 @@ assign tlb_r_index = tlbidx_i[`_TLBIDX_INDEX];
 // assign tlbidx_o   = {!tlb_r_resp.e, 1'b0, tlb_r_resp.ps, 24'b0};
 // assign asid_o     = tlb_r_resp.asid;
 
-assign tlb_inv_req.en = decode_info_i.m2.invtlb_en;
+assign tlb_inv_req.en = decode_info_i.m2.invtlb_en && inst_valid_i;
 assign tlb_inv_req.op = decode_info_i.general.inst25_0[4:0];
 assign tlb_inv_req.asid = invtlb_asid;
 assign tlb_inv_req.vpn = invtlb_vpn;

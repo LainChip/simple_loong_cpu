@@ -11,6 +11,7 @@ module excp_handler(
     input logic trans_en_i,
     input mmu_s_resp_t mmu_resp_i,
     input logic[1:0] plv_i,
+    input logic llbit_i,
 
     output logic [5:0]  ecode_o,            //输出：两条流水线的例外一级码
     output logic [8:0]  esubcode_o,         //输出：两条流水线的例外二级码
@@ -21,6 +22,15 @@ module excp_handler(
     output logic        tlbehi_update_o,
     output logic        ipe_o
 );
+
+    logic read_inst;
+    logic write_inst;
+    logic mem_inst;
+    assign read_inst = decode_info_i.m1.mem_valid && ~decode_info_i.m1.mem_write;
+    
+    // 对于sc指令，当llbit无效时候不产生异常
+    assign write_inst = decode_info_i.m1.mem_write && (!decode_info_i.m2.llsc || llbit_i);
+    assign mem_inst = write_inst || read_inst;
 
     always_comb begin
         va_error_o = '0;
@@ -81,7 +91,7 @@ module excp_handler(
             bad_va_o = vlsu_i;
             va_error_o = '1;
         end else 
-        if(trans_en_i && !mmu_resp_i.found && (decode_info_i.m1.mem_valid || decode_info_i.m2.cacop)) begin // DTLBR
+        if(trans_en_i && !mmu_resp_i.found && (mem_inst || decode_info_i.m2.cacop)) begin // DTLBR
             ecode_o = `_ECODE_TLBR;
             excp_trigger_o = '1;
             bad_va_o = vlsu_i;
@@ -89,21 +99,21 @@ module excp_handler(
             tlbrefill_o = '1;
             tlbehi_update_o = '1;
         end else 
-        if(trans_en_i && !mmu_resp_i.v && (decode_info_i.m1.mem_valid || decode_info_i.m2.cacop)) begin // PIS / PIL
+        if(trans_en_i && !mmu_resp_i.v && (mem_inst || decode_info_i.m2.cacop)) begin // PIS / PIL
             ecode_o = decode_info_i.m1.mem_write ? `_ECODE_PIS : `_ECODE_PIL;
             excp_trigger_o = '1;
             bad_va_o = vlsu_i; 
             va_error_o = '1;
             tlbehi_update_o = '1;
         end else
-        if(trans_en_i && mmu_resp_i.v && (plv_i > mmu_resp_i.plv) && decode_info_i.m1.mem_valid) begin // DPPI
+        if(trans_en_i && mmu_resp_i.v && (plv_i > mmu_resp_i.plv) && mem_inst) begin // DPPI
             ecode_o = `_ECODE_PPI;
             excp_trigger_o = '1;
             bad_va_o = vlsu_i;  
             va_error_o = '1;
             tlbehi_update_o = '1;
         end else 
-        if(trans_en_i && mmu_resp_i.v && !mmu_resp_i.d && decode_info_i.m1.mem_write) begin // PME
+        if(trans_en_i && mmu_resp_i.v && !mmu_resp_i.d && write_inst) begin // PME
             ecode_o = `_ECODE_PME;
             excp_trigger_o = '1;
             bad_va_o = vlsu_i;

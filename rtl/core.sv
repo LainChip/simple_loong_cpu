@@ -123,7 +123,7 @@ mmu #(
 ) mmu(
 	.clk(clk),
 	.rst_n(rst_n),
-	.stall_i(backend.pipeline_0.stall_vec_i[2]),
+	.inst_valid_i (backend.pipeline_0.m2_inst_valid),
 	.mmu_s_req_i ({immu_req            , backend.mmu_req_o  }),
 	.mmu_s_resp_o({immu_resp           , dmmu_resp          }),
 	.mmu_raw_mat_i({backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATF],

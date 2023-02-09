@@ -84,7 +84,7 @@ module backend_pipeline #(
 	logic [31:0] m2_csr_read, m2_lsu_read, m2_mdu_res, m2_csr_jump_target, m2_vaddr, m2_paddr, m2_wdata;
 	logic [31:0] wb_vaddr,wb_paddr,wb_wdata;
 	mmu_s_resp_t m2_mmu_resp;
-	logic m2_trans_en;
+	logic m2_trans_en,m2_inst_valid;
 	logic m2_csr_jump_req,m2_lsu_clr_hint;
 	logic m1_lsu_ale,m1_lsu_adem,m1_trans_en;
 
@@ -329,8 +329,8 @@ module backend_pipeline #(
 		ex_data_flow_forwarding.reg_data[1] + {{20{ex_ctrl_flow.decode_info.general.inst25_0[21]}},ex_ctrl_flow.decode_info.general.inst25_0[21:10]};
 
 		// 地址检查
-		assign m1_lsu_ale = ((|m1_word_shift) & m1_ctrl_flow.decode_info.m1.mem_type[0] & ~m1_ctrl_flow.decode_info.m1.mem_type[1]) 
-		|| ((m1_word_shift[0]) & ~m1_ctrl_flow.decode_info.m1.mem_type[0] & m1_ctrl_flow.decode_info.m1.mem_type[1]);
+		assign m1_lsu_ale = (((|m1_word_shift) & m1_ctrl_flow.decode_info.m1.mem_type[0] & ~m1_ctrl_flow.decode_info.m1.mem_type[1]) 
+		|| ((m1_word_shift[0]) & ~m1_ctrl_flow.decode_info.m1.mem_type[0] & m1_ctrl_flow.decode_info.m1.mem_type[1])) && m1_ctrl_flow.decode_info.m1.mem_valid;
 		assign m1_lsu_adem = m1_trans_en && (m2_plv == 2'd3) && m1_ctrl_flow.decode_info.m1.mem_valid && m1_saddr[31];
 
 		// CACHE 指令
@@ -440,6 +440,7 @@ module backend_pipeline #(
 			.trans_en_i(m2_trans_en),
 			.mmu_resp_i(m2_mmu_resp),
 			.plv_i(m2_plv),
+			.llbit_i(llbit),
 
 
 			.ecode_o(ecode),
@@ -453,16 +454,17 @@ module backend_pipeline #(
 		assign csr_module.ipe_i = excp_handler_module.ipe_o;
 		assign m2_plv = csr_module.reg_crmd[`_CRMD_PLV];
 		assign m2_clr_req_o = m2_csr_jump_req & ~stall_vec_i[2];
+		assign m2_inst_valid = ~stall_vec_i[2] && ~(csr_module.do_exception || csr_module.do_interrupt); // MMU仅在指令有效的情况下更新tlb表项。
 	end else begin
 		assign m2_lsu_read = '0;
 		assign m2_csr_read = '0;
 		assign m2_clr_req_o = '0;
 		assign m2_clr_exclude_self_o = '0;
 		assign lsu_busy = '0;
+		assign m2_inst_valid = '0;
 	end
 
 	assign m2_stall_req_o = div_busy | lsu_busy;	// 虽然mdu和lsu分属两条管线，不会撞车；但这样应该更清楚些
-
 	assign m1_data_flow_forwarding.result = m1_data_flow_raw.result;
 	assign m1_data_flow_forwarding.pc = m1_data_flow_raw.pc;
 	assign m2_data_flow_forwarding.result = (m2_ctrl_flow.decode_info.wb.wb_sel == `_REG_WB_ALU || 
