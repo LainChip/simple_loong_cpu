@@ -39,7 +39,7 @@ module bpu (
 	localparam BPU_READY = 1'b1;
 
 	// when flush, we need 1 clk to refill bpu pipe
-	always_ff @(posedge clk or negedge rst_n) begin : proc_bpu_state
+	always_ff @(posedge clk) begin : proc_bpu_state
 		if(~rst_n || update_i.flush) begin
 			bpu_state <= BPU_REFILL;
 		end else begin
@@ -47,7 +47,7 @@ module bpu (
 		end
 	end
 
-	always_ff @(posedge clk or negedge rst_n) begin : proc_pc
+	always_ff @(posedge clk) begin : proc_pc
 		if(~rst_n) begin
 			pc <= 30'h0700_0000; // 32'h1c00_0000
 		end else if (update_i.flush) begin

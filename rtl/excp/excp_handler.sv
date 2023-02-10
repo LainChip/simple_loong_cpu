@@ -13,14 +13,14 @@ module excp_handler(
     input logic[1:0] plv_i,
     input logic llbit_i,
 
-    output logic [5:0]  ecode_o,            //输出：两条流水线的例外一级码
+    (* mark_debug="true" *) output logic [5:0]  ecode_o,            //输出：两条流水线的例外一级码
     output logic [8:0]  esubcode_o,         //输出：两条流水线的例外二级码
-    output logic        excp_trigger_o,     //输出：是否发生异常
+    (* mark_debug="true" *) output logic        excp_trigger_o,     //输出：是否发生异常
     output logic [31:0] bad_va_o,           //输出：地址相关例外出错的虚地址
-    output logic        va_error_o,
-    output logic        tlbrefill_o,
-    output logic        tlbehi_update_o,
-    output logic        ipe_o
+    (* mark_debug="true" *) output logic        va_error_o,
+    (* mark_debug="true" *) output logic        tlbrefill_o,
+    (* mark_debug="true" *) output logic        tlbehi_update_o,
+    (* mark_debug="true" *) output logic        ipe_o
 );
 
     logic read_inst;

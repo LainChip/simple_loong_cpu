@@ -84,9 +84,9 @@ logic                   tlbrefill_i,tlbehi_update_i,tlbehi_update;
 logic                   ipe_i;              //输入：当前特权指令无效
 
 //Exception handling
-logic [31:0]    exception_handler;
-logic [31:0]    interrupt_handler;
-logic [31:0]    tlbrefill_handler;//todo
+// logic [31:0]    exception_handler;
+// logic [31:0]    interrupt_handler;
+// logic [31:0]    tlbrefill_handler;//todo
 logic do_interrupt;
 logic do_exception,do_tlbrefill,do_ertn_tlbrefill,do_refetch;
 
@@ -104,7 +104,7 @@ logic [31:0]    reg_ectl;
 logic [31:0]    reg_estat;
 logic [31:0]    reg_era;
 logic [31:0]    reg_badv;
-logic [31:0]    reg_eentry;
+(* mark_debug="true" *) logic [31:0]    reg_eentry;
 logic [31:0]    reg_tlbidx;
 logic [31:0]    reg_tlbehi;
 logic [31:0]    reg_tlbelo0;
@@ -293,11 +293,11 @@ always_comb begin
 end
 
 //simple reg write
-logic [31:0] wr_data;
+(* mark_debug="true" *) logic [31:0] wr_data;
 assign wr_data = ( instr_i[`_INSTR_RJ] == 5'd1 || instr_i[`_INSTR_RJ] == 5'd0 ) ? wr_data_i : ((wr_data_i & wr_mask_i) | (read_reg_result & ~wr_mask_i));
-logic write_en;
+(* mark_debug="true" *) logic write_en;
 
-assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i & ~ipe_i & ~do_interrupt;
+assign write_en = (~stall_i) & decode_info_i.wb.valid & csr_write_en_i & ~do_exception & ~do_interrupt;
 
 wire wen_crmd             = write_en & (wr_addr_i == ADDR_CRMD) ;
 wire wen_prmd             = write_en & (wr_addr_i == ADDR_PRMD) ;
@@ -770,26 +770,26 @@ always_comb begin
     esubcode_selected   = reg_estat[`_ESTAT_ESUBCODE];
     va_error = 0;
     bad_va_selected = reg_badv;
-    exception_handler = reg_eentry;
-    interrupt_handler = reg_eentry;
-    tlbrefill_handler = reg_tlbrentry;
-    redirect_addr_o = exception_handler;
+    // exception_handler = reg_eentry;
+    // interrupt_handler = reg_eentry;
+    // tlbrefill_handler = reg_tlbrentry;
+    redirect_addr_o = reg_eentry;
     // redirect_addr_o
     if(interrupt_need_handle/* && !not_allowed_int*/) begin
-        redirect_addr_o = interrupt_handler;
+        redirect_addr_o = reg_eentry;
         lsu_clr_hint_o = 1'b1;
     end else if (excp_trigger_i)begin
         //todo: tlb exception
-        redirect_addr_o = exception_handler;
+        redirect_addr_o = reg_eentry;
         lsu_clr_hint_o = 1'b1;
         if(tlbrefill_i) begin
             do_tlbrefill = '1;
-            redirect_addr_o = tlbrefill_handler;
+            redirect_addr_o = reg_tlbrentry;
         end
     end else if (ertn_i) begin
         redirect_addr_o = reg_era;
     end else begin
-        redirect_addr_o = exception_handler;
+        redirect_addr_o = reg_eentry;
     end
 
     /*  assign:
