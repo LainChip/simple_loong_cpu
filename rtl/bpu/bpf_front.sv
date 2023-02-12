@@ -4,12 +4,12 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpf_front.sv
 // Create : 2023-01-31 14:22:04
-// Revise : 2023-02-03 15:46:35
+// Revise : 2023-02-11 23:32:20
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
 
-`include "../decoder/decoder.svh"
+`include "decoder.svh"
 `include "bpu.svh"
 
 module bpf_front (

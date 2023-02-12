@@ -154,7 +154,7 @@ module frontend(
 
         .ready_i(fetch_ready),
         .ready_o(icache_ready),
-        .clr_i(frontend_clr),
+        .clr_i(frontend_clr | bpf_front_update.flush),
 
         .bus_req_o,
         .bus_resp_i
@@ -172,7 +172,7 @@ module frontend(
         .clk,
         .rst_n,
 
-        .flush_i(frontend_clr),
+        .flush_i(frontend_clr | bpf_front_update.flush),
 
         .write_valid_i(1'b1),
         .write_ready_o(fetch_ready),
