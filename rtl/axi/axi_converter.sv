@@ -65,9 +65,9 @@ module axi_converter#(
 		end
 	end
 	always_ff @(posedge clk) begin : proc_sel_req_r
-		// if(~rst_n) begin
-		// 	sel_req_r <= '0;
-		// end else
+		if(~rst_n) begin
+			sel_req_r <= '0;
+		end else
 		if(take) begin
 			sel_req_r <= sel_req_comb;
 			arr_sel_r <= arr_sel_comb;
