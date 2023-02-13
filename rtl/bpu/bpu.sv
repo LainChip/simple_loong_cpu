@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-02-06 11:20:23
+// Revise : 2023-02-12 14:05:27
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -68,7 +68,7 @@ module bpu (
 		end
 	end
 
-	assign npc = bpu_state == BPU_REFILL | stall_i ? pc : ppc;
+	assign npc = bpu_state == BPU_REFILL | stall_i ? pc[31:2] : ppc;
 	// assign npc = ppc;
 
 	// ====================== BTB ======================

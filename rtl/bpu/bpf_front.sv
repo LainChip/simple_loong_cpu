@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpf_front.sv
 // Create : 2023-01-31 14:22:04
-// Revise : 2023-02-11 23:32:20
+// Revise : 2023-02-12 13:58:54
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -16,6 +16,7 @@ module bpf_front (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
 	input [31:0] pc_i,
+	input [1:0] valid_i,
 	input decode_info_t [1:0] decode_i,
 	input bpu_predict_t predict_i,
 	output bpu_update_t update_o,
@@ -23,8 +24,8 @@ module bpf_front (
 );
 
 	assign update_o.flush = predict_i.taken &
-							((predict_i.fsc == 1'b0 && decode_i[0].ex.branch_type == `_BRANCH_INVALID) |
-							(predict_i.fsc == 1'b1 && decode_i[1].ex.branch_type == `_BRANCH_INVALID));
+							((predict_i.fsc == 1'b0 && decode_i[0].ex.branch_type == `_BRANCH_INVALID && valid_i[0]) |
+							(predict_i.fsc == 1'b1 && decode_i[1].ex.branch_type == `_BRANCH_INVALID) && valid_i[1]);
 	assign update_o.pc = pc_i;
 	assign update_o.br_target = {pc_i[31:3] + 1, 3'b000};
 	assign update_o.lphr = predict_i.lphr;

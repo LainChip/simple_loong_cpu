@@ -211,8 +211,9 @@ module frontend(
         .clk       (clk),
         .rst_n     (rst_n),
         .pc_i      (fetch_fifo_out[0][63:32]),
+        .valid_i   (fetch_valid),
         .decode_i  (fifo_decode_info),
-        .predict_i (fetch_predict),
+        .predict_i (fetch_fifo_out[1][63+$bits(bpu_predict_t):64]),
         .update_o  (bpf_front_update),
         .predict_o (bpf_front_predict)
     );
