@@ -37,8 +37,8 @@ module icache #(
 	output logic ready_o, // TO NPC/BPU
 	input  logic clr_i,
 
-	output cache_bus_req_t bus_req_o,
-	input cache_bus_resp_t bus_resp_i
+	(* mark_debug="true" *) output cache_bus_req_t bus_req_o,
+	(* mark_debug="true" *) input cache_bus_resp_t bus_resp_i
     // input trans_en_i
 );
 
@@ -102,7 +102,7 @@ assign ready_o = ~stall & ~cacheop_valid_i;
 assign cacheop_ready_o = ~stall;
 // 地址及控制信息流水
 always_ff @(posedge clk) begin
-    if(clr_i) begin
+    if(clr_i || ~rst_n) begin
         fetch_valid_early <= '0;
         fetch_excp_adef_early <= '0;
         valid_req_early <= '0;
@@ -142,7 +142,7 @@ end
 
 assign vpc_o = va;
 assign ppc_o = pa;
-assign valid_o = fetch_valid & {FETCH_SIZE{~stall}};
+assign valid_o = fetch_valid & {FETCH_SIZE{(~stall) & (~clr_i)}};
 assign attached_o = fetch_attached;
 
 logic [WAY_CNT - 1 : 0] sel,data_we,tag_we;
@@ -200,7 +200,7 @@ end
 always_ff @(posedge clk) begin
     if(fsm_state == STATE_NORM && ~stall_delay) 
         inst <= inst_raw;
-    else if(fsm_state == STATE_FETC && fetch_cnt[1] == pa[3]) 
+    else if(fsm_state == STATE_FETC && (fetch_cnt[1] == pa[3] || uncached)) 
         inst[fetch_cnt[0]] <= bus_resp_i.r_data;
 end
 always_ff @(posedge clk) begin
@@ -279,9 +279,17 @@ always_comb begin
             end
         end
         STATE_FETC: begin
-			if(transfer_done) begin
+			if(transfer_done & !uncached) begin
 				fsm_state_next = STATE_SYNC;
-			end
+            end else if(transfer_done & uncached) begin
+                if(fetch_cnt[0]) begin
+                    // uncached over
+                    fsm_state_next = STATE_NORM;
+                end else begin
+                    // uncached repeat
+                    fsm_state_next = STATE_ADDR;
+                end
+            end
         end
         STATE_INVA: begin
             fsm_state_next = STATE_SYNC;
@@ -342,8 +350,8 @@ always_comb begin
             data_we |= sel_vec[va[11:4]] & {WAY_CNT{bus_resp_i.data_ok}} & ~uncached;
             tag_we  |= sel_vec[va[11:4]] /*& bus_resp_i.data_last & bus_resp_i.data_ok TODO: JUDGE WHETHER WE NEED THIS*/ & ~uncached;
         end else begin
-            data_we[lfsr_sel_vec] = 1'b1;
-            tag_we[lfsr_sel_vec]  = 1'b1;
+            data_we[lfsr_sel_vec] = ~uncached;
+            tag_we[lfsr_sel_vec]  = ~uncached;
         end
     end else if(fsm_state == STATE_SYNC || fsm_state == STATE_SYN2) begin
         datapath_addr = va_early[11:2];
@@ -354,9 +362,9 @@ end
 always_comb begin
 	bus_req_o.valid = fsm_state == STATE_ADDR;
 	bus_req_o.write = '0;
-	bus_req_o.burst = '1;
+	bus_req_o.burst =  ~uncached;
 	bus_req_o.cached = ~uncached;
-	bus_req_o.addr = {pa[31:4], 4'b0000};
+	bus_req_o.addr = uncached ? {pa[31:3], fetch_cnt[0], 2'b00} : {pa[31:4], 4'b0000};
 
 	bus_req_o.w_data = '0;
 	bus_req_o.data_strobe = '0;
@@ -368,7 +376,7 @@ end
 always_ff @(posedge clk) begin
     if(fsm_state == STATE_FETC) begin
         fetch_cnt <= {fetch_cnt[1] ^ (fetch_cnt[0] & bus_resp_i.data_ok), fetch_cnt[0] ^ bus_resp_i.data_ok};
-    end else begin
+    end else if(fsm_state != STATE_ADDR) begin
         fetch_cnt <= '0;
     end
 end
@@ -379,7 +387,7 @@ assign handling = (fsm_state != STATE_NORM) || (fsm_state != fsm_state_next);
 // 由FSM控制的fetched，transfer_done逻辑
 assign transfer_done = bus_resp_i.data_ok & bus_resp_i.data_last;
 always_ff @(posedge clk) begin
-    if(fsm_state == STATE_SYN2) begin
+    if(fsm_state == STATE_SYN2 || (fsm_state == STATE_FETC && uncached && transfer_done && fetch_cnt[0])) begin
         fetched <= 1'b1;
     end else if(~stall)begin
         fetched <= 1'b0;

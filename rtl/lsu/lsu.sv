@@ -123,7 +123,7 @@ module lsu (
 		bus_req_o.write = mem_req_stage_2.mem_write;
 		bus_req_o.burst = '0;
 		bus_req_o.cached = '0;
-		bus_req_o.addr = mem_req_stage_2.mem_addr;
+		bus_req_o.addr = {mem_req_stage_2.mem_addr[31:2],2'b00};
 
 		bus_req_o.w_data = w_data_i << {mem_req_stage_2.mem_addr[1:0],3'b000};
 		case(mem_req_stage_2.mem_type[1:0])

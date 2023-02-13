@@ -132,7 +132,7 @@ logic [31:0]    reg_dmw1;
 // logic [31:0]    reg_brk;
 // logic [31:0]    reg_disable_cache;
 
-logic [63:0]    reg_timer_64;
+(* mark_debug="true" *) logic [63:0]    reg_timer_64;
 
 
 
