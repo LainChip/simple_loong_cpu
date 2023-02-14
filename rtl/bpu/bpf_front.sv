@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpf_front.sv
 // Create : 2023-01-31 14:22:04
-// Revise : 2023-02-12 13:58:54
+// Revise : 2023-02-14 14:04:42
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -23,11 +23,12 @@ module bpf_front (
 	output bpu_predict_t predict_o
 );
 
-	assign update_o.flush = predict_i.taken &
-							((predict_i.fsc == 1'b0 && decode_i[0].ex.branch_type == `_BRANCH_INVALID && valid_i[0]) |
-							(predict_i.fsc == 1'b1 && decode_i[1].ex.branch_type == `_BRANCH_INVALID) && valid_i[1]);
+	wire fst_miss = predict_i.taken && predict_i.fsc == 1'b0 && decode_i[0].ex.branch_type == `_BRANCH_INVALID && valid_i[0];
+	wire sec_miss = predict_i.taken && predict_i.fsc == 1'b1 && decode_i[1].ex.branch_type == `_BRANCH_INVALID && valid_i[1];
+
+	assign update_o.flush = fst_miss | sec_miss;
 	assign update_o.pc = pc_i;
-	assign update_o.br_target = {pc_i[31:3] + 1, 3'b000};
+	assign update_o.br_target = fst_miss ? pc_i + 4 : {pc_i[31:3] + 1, 3'b000};
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
 	assign update_o.br_taken = 1'b0;
