@@ -7,8 +7,9 @@ typedef struct packed{
     // 请求信号
     logic valid;                             // 拉高时说明cache的请求有效，请求有效后，valid信号应该被拉低
     logic write;                             // 拉高时说明cache请求进行写入
-    logic burst;                             // 0 for no burst, 1 for cache burst length
+    logic [3:0]burst_size;                   // 0 for no burst, n for n + 1 times burst
     logic cached;                            // 0 for uncached, 1 for cached
+    logic [1:0]data_size;                    // n for (1 << n) bytes in a transfer
     logic[31:0] addr;                        // cache请求的物理地址
 
     // 数据
