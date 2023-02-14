@@ -839,10 +839,12 @@ module cached_lsu #(
         // axi_req.AR_valid = 1'b1;
         bus_req_o.valid = '1;
         // axi_req.AR_len = (slot_2_8_byte) ? 2'd1 : '0;
+        // axi_req.AR_burstType = (slot_2_8_byte) ? 2'b10 : 2'b00;
 
-        axi_req.AR_burstType = (slot_2_8_byte) ? 2'b10 : 2'b00;
-        axi_req.AR_addr = {delay_2_req.vaddr[31:0]};
-        axi_req.AR_size = {1'b0, delay_2_req.size};
+        // axi_req.AR_addr = {delay_2_req.vaddr[31:0]};
+        // axi_req.AR_size = {1'b0, delay_2_req.size};
+        bus_req_o.addr = {delay_2_req.vaddr[31:0]};
+        bus_req_o.data_size = delay_2_req.size;
       end
       // S_PDW: begin
       //   axi_req.DW_valid  = '1;
@@ -850,38 +852,43 @@ module cached_lsu #(
       //   axi_req.DW_strobe = w_req.byteen;
       //   axi_req.DW_data   = w_req.data;
       // end
-      S_DR: begin
-        axi_req.DR_ready = 1'b1;
+      S_RDAT: begin
+        // axi_req.DR_ready = 1'b1;
+        bus_req_o.data_ok = '1;
       end
-      S_PDR: begin
-        axi_req.DR_ready = 1'b1;
+      S_PDAT: begin
+        // axi_req.DR_ready = 1'b1;
+        bus_req_o.data_ok = '1;
       end
       // S_PB: begin
       //   axi_req.BW_ready = '1;
       // end
-      S_B: begin
-        axi_req.BW_ready = '1;
-      end
+      // S_B: begin
+      //   axi_req.BW_ready = '1;
+      // end
     endcase
     if (uncached_fsm_machine_busy) begin
-      axi_req.DW_data = uncached_axi_req.DW_data;
-      axi_req.AW_burstType = uncached_axi_req.AW_burstType;
-      axi_req.AW_addr = uncached_axi_req.AW_addr;
-      axi_req.AW_len = uncached_axi_req.AW_len;
-      axi_req.AW_size = uncached_axi_req.AW_size;
-      axi_req.AW_valid = uncached_axi_req.AW_valid;
-      axi_req.DW_valid = uncached_axi_req.DW_valid;
-      axi_req.DW_last = uncached_axi_req.DW_last;
-      axi_req.DW_strobe = uncached_axi_req.DW_strobe;
-      axi_req.BW_ready = uncached_axi_req.BW_ready;
+      // axi_req.DW_data = uncached_axi_req.DW_data;
+      // axi_req.AW_burstType = uncached_axi_req.AW_burstType;
+      // axi_req.AW_addr = uncached_axi_req.AW_addr;
+      // axi_req.AW_len = uncached_axi_req.AW_len;
+      // axi_req.AW_size = uncached_axi_req.AW_size;
+      // axi_req.AW_valid = uncached_axi_req.AW_valid;
+      // axi_req.DW_valid = uncached_axi_req.DW_valid;
+      // axi_req.DW_last = uncached_axi_req.DW_last;
+      // axi_req.DW_strobe = uncached_axi_req.DW_strobe;
+      // axi_req.BW_ready = uncached_axi_req.BW_ready;
+      bus_req_o = uncached_bus_req_o;
     end
   end
 
   logic [31:0] stage_2_read_result;
-  assign d_resp.data = stage_2_read_result;
-  assign d_resp.tlb_miss = '0;
-  assign d_resp.valid = delay_2_req.ctrl == `_CACHE_CTRL_WRITE || delay_2_req.ctrl == `_CACHE_CTRL_READ;
-  assign d_resp.vaddr = delay_2_req.vaddr;
+  // assign d_resp.data = stage_2_read_result;
+  assign r_data_o = stage_2_read_result;
+  // assign d_resp.tlb_miss = '0;
+  // assign d_resp.valid = delay_2_req.ctrl == `_CACHE_CTRL_WRITE || delay_2_req.ctrl == `_CACHE_CTRL_READ;
+  // assign d_resp.vaddr = delay_2_req.vaddr;
+  assign paddr_o = delay_2_req.vaddr;
   // This block will describe cache data write logic.
   // All write is done in final stage, so we only need to controll it directly in stage 2
   always_comb begin
