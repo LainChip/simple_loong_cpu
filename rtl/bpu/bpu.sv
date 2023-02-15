@@ -4,7 +4,7 @@
 // Author : Jiuxi 2506806016@qq.com
 // File   : bpu.sv
 // Create : 2023-01-07 22:13:44
-// Revise : 2023-02-12 14:05:27
+// Revise : 2023-02-15 11:49:35
 // Editor : sublime text4, tab size (4)
 // Brief  : 
 // -----------------------------------------------------------------------------
@@ -85,7 +85,7 @@ module bpu (
 		.rpc_i     (npc),
 		.update_i  (update_i.btb_update),
 		.wpc_i     (update_i.pc),
-		.bta_i     (update_i.br_target),
+		.bta_i     (update_i.br_target[31:2]),
 		.Br_type_i (update_i.br_type),
 		.fsc_o     (btb_fsc),
 		.miss_o    (btb_miss),
@@ -145,6 +145,11 @@ module bpu (
 	assign predict_o.npc = npc;
 	assign predict_o.lphr = lphr;
 	assign predict_o.lphr_index = pc[`_LPHT_ADDR_WIDTH +2:3];
+
+	// debug
+
+	wire[31:0] npc_32 = {npc, 2'b00};
+	wire[31:0] src_32 = {update_i.pc, 2'b00};
 
 endmodule : bpu
 

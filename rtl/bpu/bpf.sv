@@ -101,12 +101,6 @@ module bpf (
 	assign update_o.lpht_update = 1'b1;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
-
-	// debug
-	wire wb_valid = decode_i.wb.valid;
-	wire flush = update_o.flush;
-	wire predict_taken = predict_i.taken;
-	wire [1:0] br_type = update_o.br_type;
 	
 endmodule : bpf
 
