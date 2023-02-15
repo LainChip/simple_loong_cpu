@@ -22,8 +22,18 @@ typedef struct packed{
 	logic [4:0] w_reg;
 } register_info_t;
 
+typedef struct packed {
+	logic adef;
+	// TODO TLB
+	logic tlbr;
+	logic pif;
+	// logic [1:0] found_plv; // lower means higher privilege
+	logic ppi;
+} fetch_excp_t;
+
 // 输入到后端的指令流信息
 typedef struct packed {
+	fetch_excp_t fetch_excp;
 	decode_info_t decode_info;
 	register_info_t register_info;
 	bpu_predict_t bpu_predict;
@@ -37,8 +47,22 @@ typedef struct packed {
 	decode_info_t decode_info;
 	forwarding_info_t [1:0] forwarding_info;
 	bpu_predict_t bpu_predict;
+	fetch_excp_t fetch_excp;
 	logic[4:0] w_reg;
 } ctrl_flow_t;
+
+// 异常流
+typedef struct packed {
+	logic adem;
+	logic ale;
+
+	// FRONTEND
+	logic adef;
+	logic itlbr;
+	logic pif;
+	logic ippi;
+
+} excp_flow_t;
 
 // 管线中的数据flow类型，目前未进行精简。 对于管线二，可以精简其寄存器部分。
 typedef struct packed {

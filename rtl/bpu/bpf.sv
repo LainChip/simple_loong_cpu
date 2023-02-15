@@ -28,6 +28,7 @@ module bpf (
 );
 
 	logic taken;
+
 	wire [25:0] offs_i = decode_i.general.inst25_0; 
 	wire [4:0] rj_index_i = decode_i.general.inst25_0[9:5];
 	wire [4:0] rd_index_i = decode_i.general.inst25_0[4:0];
@@ -38,11 +39,11 @@ module bpf (
 	wire [31:0] offs_26 = {{4{offs_i[9]}},offs_i[9:0], offs_i[25:10], 2'b00};
 	wire [31:0] offs_16 = {{14{offs_i[25]}}, offs_i[25:10], 2'b00};
 
-	wire [31:0] target = branch_type_i == `_BRANCH_IMMEDIATE 		  ? pc_i + (offs_26) :
-					     branch_type_i == `_BRANCH_INDIRECT  		  ? rj_i + (offs_16) :
-					     branch_type_i == `_BRANCH_CONDITION && taken ? pc_i + (offs_16) :
+	(* mark_debug="true" *) wire [31:0] target = (branch_type_i == `_BRANCH_IMMEDIATE) 		    ? (pc_i + (offs_26)) :(
+					     						 (branch_type_i == `_BRANCH_INDIRECT)  		    ? (rj_i + (offs_16)) :(
+					     						 (branch_type_i == `_BRANCH_CONDITION && taken) ? (pc_i + (offs_16)) :(
 								   						       			// pc_i + 4;
-								   						       			{pc_i[31:3] + 1, 3'b000};
+								   						       			{pc_i[31:3] + 29'd1, 3'b000})));
 	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
 	
 	always_comb begin : proc_taken
@@ -55,7 +56,7 @@ module bpf (
 				`_CMP_LEQ: taken = $signed(rj_i) <= $signed(rd_i);
 				`_CMP_GEQ: taken = $signed(rj_i) >= $signed(rd_i);
 				`_CMP_LTU: taken = rj_i < rd_i;
-				`_CMP_GEU: taken = rj_i > rd_i;
+				`_CMP_GEU: taken = rj_i >= rd_i;
 				default : taken = 1'b0;
 			endcase
 		end else if (branch_type_i != `_BRANCH_INVALID) begin
@@ -78,9 +79,10 @@ module bpf (
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	// 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
-	assign update_o.br_target = csr_flush_i ? csr_target_i : 
-								pc_i[2] == 0 && taken == 0 && predict_i.taken == 1 ? pc_i + 4 : 
-								target;
+	assign update_o.br_target = csr_flush_i ? csr_target_i[31:0] : 
+								(pc_i[2] == '0 && taken == '0 && predict_i.taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} : 
+								target[31:0];
+
 	assign update_o.btb_update = 1'b1;
 	always_comb begin : proc_br_type
 		if ((branch_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || decode_i.ex.branch_link) begin

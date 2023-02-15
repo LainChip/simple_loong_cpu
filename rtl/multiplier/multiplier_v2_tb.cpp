@@ -19,10 +19,6 @@
 
 #define TEST_TIMES (10000)
 
-#define next(top) do { \
-        contextp->timeInc(1); \
-        top->eval();          \
-    } while (0)
 
 #define step(statements) do { \
         contextp->timeInc(1); \

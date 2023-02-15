@@ -8,28 +8,19 @@ module decoder(
 );
 
     always_comb begin
-        casex(inst_i)
-            32'b010011xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
+        unique casez(inst_i)
+            32'b010011??????????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_BPF;
-                decode_info_o.is.pipe_one_inst = 1'd1;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = `_USE_EX;
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = `_BRANCH_INDIRECT;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -39,29 +30,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_BPF;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_EX;
+                decode_info_o.is.use_time = `_USE_EX;
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd106 ,8'd105 ,8'd114 ,8'd108}; //jirl
             end
-            32'b010100xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b010100??????????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'd1;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_I;
                 decode_info_o.ex.branch_type = `_BRANCH_IMMEDIATE;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -71,29 +61,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_I;
                 inst_string_o = {8'd98}; //b
             end
-            32'b010101xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b010101??????????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_BPF;
-                decode_info_o.is.pipe_one_inst = 1'd1;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_BL;
                 decode_info_o.ex.branch_type = `_BRANCH_IMMEDIATE;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd1;
@@ -103,29 +92,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_BPF;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_EX;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_BL;
                 inst_string_o = {8'd98 ,8'd108}; //bl
             end
-            32'b010110xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b010110??????????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'd1;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX, `_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RR;
                 decode_info_o.ex.branch_type = `_BRANCH_CONDITION;
                 decode_info_o.ex.cmp_type = `_CMP_EQL;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -135,21 +123,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd98 ,8'd101 ,8'd113}; //beq
-            end
-            32'b010111xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -158,6 +131,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX, `_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd98 ,8'd101 ,8'd113}; //beq
+            end
+            32'b010111??????????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = `_BRANCH_CONDITION;
                 decode_info_o.ex.cmp_type = `_CMP_NEQ;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -167,21 +154,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd98 ,8'd110 ,8'd101}; //bne
-            end
-            32'b011000xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -190,6 +162,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX, `_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd98 ,8'd110 ,8'd101}; //bne
+            end
+            32'b011000??????????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = `_BRANCH_CONDITION;
                 decode_info_o.ex.cmp_type = `_CMP_LSS;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -199,21 +185,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd98 ,8'd108 ,8'd116}; //blt
-            end
-            32'b011001xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -222,6 +193,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX, `_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd98 ,8'd108 ,8'd116}; //blt
+            end
+            32'b011001??????????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = `_BRANCH_CONDITION;
                 decode_info_o.ex.cmp_type = `_CMP_GER;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -231,21 +216,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd98 ,8'd103 ,8'd101}; //bge
-            end
-            32'b011010xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -254,6 +224,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX, `_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd98 ,8'd103 ,8'd101}; //bge
+            end
+            32'b011010??????????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = `_BRANCH_CONDITION;
                 decode_info_o.ex.cmp_type = `_CMP_LTU;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -263,21 +247,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd98 ,8'd108 ,8'd116 ,8'd117}; //bltu
-            end
-            32'b011011xxxxxxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -286,6 +255,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX, `_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd98 ,8'd108 ,8'd116 ,8'd117}; //bltu
+            end
+            32'b011011??????????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = `_BRANCH_CONDITION;
                 decode_info_o.ex.cmp_type = `_CMP_GEU;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -295,29 +278,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX, `_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RR;
                 inst_string_o = {8'd98 ,8'd103 ,8'd101 ,8'd117}; //bgeu
             end
-            32'b0001010xxxxxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b0001010?????????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_W;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -327,21 +309,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_LUI;
                 decode_info_o.ex.opd_type = `_OPD_IMM_S20;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd108 ,8'd117 ,8'd49 ,8'd50 ,8'd105 ,8'd46 ,8'd119}; //lu12i.w
-            end
-            32'b0001110xxxxxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -350,6 +317,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_W;
+                inst_string_o = {8'd108 ,8'd117 ,8'd49 ,8'd50 ,8'd105 ,8'd46 ,8'd119}; //lu12i.w
+            end
+            32'b0001110?????????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -359,29 +340,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_ADD;
                 decode_info_o.ex.opd_type = `_OPD_IMM_S20;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_EX;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_W;
                 inst_string_o = {8'd112 ,8'd99 ,8'd97 ,8'd100 ,8'd100 ,8'd117 ,8'd49 ,8'd50 ,8'd105}; //pcaddu12i
             end
-            32'b00000100xxxxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b00000100????????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd1;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_CSR;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_M2,`_USE_M2};
-                decode_info_o.is.reg_type = `_REG_TYPE_CSRXCHG;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -391,29 +371,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd99 ,8'd115 ,8'd114 ,8'd120 ,8'd99 ,8'd104 ,8'd103}; //csrxchg
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_CSR;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_M2,`_USE_M2};
+                decode_info_o.is.reg_type = `_REG_TYPE_CSRXCHG;
+                inst_string_o = {8'd99 ,8'd115 ,8'd114 ,8'd119 ,8'd114 ,8'd120 ,8'd99 ,8'd104 ,8'd103}; //csrwrxchg
             end
-            32'b0000001000xxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b0000001000??????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -423,21 +402,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SLT;
                 decode_info_o.ex.opd_type = `_OPD_IMM_S12;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd108 ,8'd116 ,8'd105}; //slti
-            end
-            32'b0000001001xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -446,6 +410,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd115 ,8'd108 ,8'd116 ,8'd105}; //slti
+            end
+            32'b0000001001??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -455,21 +433,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SLT;
                 decode_info_o.ex.opd_type = `_OPD_IMM_S12;
                 decode_info_o.ex.opd_unsigned = 1'd1;
-                inst_string_o = {8'd115 ,8'd108 ,8'd116 ,8'd117 ,8'd105}; //sltui
-            end
-            32'b0000001010xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -478,6 +441,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd115 ,8'd108 ,8'd116 ,8'd117 ,8'd105}; //sltui
+            end
+            32'b0000001010??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -487,21 +464,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_ADD;
                 decode_info_o.ex.opd_type = `_OPD_IMM_S12;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd97 ,8'd100 ,8'd100 ,8'd105 ,8'd46 ,8'd119}; //addi.w
-            end
-            32'b0000001101xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -510,6 +472,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd97 ,8'd100 ,8'd100 ,8'd105 ,8'd46 ,8'd119}; //addi.w
+            end
+            32'b0000001101??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -519,21 +495,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_AND;
                 decode_info_o.ex.opd_type = `_OPD_IMM_U12;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd97 ,8'd110 ,8'd100 ,8'd105}; //andi
-            end
-            32'b0000001110xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -542,6 +503,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd97 ,8'd110 ,8'd100 ,8'd105}; //andi
+            end
+            32'b0000001110??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -551,21 +526,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_OR;
                 decode_info_o.ex.opd_type = `_OPD_IMM_U12;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd111 ,8'd114 ,8'd105}; //ori
-            end
-            32'b0000001111xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -574,6 +534,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd111 ,8'd114 ,8'd105}; //ori
+            end
+            32'b0000001111??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -583,29 +557,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_XOR;
                 decode_info_o.ex.opd_type = `_OPD_IMM_U12;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_EX;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd120 ,8'd111 ,8'd114 ,8'd105}; //xori
             end
-            32'b0010100000xxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b0010100000??????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_LSU;
-                decode_info_o.is.pipe_one_inst = 1'd1;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -615,29 +588,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_LSU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd98}; //ld.b
             end
-            32'b0010100001xxxxxxxxxxxxxxxxxxxxxx: begin
+            32'b0010100001??????????????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_LSU;
-                decode_info_o.is.pipe_one_inst = 1'd1;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -647,21 +619,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd104}; //ld.h
-            end
-            32'b0010100010xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_LSU;
@@ -670,6 +627,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd104}; //ld.h
+            end
+            32'b0010100010??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -679,29 +650,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd119}; //ld.w
-            end
-            32'b0010100100xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.wb.wb_sel = `_REG_WB_LSU;
                 decode_info_o.is.pipe_one_inst = 1'd1;
                 decode_info_o.is.pipe_two_inst = 1'b0;
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd119}; //ld.w
+            end
+            32'b0010100100??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -711,21 +681,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd116 ,8'd46 ,8'd98}; //st.b
-            end
-            32'b0010100101xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -734,6 +689,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd115 ,8'd116 ,8'd46 ,8'd98}; //st.b
+            end
+            32'b0010100101??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -743,21 +712,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd116 ,8'd46 ,8'd104}; //st.h
-            end
-            32'b0010100110xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -766,6 +720,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd115 ,8'd116 ,8'd46 ,8'd104}; //st.h
+            end
+            32'b0010100110??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -775,29 +743,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd116 ,8'd46 ,8'd119}; //st.w
-            end
-            32'b0010101000xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_LSU;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
                 decode_info_o.is.pipe_one_inst = 1'd1;
                 decode_info_o.is.pipe_two_inst = 1'b0;
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                decode_info_o.is.reg_type = `_REG_TYPE_RR;
+                inst_string_o = {8'd115 ,8'd116 ,8'd46 ,8'd119}; //st.w
+            end
+            32'b0010101000??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -807,21 +774,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd98 ,8'd117}; //ld.bu
-            end
-            32'b0010101001xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_LSU;
@@ -830,6 +782,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd98 ,8'd117}; //ld.bu
+            end
+            32'b0010101001??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -839,21 +805,6 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd104 ,8'd117}; //ld.hu
-            end
-            32'b0010101010xxxxxxxxxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_LSU;
@@ -862,6 +813,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd104 ,8'd117}; //ld.hu
+            end
+            32'b0010101010??????????????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -871,29 +836,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_LSU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd108 ,8'd100 ,8'd46 ,8'd119 ,8'd117}; //ld.wu
             end
-            32'b00000000000100000xxxxxxxxxxxxxxx: begin
+            32'b00000000000100000???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -903,21 +867,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_ADD;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd97 ,8'd100 ,8'd100 ,8'd46 ,8'd119}; //add.w
-            end
-            32'b00000000000100010xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -926,6 +875,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd97 ,8'd100 ,8'd100 ,8'd46 ,8'd119}; //add.w
+            end
+            32'b00000000000100010???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -935,21 +898,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SUB;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd117 ,8'd98 ,8'd46 ,8'd119}; //sub.w
-            end
-            32'b00000000000100100xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -958,6 +906,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd115 ,8'd117 ,8'd98 ,8'd46 ,8'd119}; //sub.w
+            end
+            32'b00000000000100100???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -967,21 +929,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SLT;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd108 ,8'd116}; //slt
-            end
-            32'b00000000000100101xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -990,6 +937,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd115 ,8'd108 ,8'd116}; //slt
+            end
+            32'b00000000000100101???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -999,21 +960,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SLT;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd1;
-                inst_string_o = {8'd115 ,8'd108 ,8'd116 ,8'd117}; //sltu
-            end
-            32'b00000000000101000xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1022,6 +968,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd115 ,8'd108 ,8'd116 ,8'd117}; //sltu
+            end
+            32'b00000000000101000???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1031,21 +991,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_NOR;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd110 ,8'd111 ,8'd114}; //nor
-            end
-            32'b00000000000101001xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1054,6 +999,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd110 ,8'd111 ,8'd114}; //nor
+            end
+            32'b00000000000101001???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1063,21 +1022,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_AND;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd97 ,8'd110 ,8'd100}; //and
-            end
-            32'b00000000000101010xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1086,6 +1030,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd97 ,8'd110 ,8'd100}; //and
+            end
+            32'b00000000000101010???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1095,21 +1053,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_OR;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd111 ,8'd114}; //or
-            end
-            32'b00000000000101011xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1118,6 +1061,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd111 ,8'd114}; //or
+            end
+            32'b00000000000101011???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1127,21 +1084,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_XOR;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd120 ,8'd111 ,8'd114}; //xor
-            end
-            32'b00000000000101110xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1150,6 +1092,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd120 ,8'd111 ,8'd114}; //xor
+            end
+            32'b00000000000101110???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1159,21 +1115,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SL;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd108 ,8'd108 ,8'd46 ,8'd119}; //sll.w
-            end
-            32'b00000000000101111xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1182,6 +1123,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd115 ,8'd108 ,8'd108 ,8'd46 ,8'd119}; //sll.w
+            end
+            32'b00000000000101111???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1191,21 +1146,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SR;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd1;
-                inst_string_o = {8'd115 ,8'd114 ,8'd108 ,8'd46 ,8'd119}; //srl.w
-            end
-            32'b00000000000110000xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1214,6 +1154,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd115 ,8'd114 ,8'd108 ,8'd46 ,8'd119}; //srl.w
+            end
+            32'b00000000000110000???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1223,21 +1177,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SR;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd114 ,8'd97 ,8'd46 ,8'd119}; //sra.w
-            end
-            32'b00000000000111000xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1246,6 +1185,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RRW;
+                inst_string_o = {8'd115 ,8'd114 ,8'd97 ,8'd46 ,8'd119}; //sra.w
+            end
+            32'b00000000000111000???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1255,29 +1208,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_MUL;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_MDU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'd1;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 inst_string_o = {8'd109 ,8'd117 ,8'd108 ,8'd46 ,8'd119}; //mul.w
             end
-            32'b00000000000111001xxxxxxxxxxxxxxx: begin
+            32'b00000000000111001???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1287,29 +1239,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_MULH;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_MDU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'd1;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 inst_string_o = {8'd109 ,8'd117 ,8'd108 ,8'd104 ,8'd46 ,8'd119}; //mulh.w
             end
-            32'b00000000000111010xxxxxxxxxxxxxxx: begin
+            32'b00000000000111010???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1319,29 +1270,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_MULH;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd1;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_MDU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'd1;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 inst_string_o = {8'd109 ,8'd117 ,8'd108 ,8'd104 ,8'd46 ,8'd119 ,8'd117}; //mulh.wu
             end
-            32'b00000000001000000xxxxxxxxxxxxxxx: begin
+            32'b00000000001000000???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1351,29 +1301,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_DIV;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_MDU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'd1;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 inst_string_o = {8'd100 ,8'd105 ,8'd118 ,8'd46 ,8'd119}; //div.w
             end
-            32'b00000000001000001xxxxxxxxxxxxxxx: begin
+            32'b00000000001000001???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1383,29 +1332,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_MOD;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_MDU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'd1;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 inst_string_o = {8'd109 ,8'd111 ,8'd100 ,8'd46 ,8'd119}; //mod.w
             end
-            32'b00000000001000010xxxxxxxxxxxxxxx: begin
+            32'b00000000001000010???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1415,29 +1363,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_DIV;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd1;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_MDU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'd1;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 inst_string_o = {8'd100 ,8'd105 ,8'd118 ,8'd46 ,8'd119 ,8'd117}; //div.wu
             end
-            32'b00000000001000011xxxxxxxxxxxxxxx: begin
+            32'b00000000001000011???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1447,29 +1394,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_MOD;
                 decode_info_o.ex.opd_type = `_OPD_REG;
                 decode_info_o.ex.opd_unsigned = 1'd1;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_MDU;
+                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_two_inst = 1'd1;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RRW;
                 inst_string_o = {8'd109 ,8'd111 ,8'd100 ,8'd46 ,8'd119 ,8'd117}; //mod.wu
             end
-            32'b00000000001010100xxxxxxxxxxxxxxx: begin
+            32'b00000000001010100???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_SYSCALL;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_I;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1479,29 +1425,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_I;
                 inst_string_o = {8'd98 ,8'd114 ,8'd101 ,8'd97 ,8'd107}; //break
             end
-            32'b00000000001010110xxxxxxxxxxxxxxx: begin
+            32'b00000000001010110???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_SYSCALL;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_I;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1511,29 +1456,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_I;
                 inst_string_o = {8'd115 ,8'd121 ,8'd115 ,8'd99 ,8'd97 ,8'd108 ,8'd108}; //syscall
             end
-            32'b00000000010000001xxxxxxxxxxxxxxx: begin
+            32'b00000000010000001???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_EX;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1543,21 +1487,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SL;
                 decode_info_o.ex.opd_type = `_OPD_IMM_U5;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd108 ,8'd108 ,8'd105 ,8'd46 ,8'd119}; //slli.w
-            end
-            32'b00000000010001001xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1566,6 +1495,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd115 ,8'd108 ,8'd108 ,8'd105 ,8'd46 ,8'd119}; //slli.w
+            end
+            32'b00000000010001001???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1575,21 +1518,6 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SR;
                 decode_info_o.ex.opd_type = `_OPD_IMM_U5;
                 decode_info_o.ex.opd_unsigned = 1'd1;
-                inst_string_o = {8'd115 ,8'd114 ,8'd108 ,8'd105 ,8'd46 ,8'd119}; //srli.w
-            end
-            32'b00000000010010001xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
@@ -1598,6 +1526,20 @@ module decoder(
                 decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd115 ,8'd114 ,8'd108 ,8'd105 ,8'd46 ,8'd119}; //srli.w
+            end
+            32'b00000000010010001???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1607,29 +1549,28 @@ module decoder(
                 decode_info_o.ex.alu_type = `_ALU_TYPE_SR;
                 decode_info_o.ex.opd_type = `_OPD_IMM_U5;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd115 ,8'd114 ,8'd97 ,8'd105 ,8'd46 ,8'd119}; //srai.w
-            end
-            32'b00000110010010001xxxxxxxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
                 decode_info_o.is.pipe_one_inst = 1'b0;
                 decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_I;
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
+                inst_string_o = {8'd115 ,8'd114 ,8'd97 ,8'd105 ,8'd46 ,8'd119}; //srai.w
+            end
+            32'b00000110010010001???????????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1639,29 +1580,59 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_I;
                 inst_string_o = {8'd105 ,8'd100 ,8'd108 ,8'd101}; //idle
             end
-            32'b00000110010010011xxxxxxxxxxxxxxx: begin
+            32'b00000110010010011???????????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd1;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd1;
                 decode_info_o.m2.do_ertn = 1'd0;
+                decode_info_o.ex.branch_type = 2'd0;
+                decode_info_o.ex.cmp_type = 3'd0;
+                decode_info_o.ex.branch_link = 1'd0;
+                decode_info_o.m1.mem_type = 3'd0;
+                decode_info_o.m1.mem_write = 1'd0;
+                decode_info_o.m1.mem_valid = 1'd0;
+                decode_info_o.ex.alu_type = 4'd0;
+                decode_info_o.ex.opd_type = 3'd0;
+                decode_info_o.ex.opd_unsigned = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_one_inst = 1'd1;
                 decode_info_o.is.pipe_two_inst = 1'b0;
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_M2,`_USE_M2};
                 decode_info_o.is.reg_type = `_REG_TYPE_INVTLB;
+                inst_string_o = {8'd105 ,8'd110 ,8'd118 ,8'd116 ,8'd108 ,8'd98}; //invtlb
+            end
+            32'b000000000000000001100???????????: begin
+                decode_info_o.general.inst25_0 = inst_i[25:0];
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
+                decode_info_o.m2.csr_num = 14'd0;
+                decode_info_o.m2.csr_write_en = 1'd0;
+                decode_info_o.m2.tlbsrch_en = 1'd0;
+                decode_info_o.m2.tlbrd_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
+                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1671,125 +1642,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd105 ,8'd110 ,8'd118 ,8'd116 ,8'd108 ,8'd98}; //invtlb
-            end
-            32'b0000000000000000011000xxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd1;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_CSR;
-                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_one_inst = 1'd1;
                 decode_info_o.is.pipe_two_inst = 1'b0;
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_RDCNTID;
-                decode_info_o.ex.branch_type = 2'd0;
-                decode_info_o.ex.cmp_type = 3'd0;
-                decode_info_o.ex.branch_link = 1'd0;
-                decode_info_o.m1.mem_type = 3'd0;
-                decode_info_o.m1.mem_write = 1'd0;
-                decode_info_o.m1.mem_valid = 1'd0;
-                decode_info_o.ex.alu_type = 4'd0;
-                decode_info_o.ex.opd_type = 3'd0;
-                decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd114 ,8'd100 ,8'd99 ,8'd110 ,8'd116 ,8'd105 ,8'd100 ,8'd46 ,8'd119}; //rdcntid.w
+                inst_string_o = {8'd114 ,8'd100 ,8'd99 ,8'd110 ,8'd116 ,8'd46 ,8'd119}; //rdcnt.w
             end
-            32'b0000000000000000011000xxxxxxxxxx: begin
+            32'b0000011001001000001010??????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_LOW;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_CSR;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
-                decode_info_o.ex.branch_type = 2'd0;
-                decode_info_o.ex.cmp_type = 3'd0;
-                decode_info_o.ex.branch_link = 1'd0;
-                decode_info_o.m1.mem_type = 3'd0;
-                decode_info_o.m1.mem_write = 1'd0;
-                decode_info_o.m1.mem_valid = 1'd0;
-                decode_info_o.ex.alu_type = 4'd0;
-                decode_info_o.ex.opd_type = 3'd0;
-                decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd114 ,8'd100 ,8'd99 ,8'd110 ,8'd116 ,8'd118 ,8'd108 ,8'd46 ,8'd119}; //rdcntvl.w
-            end
-            32'b0000000000000000011001xxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_HIGH;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd0;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_CSR;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
-                decode_info_o.ex.branch_type = 2'd0;
-                decode_info_o.ex.cmp_type = 3'd0;
-                decode_info_o.ex.branch_link = 1'd0;
-                decode_info_o.m1.mem_type = 3'd0;
-                decode_info_o.m1.mem_write = 1'd0;
-                decode_info_o.m1.mem_valid = 1'd0;
-                decode_info_o.ex.alu_type = 4'd0;
-                decode_info_o.ex.opd_type = 3'd0;
-                decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd114 ,8'd100 ,8'd99 ,8'd110 ,8'd116 ,8'd118 ,8'd104 ,8'd46 ,8'd119}; //rdcntvh.w
-            end
-            32'b0000011001001000001010xxxxxxxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd1;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1799,29 +1673,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd116 ,8'd108 ,8'd98 ,8'd115 ,8'd114 ,8'd99 ,8'd104}; //tlbsrch
             end
-            32'b0000011001001000001011xxxxxxxxxx: begin
+            32'b0000011001001000001011??????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd1;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1831,29 +1704,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd116 ,8'd108 ,8'd98 ,8'd114 ,8'd100}; //tlbrd
             end
-            32'b0000011001001000001100xxxxxxxxxx: begin
+            32'b0000011001001000001100??????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd1;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd1;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1863,29 +1735,28 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd116 ,8'd108 ,8'd98 ,8'd119 ,8'd114}; //tlbwr
             end
-            32'b0000011001001000001101xxxxxxxxxx: begin
+            32'b0000011001001000001101??????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd1;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd1;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 decode_info_o.ex.branch_type = 2'd0;
                 decode_info_o.ex.cmp_type = 3'd0;
                 decode_info_o.ex.branch_link = 1'd0;
@@ -1895,103 +1766,77 @@ module decoder(
                 decode_info_o.ex.alu_type = 4'd0;
                 decode_info_o.ex.opd_type = 3'd0;
                 decode_info_o.ex.opd_unsigned = 1'd0;
+                decode_info_o.wb.debug_inst = inst_i;
+                decode_info_o.wb.valid = 1'b1;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'd1;
+                decode_info_o.is.pipe_two_inst = 1'b0;
+                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
+                decode_info_o.is.reg_type = `_REG_TYPE_RW;
                 inst_string_o = {8'd116 ,8'd108 ,8'd98 ,8'd102 ,8'd105 ,8'd108 ,8'd108}; //tlbfill
             end
-            32'b0000011001001000001110xxxxxxxxxx: begin
+            32'b0000011001001000001110??????????: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_NONE;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd1;
+                decode_info_o.ex.branch_type = 2'd0;
+                decode_info_o.ex.cmp_type = 3'd0;
+                decode_info_o.ex.branch_link = 1'd0;
+                decode_info_o.m1.mem_type = 3'd0;
+                decode_info_o.m1.mem_write = 1'd0;
+                decode_info_o.m1.mem_valid = 1'd0;
+                decode_info_o.ex.alu_type = 4'd0;
+                decode_info_o.ex.opd_type = 3'd0;
+                decode_info_o.ex.opd_unsigned = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
                 decode_info_o.wb.wb_sel = `_REG_WB_ALU;
-                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.is.pipe_one_inst = 1'd1;
                 decode_info_o.is.pipe_two_inst = 1'b0;
                 decode_info_o.is.ready_time = `_READY_M2;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
                 decode_info_o.is.reg_type = `_REG_TYPE_I;
-                decode_info_o.ex.branch_type = 2'd0;
-                decode_info_o.ex.cmp_type = 3'd0;
-                decode_info_o.ex.branch_link = 1'd0;
-                decode_info_o.m1.mem_type = 3'd0;
-                decode_info_o.m1.mem_write = 1'd0;
-                decode_info_o.m1.mem_valid = 1'd0;
-                decode_info_o.ex.alu_type = 4'd0;
-                decode_info_o.ex.opd_type = 3'd0;
-                decode_info_o.ex.opd_unsigned = 1'd0;
                 inst_string_o = {8'd101 ,8'd114 ,8'd116 ,8'd110}; //ertn
             end
-            32'b00000100xxxxxxxxxxxxxx00000xxxxx: begin
+            default: begin
                 decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd1;
+                decode_info_o.m2.exception_hint = `_EXCEPTION_HINT_INVALID;
+                decode_info_o.m2.do_rdcntid = 1'd0;
                 decode_info_o.m2.csr_num = 14'd0;
                 decode_info_o.m2.csr_write_en = 1'd0;
                 decode_info_o.m2.tlbsrch_en = 1'd0;
                 decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
+                decode_info_o.m2.tlbwr_en = 1'd0;
+                decode_info_o.m2.tlbfill_en = 1'd0;
+                decode_info_o.m2.invtlb_en = 1'd0;
                 decode_info_o.m2.do_ertn = 1'd0;
+                decode_info_o.ex.branch_type = 2'd0;
+                decode_info_o.ex.cmp_type = 3'd0;
+                decode_info_o.ex.branch_link = 1'd0;
+                decode_info_o.m1.mem_type = 3'd0;
+                decode_info_o.m1.mem_write = 1'd0;
+                decode_info_o.m1.mem_valid = 1'd0;
+                decode_info_o.ex.alu_type = 4'd0;
+                decode_info_o.ex.opd_type = 3'd0;
+                decode_info_o.ex.opd_unsigned = 1'd0;
                 decode_info_o.wb.debug_inst = inst_i;
                 decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_CSR;
-                decode_info_o.is.pipe_one_inst = 1'b0;
+                decode_info_o.wb.wb_sel = `_REG_WB_ALU;
+                decode_info_o.is.pipe_one_inst = 1'b1;
                 decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
+                decode_info_o.is.ready_time = `_READY_EX;
                 decode_info_o.is.use_time = {`_USE_EX,`_USE_EX};
-                decode_info_o.is.reg_type = `_REG_TYPE_RW;
-                decode_info_o.ex.branch_type = 2'd0;
-                decode_info_o.ex.cmp_type = 3'd0;
-                decode_info_o.ex.branch_link = 1'd0;
-                decode_info_o.m1.mem_type = 3'd0;
-                decode_info_o.m1.mem_write = 1'd0;
-                decode_info_o.m1.mem_valid = 1'd0;
-                decode_info_o.ex.alu_type = 4'd0;
-                decode_info_o.ex.opd_type = 3'd0;
-                decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd99 ,8'd115 ,8'd114 ,8'd114 ,8'd100}; //csrrd
-            end
-            32'b00000100xxxxxxxxxxxxxx00001xxxxx: begin
-                decode_info_o.general.inst25_0 = inst_i[25:0];
-                decode_info_o.wb.rdcntv_type = `_RDCNTV_TYPE_NONE;
-                decode_info_o.wb.do_rdcntid = 1'd0;
-                decode_info_o.wb.do_csrrd = 1'd0;
-                decode_info_o.m2.csr_num = 14'd0;
-                decode_info_o.m2.csr_write_en = 1'd1;
-                decode_info_o.m2.tlbsrch_en = 1'd0;
-                decode_info_o.m2.tlbrd_en = 1'd0;
-                decode_info_o.m1.tlbwr_en = 1'd0;
-                decode_info_o.m1.tlbfill_en = 1'd0;
-                decode_info_o.m1.invtlb_en = 1'd0;
-                decode_info_o.m2.do_ertn = 1'd0;
-                decode_info_o.wb.debug_inst = inst_i;
-                decode_info_o.wb.valid = 1'b1;
-                decode_info_o.wb.wb_sel = `_REG_WB_CSR;
-                decode_info_o.is.pipe_one_inst = 1'b0;
-                decode_info_o.is.pipe_two_inst = 1'b0;
-                decode_info_o.is.ready_time = `_READY_M2;
-                decode_info_o.is.use_time = {`_USE_M2,`_USE_M2};
-                decode_info_o.is.reg_type = `_REG_TYPE_CSRXCHG;
-                decode_info_o.ex.branch_type = 2'd0;
-                decode_info_o.ex.cmp_type = 3'd0;
-                decode_info_o.ex.branch_link = 1'd0;
-                decode_info_o.m1.mem_type = 3'd0;
-                decode_info_o.m1.mem_write = 1'd0;
-                decode_info_o.m1.mem_valid = 1'd0;
-                decode_info_o.ex.alu_type = 4'd0;
-                decode_info_o.ex.opd_type = 3'd0;
-                decode_info_o.ex.opd_unsigned = 1'd0;
-                inst_string_o = {8'd99 ,8'd115 ,8'd114 ,8'd119 ,8'd114}; //csrwr
+                decode_info_o.is.reg_type = 4'b1111;
+                inst_string_o = {8'd78 ,8'd79 ,8'd78 ,8'd69 ,8'd86 ,8'd65 ,8'd76 ,8'd73 ,8'd68}; //NONEVALID
             end
         endcase
     end

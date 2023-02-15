@@ -19,13 +19,13 @@ module npc (
 	input stall_i,
 	input bpu_update_t update_i,
 	output bpu_predict_t predict_o,
-	output reg [31:0] pc_o,
+	(* mark_debug="true" *) output reg [31:0] pc_o,
 	output stall_o
 );
 
-	wire flush = update_i.flush;
-	wire [31:0] target = {update_i.br_target, 2'b00};
-	wire [31:0] npc = {pc_o[31:3] + 1, 3'b000};
+	(* mark_debug="true" *) wire flush = update_i.flush;
+	(* mark_debug="true" *) wire [31:0] target = update_i.br_target;
+	wire [31:0] npc = {pc_o[31:3] + 1, 1'b0, pc_o[1:0]};
 
 	always_ff @(posedge clk or negedge rst_n) begin : proc_pc
 		if(~rst_n) begin

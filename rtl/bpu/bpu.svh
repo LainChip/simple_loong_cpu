@@ -43,6 +43,7 @@ typedef struct packed {
 	logic lpht_update;
 	logic [1:0] lphr;
 	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
+
 } bpu_update_t;
 
 
@@ -52,6 +53,7 @@ typedef struct packed {
 	logic [31:2] npc;
 	logic [1:0] lphr;
 	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
+
 } bpu_predict_t;
 
 `endif // _BPU_SVH_

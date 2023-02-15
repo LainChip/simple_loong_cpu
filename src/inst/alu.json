@@ -136,7 +136,9 @@
             "alu_type": "`_ALU_TYPE_MUL",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
-            "ready_time": "`_READY_EX",
+            "pipe_two_inst": 1,
+            "ready_time": "`_READY_M2",
+            "wb_sel": "`_REG_WB_MDU",
             "opd_unsigned": 0
         },
         "mulh.w": {
@@ -144,7 +146,9 @@
             "alu_type": "`_ALU_TYPE_MULH",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
-            "ready_time": "`_READY_EX",
+            "pipe_two_inst": 1,
+            "ready_time": "`_READY_M2",
+            "wb_sel": "`_REG_WB_MDU",
             "opd_unsigned": 0
         },
         "mulh.wu": {
@@ -152,7 +156,9 @@
             "alu_type": "`_ALU_TYPE_MULH",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
-            "ready_time": "`_READY_EX",
+            "pipe_two_inst": 1,
+            "ready_time": "`_READY_M2",
+            "wb_sel": "`_REG_WB_MDU",
             "opd_unsigned": 1
         },
         "div.w": {
@@ -160,7 +166,9 @@
             "alu_type": "`_ALU_TYPE_DIV",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
-            "ready_time": "`_READY_EX",
+            "pipe_two_inst": 1,
+            "ready_time": "`_READY_M2",
+            "wb_sel": "`_REG_WB_MDU",
             "opd_unsigned": 0
         },
         "mod.w": {
@@ -168,7 +176,9 @@
             "alu_type": "`_ALU_TYPE_MOD",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
-            "ready_time": "`_READY_EX",
+            "pipe_two_inst": 1,
+            "ready_time": "`_READY_M2",
+            "wb_sel": "`_REG_WB_MDU",
             "opd_unsigned": 0
         },
         "div.wu": {
@@ -176,7 +186,9 @@
             "alu_type": "`_ALU_TYPE_DIV",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
-            "ready_time": "`_READY_EX",
+            "pipe_two_inst": 1,
+            "ready_time": "`_READY_M2",
+            "wb_sel": "`_REG_WB_MDU",
             "opd_unsigned": 1
         },
         "mod.wu": {
@@ -184,7 +196,9 @@
             "alu_type": "`_ALU_TYPE_MOD",
             "reg_type": "`_REG_TYPE_RRW",
             "opd_type": "`_OPD_REG",
-            "ready_time": "`_READY_EX",
+            "pipe_two_inst": 1,
+            "ready_time": "`_READY_M2",
+            "wb_sel": "`_REG_WB_MDU",
             "opd_unsigned": 1
         },
         "slli.w": {

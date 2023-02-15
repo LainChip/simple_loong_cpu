@@ -11,8 +11,8 @@ module frontend(
 	// 指令输出
 	output  inst_t [1:0] inst_o,
 	output  logic  [1:0] inst_valid_o,
-	input logic    [1:0] issue_num_i, // 0, 1, 2
-	input logic          backend_stall_i, 
+	input   logic  [1:0] issue_num_i, // 0, 1, 2
+	input   logic        backend_stall_i, 
 
 	// BPU 反馈
 	input bpu_update_t bpu_feedback_i,
@@ -23,7 +23,11 @@ module frontend(
 
 	// 访存总线
     output cache_bus_req_t bus_req_o,       // cache的访问请求
-    input cache_bus_resp_t bus_resp_i        // cache的访问应答
+    input cache_bus_resp_t bus_resp_i,        // cache的访问应答
+
+	// MMU 访问信号
+	output logic[31:0] mmu_req_vpc_o,
+	input mmu_s_resp_t mmu_resp_i
 );
     // 这个function应该放在前端，在fetch阶段和写入fifo阶段之间，合成inst_t的阶段进行。
     function register_info_t get_register_info(
@@ -69,7 +73,7 @@ module frontend(
             `_REG_TYPE_RDCNTID:begin
                 ret.r_reg[0] = '0;
                 ret.r_reg[1] = '0;
-                ret.w_reg = decode_info.general.inst25_0[9:5];
+                ret.w_reg = decode_info.general.inst25_0[4:0] | decode_info.general.inst25_0[9:5];
             end
             `_REG_TYPE_INVTLB:begin
                 ret.r_reg[0] = decode_info.general.inst25_0[14:10];
@@ -85,6 +89,22 @@ module frontend(
         return ret;
     endfunction
 
+    // IDLE WAIT逻辑
+    // 当出现idle指令的时候，刷新整条流水线到idle + 4的位置，并在前端停住整条流水线，以降低执行功耗。
+    logic wait_i,int_i;
+    logic idle_lock;
+    always @(posedge clk) begin
+        if (~rst_n) begin
+            idle_lock <= 1'b0;
+        end
+        else if (wait_i && !int_i) begin
+            idle_lock <= 1'b1;
+        end
+        else if (int_i) begin
+            idle_lock <= 1'b0;
+        end
+    end
+    fetch_excp_t fetch_excp;
     bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict;
     bpu_predict_t bpu_predict,fetch_predict;
     decode_info_t [1:0]fifo_decode_info;
@@ -93,27 +113,12 @@ module frontend(
     logic frontend_clr, bpu_stall, bpu_stall_req,icache_ready,fetch_ready,fifo_ready;
 
     logic[1:0][31:0] fetch_inst,fetch_inst_fifo;
-    logic[1:0][63+$bits(bpu_predict_t):0] fetch_fifo_out;
+    logic[1:0][63 + $bits(bpu_predict_t) + $bits(fetch_excp_t):0] fetch_fifo_out;
     inst_t [1:0] fifo_inst;
     logic [1:0] fifo_write_num,fetch_write_num;
 
     // NPC / BPU 模块
-    // npc npc_module(
-    //     .clk,
-    //     .rst_n,
-    //     .stall_i(bpu_stall),
-    //     .update_i(bpu_feedback_i),
-    //     .predict_o(bpu_predict),
-    //     .pc_o(bpu_vpc),
-    //     .stall_o(bpu_stall_req)
-    // );
-
-    // assign bpu_pc_valid = {~frontend_clr & rst_n , ~frontend_clr & ~bpu_vpc[2] & rst_n};
-    bpu_update_t bpf_front_update;
-    bpu_predict_t bpf_front_predict;
-
-    bpu inst_bpu
-    (
+    npc npc_module(
         .clk,
         .rst_n,
         .stall_i(bpu_stall),
@@ -121,14 +126,46 @@ module frontend(
         .update_front_i(bpf_front_update),
         .predict_o(bpu_predict),
         .pc_o(bpu_vpc),
-        .stall_o(bpu_stall_req),
-        .pc_valid_o(bpu_pc_valid)
+        .stall_o(bpu_stall_req)
     );
+
+    assign bpu_pc_valid = {~frontend_clr & rst_n & ~idle_lock, ~frontend_clr & ~bpu_vpc[2] & rst_n & ~idle_lock};
+
+
+    // bpu inst_bpu
+    // (
+    //     .clk,
+    //     .rst_n,
+    //     .stall_i(bpu_stall),
+    //     .update_i(bpu_feedback_i),
+    //     .predict_o(bpu_predict),
+    //     .pc_o(bpu_vpc),
+    //     .stall_o(bpu_stall_req),
+    //     .pc_valid_o(bpu_pc_valid)
+    // );
 
 
     // 暂停以及清零控制逻辑
     assign frontend_clr = bpu_feedback_i.flush;
-    assign bpu_stall = ~icache_ready | bpu_stall_req;
+    assign bpu_stall = ~icache_ready | bpu_stall_req | idle_lock;
+
+    // CACHE 指令逻辑
+    logic icacheop_valid_i,icacheop_valid;
+    logic[1:0] icacheop_i,icacheop;
+    logic[31:0] icacheop_addr_i,icacheop_addr;
+    logic icacheop_ready;
+    always_ff @(posedge clk) begin
+        if(~rst_n) begin
+            icacheop_valid <= '0;
+        end else if(icacheop_valid_i) begin
+            icacheop_valid <= '1;
+            icacheop <= icacheop_i;
+            icacheop_addr <= icacheop_addr_i;
+        end else if(icacheop_ready) begin
+            icacheop_valid <= '0;
+        end
+    end
+
     // I CACHE 模块
     icache #(
         .FETCH_SIZE(2),
@@ -137,13 +174,17 @@ module frontend(
         .clk,    // Clock
         .rst_n,  // Asynchronous reset active low
         
-        .cacheop_i('0 /*TODO*/),
-        .cacheop_valid_i('0 /*TODO*/),
-        .cacheop_ready_o(/*NOT CONNECT TODO*/),
+        .cacheop_i(icacheop),
+        .cacheop_valid_i(icacheop_valid),
+        .cacheop_ready_o(icacheop_ready),
 
-        .vpc_i(bpu_vpc),
+        .vpc_i(icacheop_valid ? icacheop_addr : bpu_vpc),
         .valid_i(bpu_pc_valid),
         .attached_i(bpu_predict),
+
+        // TLB INTERFACE
+        .mmu_req_vpc_o,
+        .mmu_resp_i,
 
         .vpc_o(fetch_vpc),
         .ppc_o(/*NOT CONNECT*/),
@@ -151,6 +192,7 @@ module frontend(
         .attached_o(fetch_predict),
         // .decode_output_o(fetch_decode_info),
         .inst_o(fetch_inst),
+        .fetch_excp_o(fetch_excp),
 
         .ready_i(fetch_ready),
         .ready_o(icache_ready),
@@ -163,8 +205,8 @@ module frontend(
 
     // FIFO 模块
     multi_channel_fifo #(
-        .DATA_WIDTH(64 + $bits(bpu_predict_t)),
-        .DEPTH(8),
+        .DATA_WIDTH(64 + $bits(bpu_predict_t) + $bits(fetch_excp_t)),
+        .DEPTH(2),
         .BANK(4),
         .WRITE_PORT(2),
         .READ_PORT(2)
@@ -177,7 +219,7 @@ module frontend(
         .write_valid_i(1'b1),
         .write_ready_o(fetch_ready),
         .write_num_i (fetch_write_num),
-        .write_data_i({fetch_predict_fifo[1],fetch_vpc[31:3],3'b100,fetch_inst_fifo[1],fetch_predict_fifo[0],fetch_vpc[31:3],~fetch_pc_valid[0],2'b00,fetch_inst_fifo[0]}),
+        .write_data_i({fetch_excp,fetch_predict_fifo[1],fetch_vpc[31:3],1'b1,fetch_vpc[1:0],fetch_inst_fifo[1],fetch_excp,fetch_predict_fifo[0],fetch_vpc[31:3],~fetch_pc_valid[0],fetch_vpc[1:0],fetch_inst_fifo[0]}),
 
         .read_valid_o(fetch_valid),
         .read_ready_i(fifo_ready),
@@ -227,10 +269,12 @@ module frontend(
         fifo_inst[0].valid = 1'b1;
         fifo_inst[0].register_info = get_register_info(fifo_decode_info[0]);
         fifo_inst[1].bpu_predict = bpf_front_predict; // fetch_fifo_out[1][63+$bits(bpu_predict_t):64];
+        fifo_inst[0].fetch_excp = fetch_fifo_out[0][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
         fifo_inst[1].decode_info = fifo_decode_info[1];
         fifo_inst[1].pc = fetch_fifo_out[1][63:32];
         fifo_inst[1].valid = 1'b1;
         fifo_inst[1].register_info = get_register_info(fifo_decode_info[1]);
+        fifo_inst[1].fetch_excp = fetch_fifo_out[1][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
     end
 
     

@@ -71,7 +71,7 @@ module issue(
 			if(inst.decode_info.is.use_time[i] == `_USE_EX) begin
 				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (scoreboard_entry[i].forwarding_ready[0]));
 			end else /*if(inst.decode_info.is.use_time[i] == `_USE_M2)*/begin
-				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (scoreboard_entry[i].forwarding_ready));
+				ret |= ~((scoreboard_entry[i].inst_pos == '0) || (|scoreboard_entry[i].forwarding_ready));
 			end
 		end
 		return ret;
@@ -93,6 +93,8 @@ module issue(
 			   inst_first.register_info.w_reg == inst_second.register_info.w_reg ) 
 			begin
 				return 1'b1;
+			end else begin
+				return 1'b0;
 			end
 		end
 	endfunction
@@ -105,7 +107,11 @@ module issue(
 		input inst_t inst_first,
 		input inst_t inst_second
 	);
-		return inst_first.decode_info.is.pipe_one_inst & inst_second.decode_info.is.pipe_one_inst;
+		return (inst_first.decode_info.is.pipe_one_inst & inst_second.decode_info.is.pipe_one_inst) || (inst_first.decode_info.is.pipe_two_inst & inst_second.decode_info.is.pipe_two_inst)
+		|| (inst_second.decode_info.is.pipe_one_inst)
+		|| (inst_first.decode_info.m2.wait_hint)
+		// || (inst_second.decode_info.m2.exception_hint != '0)
+		;
 	endfunction
 
 	// 对于计分板的更新，输入中包含有对于每一级的暂停向量，以及跳转clr向量。
@@ -133,19 +139,19 @@ module issue(
 		ret.inst_pos = {old_scoreboard_entry.inst_pos[1:0],1'b0};
 		ret.forwarding_ready = {1'b0,old_scoreboard_entry.forwarding_ready[2:1]};
 		// 清零更新逻辑
-		if(old_scoreboard_entry.inst_pos & clr_vec[old_scoreboard_entry.pipe_sel]) begin
+		if(|(old_scoreboard_entry.inst_pos & clr_vec[old_scoreboard_entry.pipe_sel])) begin
 			ret.inst_pos = {old_scoreboard_entry.inst_pos[1:0],1'b0};
 			ret.forwarding_ready = '0;
 		end
 		// 暂停更新逻辑
-		if(old_scoreboard_entry.inst_pos & stall_vec[old_scoreboard_entry.pipe_sel]) begin
+		if(|(old_scoreboard_entry.inst_pos & stall_vec[old_scoreboard_entry.pipe_sel])) begin
 			ret.inst_pos = old_scoreboard_entry.inst_pos;
 			ret.forwarding_ready = old_scoreboard_entry.forwarding_ready;
 		end
 
 		// 发射更新逻辑 优先级最高
 		for(integer i = 0 ; i < 2 ; i += 1) begin
-			if((inst[i].register_info.w_reg == entry_id) && issue[i]) begin
+			if((inst[i].register_info.w_reg == entry_id[4:0]) && issue[i]) begin
 				ret.pipe_sel = i[0] ^ revert;
 				ret.inst_pos = 3'b001;
 				ret.forwarding_ready = {1'b1,inst[i].decode_info.is.ready_time == `_READY_EX,inst[i].decode_info.is.ready_time == `_READY_EX};
@@ -156,7 +162,9 @@ module issue(
 
 	// 计分板
 	scoreboard_info_t[31:0] scoreboard;
-
+	wire debug_second_inst_raw_conflict = raw_conflict(scoreboard, inst_i[1]);
+	wire debug_second_inst_data_conflict = second_inst_data_conflict(inst_i[0], inst_i[1]);
+	wire debug_second_inst_control_conflict = second_inst_control_conflict(inst_i[0], inst_i[1]);
 	// 分别判断两条指令可否发射
 	logic issue_first_inst;
 	assign issue_first_inst = inst_valid_i[0] & ~raw_conflict(scoreboard, inst_i[0])

@@ -3,6 +3,7 @@
 `include "pipeline.svh"
 `include "lsu_types.svh"
 `include "bpu.svh"
+`include "tlb.svh"
 
 module backend(
 	input clk,
@@ -28,15 +29,20 @@ module backend(
 
 	// 访存总线
     output cache_bus_req_t bus_req_o,       // cache的访问请求
-    input cache_bus_resp_t bus_resp_i        // cache的访问应答
+    input cache_bus_resp_t bus_resp_i,        // cache的访问应答
 
+	// MMU 访问信号
+	output mmu_s_req_t mmu_req_o,
+	input mmu_s_resp_t mmu_resp_i,
 
+	input tlb_entry_t tlb_entry_i
 );
 
 	// 信号定义
 	// 后端暂停和清零向量
 	logic m2_clr_exclude_self;
 	logic [1:0][2:0] stall_vec, clr_vec, stall_req, clr_req;
+	logic [1:0][3:0] revert_vector_pipe;
 	logic [3:0] revert_vector;
 	// 前端清零向量
 	logic clr_frontend;
@@ -103,11 +109,13 @@ module backend(
 	for(genvar pipe_id = 0 ; pipe_id < 2; pipe_id += 1) begin
 		inst_t inst_sel;
 		assign inst_sel = inst_i[revert ^ pipe_id[0]];
-		forwarding_info_t[1:0] forwarding_info_sel = forwarding_info[revert ^ pipe_id];
+		forwarding_info_t[1:0] forwarding_info_sel;
+		assign forwarding_info_sel = forwarding_info[revert ^ pipe_id];
 		always_comb begin
 			ctrl_flow[pipe_id].decode_info = inst_sel.decode_info;
 			ctrl_flow[pipe_id].bpu_predict = inst_sel.bpu_predict;
 			ctrl_flow[pipe_id].w_reg = inst_sel.register_info.w_reg;
+			ctrl_flow[pipe_id].fetch_excp = inst_sel.fetch_excp;
 			ctrl_flow[pipe_id].forwarding_info = forwarding_info_sel;
 			ctrl_flow[pipe_id].revert = revert;
 			reg_r_addr[pipe_id] = inst_sel.register_info.r_reg;
@@ -135,7 +143,7 @@ module backend(
 	.m2_stall_req_o(stall_req[0][2]),
 	.m2_clr_exclude_self_o(m2_clr_exclude_self),
 
-	.revert_vector_o(revert_vector),
+	.revert_vector_o(revert_vector_pipe[0]),
 	.ex_clr_req_o(clr_req[0][0]),
 	.m1_clr_req_o(clr_req[0][1]),
 	.m2_clr_req_o(clr_req[0][2]),
@@ -159,7 +167,14 @@ module backend(
     .bus_resp_i,        // cache的访问应答
     .priv_resp_i,
     .priv_req_o,
-    .bpu_feedback_o
+    .bpu_feedback_o,
+	.tlb_entry_i,
+	.mmu_req_o,
+	.mmu_resp_i
+
+	`ifdef _DIFFTEST_ENABLE
+    ,.delay_csr_i(~wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[1].decode_info.wb.valid)
+    `endif
 	);
 
 	backend_pipeline #(
@@ -178,7 +193,7 @@ module backend(
 	.m2_stall_req_o(stall_req[1][2]),
 	// .m2_clr_exclude_self_o(/*NOT CONNECT*/),
 
-	.revert_vector_o(/* revert vector */),
+	.revert_vector_o(revert_vector_pipe[1]),
 	.ex_clr_req_o(clr_req[1][0]),
 	.m1_clr_req_o(clr_req[1][1]),
 	.m2_clr_req_o(clr_req[1][2]),
@@ -203,7 +218,13 @@ module backend(
     .priv_resp_i(/*NOT CONNECT*/),
     .priv_req_o(/*NOT CONNECT*/),
     .bpu_feedback_o(/*NOT CONNECT*/)
+
+	`ifdef _DIFFTEST_ENABLE
+    	,.delay_csr_i('0)
+    `endif
 	);
+
+	assign backend_stall_o = 1'b0;
 
 	// 暂停及清零控制器
 	always_comb begin
@@ -235,13 +256,33 @@ module backend(
 			clr_vec[1][level] |= clr_req[0][level] & ~revert_vector[level];
 		end
 	end
+	assign revert_vector = revert_vector_pipe[0] | revert_vector_pipe[1];
 
-
-`ifdef _DIFFTEST_ENABLE
 ctrl_flow_t [1:0]wb_ctrl_flow;
 data_flow_t [1:0]wb_data_flow;
 assign wb_ctrl_flow = {pipeline_1.wb_ctrl_flow,pipeline_0.wb_ctrl_flow};
 assign wb_data_flow = {pipeline_1.wb_data_flow,pipeline_0.wb_data_flow};
+(* mark_debug="true" *) logic [31:0] commit_pc_0,commit_instr_0,commit_result_0;
+(* mark_debug="true" *) logic [31:0] commit_pc_1,commit_instr_1,commit_result_1;
+(* mark_debug="true" *) logic commit_valid_0,commit_valid_1,inst_valid_0,inst_valid_1,inst_issue_0,inst_issue_1;
+assign commit_pc_0 = wb_data_flow[0].pc;
+assign commit_pc_1 = wb_data_flow[1].pc;
+assign commit_instr_0 = wb_ctrl_flow[0].decode_info.wb.debug_inst;
+assign commit_instr_1 = wb_ctrl_flow[1].decode_info.wb.debug_inst;
+assign commit_valid_0 = wb_ctrl_flow[0].decode_info.wb.valid;
+assign commit_valid_1 = wb_ctrl_flow[1].decode_info.wb.valid;
+assign commit_result_0 = wb_data_flow[0].result;
+assign commit_result_1 = wb_data_flow[1].result;
+assign inst_issue_0 = issue[0];
+assign inst_issue_1 = issue[1];
+assign inst_valid_0 = inst_valid_i[0];
+assign inst_valid_1 = inst_valid_i[1];
+`ifdef _DIFFTEST_ENABLE
+logic[63:0] timer_64_diff;
+always_ff @(posedge clk) begin
+	timer_64_diff <= pipeline_0.timer_data_o;
+end
+logic [4:0] debug_rand_index;
 DifftestInstrCommit DifftestInstrCommit_0(
     .clock              (clk           ),
     .coreid             ('0),
@@ -250,33 +291,33 @@ DifftestInstrCommit DifftestInstrCommit_0(
     .pc                 (wb_data_flow[0].pc),
     .instr              (wb_ctrl_flow[0].decode_info.wb.debug_inst),
     .skip               (0),
-    .is_TLBFILL         ('0/*TODO*/),
-    .TLBFILL_index      ('0/*TODO*/),
-    .is_CNTinst         ('0/*TODO*/),
-    .timer_64_value     ('0/*TODO*/),
+    .is_TLBFILL         (wb_ctrl_flow[0].decode_info.m2.tlbfill_en),
+    .TLBFILL_index      (debug_rand_index),
+    .is_CNTinst         (wb_ctrl_flow[0].decode_info.is.reg_type == `_REG_TYPE_RDCNTID),
+    .timer_64_value     (timer_64_diff),
     .wen                (wb_ctrl_flow[0].w_reg != '0),
     .wdest              (wb_ctrl_flow[0].w_reg),
     .wdata              (wb_data_flow[0].result),
-    .csr_rstat          (wb_ctrl_flow[0].decode_info.m2.csr_write_en),
-    .csr_data           (reg_w_data[0])
+    .csr_rstat          ('1),
+    .csr_data           (pipeline_0.sp_inst_blk.csr_module.delay_reg_estat)
 );
 DifftestInstrCommit DifftestInstrCommit_1(
     .clock              (clk           ),
     .coreid             ('0),
-    .index              (wb_ctrl_flow[0].revert ? 0:1),
+    .index              (wb_ctrl_flow[1].revert ? 0:1),
     .valid              (wb_ctrl_flow[1].decode_info.wb.valid),
     .pc                 (wb_data_flow[1].pc),
     .instr              (wb_ctrl_flow[1].decode_info.wb.debug_inst),
     .skip               (0),
-    .is_TLBFILL         ('0/*TODO*/),
-    .TLBFILL_index      ('0/*TODO*/),
-    .is_CNTinst         ('0/*TODO*/),
-    .timer_64_value     ('0/*TODO*/),
+    .is_TLBFILL         ('0),
+    .TLBFILL_index      ('0),
+    .is_CNTinst         ('0),
+    .timer_64_value     (timer_64_diff),
     .wen                (wb_ctrl_flow[1].w_reg != '0),
     .wdest              (wb_ctrl_flow[1].w_reg),
     .wdata              (wb_data_flow[1].result),
-    .csr_rstat          ('0/*TODO*/),
-    .csr_data           ('0/*TODO*/)
+    .csr_rstat          ('0),
+    .csr_data           ('0)
 );
 
 DifftestTrapEvent DifftestTrapEvent(
@@ -289,23 +330,39 @@ DifftestTrapEvent DifftestTrapEvent(
     .instrCnt           ('0/*TODO*/)
 );
 
-DifftestStoreEvent DifftestStoreEvent(
+DifftestStoreEvent DifftestStoreEvent_0(
     .clock              (clk           ),
     .coreid             (0              ),
-    .index              (0              ),
-    .valid              ('0/*TODO*/),
-    .storePAddr         ('0/*TODO*/),
-    .storeVAddr         ('0/*TODO*/),
-    .storeData          ('0/*TODO*/)
+    .index              (0),
+    .valid              (!wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && wb_ctrl_flow[0].decode_info.m1.mem_write && (!wb_ctrl_flow[0].decode_info.m2.llsc || pipeline_0.wb_llbit)),
+    .storePAddr         (pipeline_0.wb_paddr),
+    .storeVAddr         (pipeline_0.wb_vaddr),
+    .storeData          (pipeline_0.wb_wdata)
 );
-
-DifftestLoadEvent DifftestLoadEvent(
+DifftestStoreEvent DifftestStoreEvent_1(
     .clock              (clk           ),
     .coreid             (0              ),
-    .index              (0              ),
-    .valid              ('0/*TODO*/),
-    .paddr              ('0/*TODO*/),
-    .vaddr              ('0/*TODO*/)
+    .index              (1),
+    .valid              (wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && wb_ctrl_flow[0].decode_info.m1.mem_write && (!wb_ctrl_flow[0].decode_info.m2.llsc || pipeline_0.wb_llbit)),
+    .storePAddr         (pipeline_0.wb_paddr),
+    .storeVAddr         (pipeline_0.wb_vaddr),
+    .storeData          (pipeline_0.wb_wdata)
+);
+DifftestLoadEvent DifftestLoadEvent_0(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (0),
+    .valid              (!wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && !wb_ctrl_flow[0].decode_info.m1.mem_write),
+    .paddr              (pipeline_0.wb_paddr),
+    .vaddr              (pipeline_0.wb_vaddr)
+);
+DifftestLoadEvent DifftestLoadEvent_1(
+    .clock              (clk           ),
+    .coreid             (0              ),
+    .index              (1),
+    .valid              (wb_ctrl_flow[0].revert && wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[0].decode_info.m1.mem_valid && !wb_ctrl_flow[0].decode_info.m1.mem_write),
+    .paddr              (pipeline_0.wb_paddr),
+    .vaddr              (pipeline_0.wb_vaddr)
 );
 
 DifftestGRegState DifftestGRegState(
