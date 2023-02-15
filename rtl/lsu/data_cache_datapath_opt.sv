@@ -1,9 +1,4 @@
-`timescale 1ns / 1ps
-
-`include "types.svh"
-`include "axi.svh"
-`include "cache.svh"
-`include "tlb.svh"
+`include "common.svh"
 
 /* 
 This module describe a data path inside banked cache.

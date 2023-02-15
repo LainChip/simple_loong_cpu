@@ -2,7 +2,7 @@
 `include "decoder.svh"
 `include "lsu_types.svh"
 
-`ifdef __DLSU_VER_1
+/*--JSON--{"module_name":"lsu","module_ver":"1","module_type":"module"}--JSON--*/
 
 module lsu (
 	input clk,    // Clock
@@ -14,7 +14,7 @@ module lsu (
 	
 	// 流水线数据输入输出
 	input logic[31:0] vaddr_i,
-	input logic[31:0] paddr_i, // M2 STAGE
+	input logic[31:0] paddr_i, // M1 STAGE
 	input logic[31:0] w_data_i,  // M2 STAGE
 	output logic[31:0] w_data_o,
 	input logic request_clr_m2_i,
@@ -27,6 +27,7 @@ module lsu (
 	// 连接内存总线
 	output cache_bus_req_t bus_req_o,
 	input cache_bus_resp_t bus_resp_i,
+    input mmu_s_resp_t mmu_resp_i,
 
 	// 握手信号
 	output logic busy_o,
@@ -121,23 +122,27 @@ module lsu (
 	always_comb begin
 		bus_req_o.valid = fsm_state == STATE_ADDR;
 		bus_req_o.write = mem_req_stage_2.mem_write;
-		bus_req_o.burst = '0;
+		bus_req_o.burst_size = '0;
 		bus_req_o.cached = '0;
-		bus_req_o.addr = {mem_req_stage_2.mem_addr[31:2],2'b00};
+		bus_req_o.addr = {mem_req_stage_2.mem_addr[31:0]};
 
 		bus_req_o.w_data = w_data_i << {mem_req_stage_2.mem_addr[1:0],3'b000};
 		case(mem_req_stage_2.mem_type[1:0])
 			`_MEM_TYPE_WORD: begin
 				bus_req_o.data_strobe = 4'b1111;
+				bus_req_o.data_size = 2'b10;
 			end
 			`_MEM_TYPE_HALF: begin
 				bus_req_o.data_strobe = (4'b0011 << {mem_req_stage_2.mem_addr[1],1'b0});
+				bus_req_o.data_size = 2'b01;
 			end
 			`_MEM_TYPE_BYTE: begin
 				bus_req_o.data_strobe = (4'b0001 << mem_req_stage_2.mem_addr[1:0]);
+				bus_req_o.data_size = 2'b00;
 			end
 			default: begin
 				bus_req_o.data_strobe = 4'b0000;
+				bus_req_o.data_size = 2'b00;
 			end
 		endcase
 		bus_req_o.data_ok = fsm_state == STATE_DATA;
@@ -185,5 +190,3 @@ module lsu (
 	end
 
 endmodule
-
-`endif

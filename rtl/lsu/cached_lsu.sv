@@ -1,14 +1,22 @@
-`timescale 1ns / 1ps
+`include "common.svh"
+`include "decoder.svh"
+`include "lsu_types.svh"
 
-`include "types.svh"
-`include "axi.svh"
-`include "cache.svh"
-`include "tlb.svh"
+/*--JSON--{"module_name":"lsu","module_ver":"2","module_type":"module"}--JSON--*/
 
 // 8.11 double-issue writeback is too complex, i will make it simplier.
 // 8.13 i will add uncached write buffer to this cache, lock bus will be attach to write buffer.
 // 2.13 change interface to match new cpu request.
-module cached_lsu #(
+
+`define _CACHE_CTRL_INVALID (4'd0)
+`define _CACHE_CTRL_READ (4'd1)
+`define _CACHE_CTRL_WRITE (4'd2)
+`define _CACHE_INDEX_INVALID (4'd3)
+`define _CACHE_INDEX_STORE_TAG (4'd4)
+`define _CACHE_HIT_INVALID (4'd5)
+`define _CACHE_HIT_WRITEBACK_INVALID (4'd6)
+
+module lsu #(
     parameter int page_shift_len = 12,
     parameter int word_shift_len = 2,
     parameter int bank_shift_len = 1,
@@ -27,8 +35,8 @@ module cached_lsu #(
     // input  logic stall_i,
     // output logic busy_o,
 
-    // input dcache_req_t d_req,
-    // input dcache_w_t w_req,
+    // input dcache_req_t d_req,  -- need some build up --
+    // input dcache_w_t w_req,    -- data -- byteen --
     // output dcache_resp_t d_resp,
     // output logic [31:0] slot_2_resp,
 
@@ -46,12 +54,12 @@ module cached_lsu #(
     output bus_busy_o,
 
     // 控制信号
-	input decode_info_t  decode_info_i,
-	input logic request_valid_i,
+	input decode_info_t  decode_info_i, // ex stage
+	input logic request_valid_i, // ex stage
 	
 	// 流水线数据输入输出
-	input logic[31:0] vaddr_i,
-	input logic[31:0] paddr_i, // M2 STAGE
+	input logic[31:0] vaddr_i, // ex stage
+	input logic[31:0] paddr_i, // M1 STAGE
 	input logic[31:0] w_data_i,  // M2 STAGE
 	output logic[31:0] w_data_o,
 	input logic request_clr_m2_i,
@@ -64,12 +72,92 @@ module cached_lsu #(
 	// 连接内存总线
 	output cache_bus_req_t bus_req_o,
 	input cache_bus_resp_t bus_resp_i,
+  input mmu_s_resp_t mmu_resp_i,
 
 	// 握手信号
 	output logic busy_o,
 	input stall_i
 
 );
+  // REQUEST WARPPER
+  typedef struct packed {
+    logic [31:0] vaddr;
+    logic [3:0]  ctrl;   //for now
+    logic [1:0]  size;
+    logic valid;
+  } dcache_req_t;
+  typedef struct packed {
+    logic [31:0] data;
+    logic [3:0]  byteen;
+  } dcache_w_t;
+  dcache_req_t d_req;
+  dcache_w_t   w_req;
+  // d_req 赋值逻辑
+  always_comb begin
+    d_req.vaddr = vaddr_i;
+    d_req.ctrl = `_CACHE_CTRL_INVALID;
+    d_req.valid = decode_info_i.m1.mem_valid & request_valid_i;
+    if(decode_info_i.m1.mem_valid) begin
+      // read or write
+      if(decode_info_i.m1.mem_write) begin
+        d_req.ctrl = `_CACHE_CTRL_WRITE;
+      end else begin
+        d_req.ctrl = `_CACHE_CTRL_READ;
+      end
+    end
+    if(decode_info_i.m2.cacop && decode_info_i.general.inst25_0[2:0] == 3'd1) begin
+      if(decode_info_i.general.inst25_0[4:3] == 2'b00) begin
+        // store tag
+        d_req.ctrl = `_CACHE_INDEX_STORE_TAG;
+      end else if(decode_info_i.general.inst25_0[4:3] == 2'b01) begin
+        // index invalidate
+        d_req.ctrl = `_CACHE_INDEX_INVALID;
+      end else begin
+        // hit invalidate
+        d_req.ctrl = `_CACHE_HIT_WRITEBACK_INVALID;
+      end
+    end
+    case(decode_info_i.m1.mem_type[1:0])
+			`_MEM_TYPE_WORD: begin
+				d_req.size = 2'b10;
+			end
+			`_MEM_TYPE_HALF: begin
+				d_req.size = 2'b01;
+			end
+			`_MEM_TYPE_BYTE: begin
+				d_req.size = 2'b00;
+			end
+			default: begin
+				d_req.size = 2'b00;
+			end
+    endcase
+  end
+  logic[2:0] delay_1_req_type,delay_2_req_type;
+  always_ff @(posedge clk) begin
+    if(~stall_i) begin
+      delay_1_req_type <= decode_info_i.m1.mem_type[2:0];
+      delay_2_req_type <= delay_1_req_type;
+    end
+  end
+	// w_req 赋值逻辑
+	always_comb begin
+    w_req.data = w_data_i << {paddr_o[1:0],3'b000};
+		case(delay_2_req_type[1:0])
+			`_MEM_TYPE_WORD: begin
+				w_req.byteen = 4'b1111;
+			end
+			`_MEM_TYPE_HALF: begin
+				w_req.byteen = (4'b0011 << {paddr_o[1],1'b0});;
+			end
+			`_MEM_TYPE_BYTE: begin
+				w_req.byteen = (4'b0001 << paddr_o[1:0]);
+			end
+			default: begin
+				w_req.byteen = 4'b0000;
+			end
+		endcase
+	end
+
   // stall logic
   logic stall_pipe;
   assign stall_pipe = busy_o | stall_i;
@@ -154,7 +242,7 @@ module cached_lsu #(
   assign normal_data_resp_r_data = delay_stall_outside ? delay_normal_data_resp_r_data : data_resp_r_data;
 
   // This block connect cache to tlb
-  assign tlb_req.vaddr = d_req.vaddr;
+  // assign tlb_req.vaddr = d_req.vaddr;
 
   // This block describe a switch to switch data_path controller between fsm and normal stage.
   // When stall, the controll is given to fsm.
@@ -163,40 +251,26 @@ module cached_lsu #(
   // We need request information , so that we can do some refilling and selecting work load.
   // Request type and va[31:word_shift_len] is needed.
   typedef struct packed {
-    logic [31:0] vaddr;
+    logic [31:0] vaddr; // BUG: THIS IS ACTUALLY PADDR IN STAGE 2
+    logic [31:0] paddr;
     logic [3:0] ctrl;  //for now
     logic [1:0] size;
     logic passthrough;
-    logic valid;
   } dcache_req_append_t;
   dcache_req_append_t delay_1_req;
   (* mark_debug = "true" *)dcache_req_append_t delay_2_req;
-  typedef struct packed {
-    logic [19:0] tag;
-    logic valid;
-    logic dirty;
-  } dcache_taglo_t;
-  dcache_taglo_t delay_1_lo;
-  dcache_taglo_t delay_2_lo;
   always_ff @(posedge clk) begin : proc_delay_req
     if (~rst_n || request_clr_m1_i || request_clr_m2_i) begin
-      delay_1_req <= '0;
-      delay_2_req <= '0;
-      delay_1_lo  <= '0;
-      delay_2_lo  <= '0;
+      delay_1_req.ctrl <= '0;
+      delay_2_req.ctrl <= '0;
     end else if (~stall_pipe) begin
-      delay_1_req.vaddr <= ((d_req.ctrl == `_CACHE_INDEX_STORE_TAG) || (d_req.ctrl == `_CACHE_INDEX_INVALID)) ? 
-      {d_req.vaddr} :
-      {tlb_resp.ppn,d_req.vaddr[page_shift_len - 1 : 0]};
+      delay_1_req.vaddr <= d_req.vaddr;
       delay_1_req.ctrl <= d_req.valid ? d_req.ctrl : 0;
       delay_1_req.size <= d_req.size;
-      delay_1_req.valid <= tlb_resp.valid;
-      delay_1_req.passthrough <= (force_cached == 1) ? 1'b0 : ((force_passthrogh == 1'b1) ? 1'b1 : (tlb_resp.passthrough && ((d_req.ctrl == `_CACHE_CTRL_READ) || (d_req.ctrl == `_CACHE_CTRL_WRITE))));//1'b1;
-      delay_1_lo.tag <= cp0_tag_lo[31:12];  // TODO: make sure it's correct.
-      delay_1_lo.valid <= cp0_tag_lo[11];
-      delay_1_lo.dirty <= cp0_tag_lo[10];
-      delay_2_req <= delay_1_req;
-      delay_2_lo <= delay_1_lo;
+      {delay_2_req.vaddr,delay_2_req.ctrl,delay_2_req.size} <= 
+      {delay_1_req.vaddr,delay_1_req.ctrl,delay_1_req.size};
+      delay_2_req.paddr <= paddr_i;
+      delay_2_req.passthrough <= ~mmu_resp_i.mat[0];
     end
   end
 
@@ -212,7 +286,7 @@ module cached_lsu #(
 
   assign info_r_addr = stall_pipe ? delay_1_req.vaddr[page_shift_len - 1 : page_shift_len - index_len] :
 																		    d_req.vaddr[page_shift_len - 1 : page_shift_len - index_len];
-  assign lru_r_addr = stall_pipe ? delay_2_req.vaddr[page_shift_len - 1 : page_shift_len - index_len] :
+  assign lru_r_addr = stall_pipe ? delay_2_req.paddr[page_shift_len - 1 : page_shift_len - index_len] :
 																		    delay_1_req.vaddr[page_shift_len - 1 : page_shift_len - index_len];
 
   // cache_info_t [lane_num - 1 : 0] cache_info;
@@ -272,12 +346,12 @@ module cached_lsu #(
   hit_miss_info_t stage_1_hit_miss;
   generate
     for (genvar set_id = 0; set_id < set_ass; set_id += 1) begin
-      assign stage_1_hit_miss.hit[set_id] = stage_1_info.cache_lane_info[set_id].valid && (stage_1_info.cache_lane_info[set_id].ppn == delay_1_req.vaddr[31:page_shift_len]);
+      assign stage_1_hit_miss.hit[set_id] = stage_1_info.cache_lane_info[set_id].valid && (stage_1_info.cache_lane_info[set_id].ppn == paddr_i[31:page_shift_len]);
     end
   endgenerate
   //assign stage_1_hit_miss.miss = ~(|stage_1_hit_miss.hit);
   always_comb begin
-    if (delay_1_req.passthrough) begin
+    if (~mmu_resp_i.mat[0]) begin
       stage_1_hit_miss.miss = 1;
     end else if(delay_1_req.ctrl == `_CACHE_CTRL_READ || delay_1_req.ctrl == `_CACHE_CTRL_WRITE) begin
       stage_1_hit_miss.miss = ~(|stage_1_hit_miss.hit);
@@ -487,10 +561,10 @@ module cached_lsu #(
               fsm_state_next = S_SYNC;
             end
           end else if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID) begin
-            if (stage_2_info.cache_lane_info[delay_2_req.vaddr[page_shift_len+$clog2(
+            if (stage_2_info.cache_lane_info[delay_2_req.paddr[page_shift_len+$clog2(
                     set_ass
                 )-1 : page_shift_len]].dirty &&
-                    stage_2_info.cache_lane_info[delay_2_req.vaddr[page_shift_len+$clog2(
+                    stage_2_info.cache_lane_info[delay_2_req.paddr[page_shift_len+$clog2(
                     set_ass
                 )-1 : page_shift_len]].valid) begin
               fsm_state_next = S_WADR;
@@ -503,14 +577,14 @@ module cached_lsu #(
         end
       end
       S_WADR: begin
-        if (axi_resp.AW_ready && ~uncached_fsm_machine_busy) begin
+        if (bus_resp_i.ready && ~uncached_fsm_machine_busy) begin
           fsm_state_next = S_WDAT;
         end else begin
           fsm_state_next = S_WADR;
         end
       end
       S_WDAT: begin
-        if (axi_resp.DW_ready && axi_req.DW_last) begin
+        if (bus_resp_i.data_ok && bus_req_o.data_last) begin
           if (delay_2_req.ctrl == `_CACHE_CTRL_READ || delay_2_req.ctrl == `_CACHE_CTRL_WRITE) begin
             fsm_state_next = S_RADR;
           end else begin
@@ -532,28 +606,28 @@ module cached_lsu #(
       //   end
       // end
       S_RADR: begin
-        if (axi_resp.AR_ready) begin
+        if (bus_resp_i.ready) begin
           fsm_state_next = S_RDAT;
         end else begin
           fsm_state_next = S_RADR;
         end
       end
       S_PADR: begin
-        if (axi_resp.AR_ready) begin
+        if (bus_resp_i.ready) begin
           fsm_state_next = S_PDAT;
         end else begin
           fsm_state_next = S_PADR;
         end
       end
       S_RDAT: begin
-        if (axi_resp.DR_valid && axi_resp.DR_last) begin
+        if (bus_resp_i.data_ok && bus_resp_i.data_last) begin
           fsm_state_next = S_SYNC;
         end else begin
           fsm_state_next = S_RDAT;
         end
       end
       S_PDAT: begin
-        if (axi_resp.DR_valid && axi_resp.DR_last) begin
+        if (bus_resp_i.data_ok && bus_resp_i.data_last) begin
           fsm_state_next = S_SYNC;
         end else begin
           fsm_state_next = S_PDAT;
@@ -596,7 +670,7 @@ module cached_lsu #(
   end
 
   // Imply fsm operation
-  assign stage_2_index_addr = delay_2_req.vaddr[page_shift_len-1 : page_shift_len-index_len];
+  assign stage_2_index_addr = delay_2_req.paddr[page_shift_len-1 : page_shift_len-index_len];
 
   // 1. Imply cache_info related .
   // Operation controller here, invalidate and update
@@ -609,7 +683,7 @@ module cached_lsu #(
     stage_2_waddr = stage_2_index_addr;
     stage_2_set_sel = stage_2_next_lru_sel;
     if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID || delay_2_req.ctrl == `_CACHE_INDEX_STORE_TAG) begin
-      stage_2_set_sel = delay_2_req.vaddr[page_shift_len+$clog2(set_ass)-1:page_shift_len];
+      stage_2_set_sel = delay_2_req.paddr[page_shift_len+$clog2(set_ass)-1:page_shift_len];
       stage_2_write_info.dirty = 0;
       stage_2_write_info.valid = 0;
     end else if(delay_2_req.ctrl == `_CACHE_HIT_INVALID || delay_2_req.ctrl == `_CACHE_HIT_WRITEBACK_INVALID) begin
@@ -619,7 +693,7 @@ module cached_lsu #(
     end else begin
       stage_2_write_info.valid = '1;
       stage_2_write_info.dirty = 0;
-      stage_2_write_info.ppn   = delay_2_req.vaddr[31:page_shift_len];
+      stage_2_write_info.ppn   = delay_2_req.paddr[31:page_shift_len];
     end
     case (fsm_state)
       S_NORMAL: begin
@@ -643,7 +717,7 @@ module cached_lsu #(
   end
 
   // 2. Imply busy_o signal 
-  assign busy_o = ~((fsm_state == S_NORMAL) & (fsm_state_next == S_NORMAL));
+  assign busy_o = ~((fsm_state == S_NORMAL) && (fsm_state_next == S_NORMAL));
 
   // 3. Imply lru update signal
   tree_lru_update #(
@@ -695,7 +769,7 @@ module cached_lsu #(
       if (delay_2_req.ctrl == `_CACHE_HIT_WRITEBACK_INVALID) begin
         dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][stage_2_hit_index];
       end else if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID) begin
-        dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][delay_2_req.vaddr[page_shift_len + $clog2(
+        dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][delay_2_req.paddr[page_shift_len + $clog2(
             set_ass)-1 : page_shift_len]];
       end else begin
         dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][stage_2_next_lru_sel];
@@ -710,22 +784,22 @@ module cached_lsu #(
 
   // This block describe fsm_data_req addr switches 
   always_comb begin
-    if (busy_o && ((fsm_state == S_NORMAL) || (fsm_state == S_UPDATE) || (fsm_state == S_AW) || (fsm_state == S_DW))) begin
+    if (busy_o && ((fsm_state == S_NORMAL) || (fsm_state == S_UPDATE) || (fsm_state == S_WADR) || (fsm_state == S_WDAT))) begin
       fsm_data_req_r_addr = {
-        delay_2_req.vaddr[page_shift_len-1 : word_shift_len+lane_len], addr_counter[lane_len-1 : 0]
+        delay_2_req.paddr[page_shift_len-1 : word_shift_len+lane_len], addr_counter[lane_len-1 : 0]
       };
     end else begin
       fsm_data_req_r_addr = delay_1_req.vaddr[page_shift_len-1 : word_shift_len];
     end
-    if (fsm_state == S_DR) begin
-      fsm_data_req_r_addr = delay_2_req.vaddr[page_shift_len-1 : word_shift_len];
+    if (fsm_state == S_RDAT) begin
+      fsm_data_req_r_addr = delay_2_req.paddr[page_shift_len-1 : word_shift_len];
     end
   end
   always_ff @(posedge clk) begin
     if (~rst_n) data_transfer_counter <= '0;
     else if (r_set_counter) data_transfer_counter <= {1'b1, {(lane_len) {1'b0}}};
     else if (data_transfer_counter[lane_len])
-      data_transfer_counter <= data_transfer_counter + (((axi_resp.DR_valid && (fsm_state == S_DR)) || (axi_resp.DW_ready && (fsm_state == S_DW))) ? 1 : 0);
+      data_transfer_counter <= data_transfer_counter + (((bus_resp_i.data_ok && (fsm_state == S_RDAT)) || (bus_resp_i.data_ok && (fsm_state == S_WDAT))) ? 1 : 0);
   end
 
   always_ff @(posedge clk) begin
@@ -739,12 +813,12 @@ module cached_lsu #(
   always_comb begin
     // Write back allocation:
     // axi_req.DW_data = dirty_data_fifo[data_transfer_counter[lane_len-1 : 0]];
-    bus_req_o.w_data = dirty_data_fifo[data_transfer_counter[lane_len-1 : 0]];s
+    bus_req_o.w_data = dirty_data_fifo[data_transfer_counter[lane_len-1 : 0]];
     // axi_req.AR_addr = {
-    //   delay_2_req.vaddr[31:word_shift_len+lane_len], {(word_shift_len + lane_len) {1'b0}}
+    //   delay_2_req.paddr[31:word_shift_len+lane_len], {(word_shift_len + lane_len) {1'b0}}
     // };
     bus_req_o.addr = {
-      delay_2_req.vaddr[31:word_shift_len+lane_len], {(word_shift_len + lane_len) {1'b0}}
+      delay_2_req.paddr[31:word_shift_len+lane_len], {(word_shift_len + lane_len) {1'b0}}
     };
     // axi_req.AR_id = axi_id;
     // axi_req.AR_len = lane_size - 1;
@@ -765,7 +839,7 @@ module cached_lsu #(
     // axi_req.AW_addr = {
     // bus_req_o.addr = {
     //   stage_2_info.cache_lane_info[stage_2_next_lru_sel].ppn,
-    //   delay_2_req.vaddr[page_shift_len-1 : (word_shift_len+lane_len)],
+    //   delay_2_req.paddr[page_shift_len-1 : (word_shift_len+lane_len)],
     //   {(word_shift_len + lane_len) {1'b0}}
     // };
     // In the future, we may add support for changable length of burst transfer, but not today
@@ -798,23 +872,23 @@ module cached_lsu #(
           // axi_req.AW_addr = {
           bus_req_o.addr = {
             stage_2_info.cache_lane_info[stage_2_hit_index].ppn,
-            delay_2_req.vaddr[page_shift_len-1 : (word_shift_len+lane_len)],
+            delay_2_req.paddr[page_shift_len-1 : (word_shift_len+lane_len)],
             {(word_shift_len + lane_len) {1'b0}}
           };
         end else if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID) begin
           // axi_req.AW_addr = {
           bus_req_o.addr = {
-            stage_2_info.cache_lane_info[delay_2_req.vaddr[page_shift_len+$clog2(
+            stage_2_info.cache_lane_info[delay_2_req.paddr[page_shift_len+$clog2(
                 set_ass
             )-1 : page_shift_len]].ppn,
-            delay_2_req.vaddr[page_shift_len-1 : (word_shift_len+lane_len)],
+            delay_2_req.paddr[page_shift_len-1 : (word_shift_len+lane_len)],
             {(word_shift_len + lane_len) {1'b0}}
           };
         end else begin
           // axi_req.AW_addr = {
           bus_req_o.addr = {
             stage_2_info.cache_lane_info[stage_2_next_lru_sel].ppn,
-            delay_2_req.vaddr[page_shift_len-1 : (word_shift_len+lane_len)],
+            delay_2_req.paddr[page_shift_len-1 : (word_shift_len+lane_len)],
             {(word_shift_len + lane_len) {1'b0}}
           };
         end
@@ -839,19 +913,14 @@ module cached_lsu #(
         // axi_req.AR_valid = 1'b1;
         bus_req_o.valid = '1;
         // axi_req.AR_len = (slot_2_8_byte) ? 2'd1 : '0;
+        bus_req_o.burst_size = '0;
         // axi_req.AR_burstType = (slot_2_8_byte) ? 2'b10 : 2'b00;
 
-        // axi_req.AR_addr = {delay_2_req.vaddr[31:0]};
+        // axi_req.AR_addr = {delay_2_req.paddr[31:0]};
         // axi_req.AR_size = {1'b0, delay_2_req.size};
-        bus_req_o.addr = {delay_2_req.vaddr[31:0]};
+        bus_req_o.addr = {delay_2_req.paddr[31:0]};
         bus_req_o.data_size = delay_2_req.size;
       end
-      // S_PDW: begin
-      //   axi_req.DW_valid  = '1;
-      //   axi_req.DW_last   = '1;
-      //   axi_req.DW_strobe = w_req.byteen;
-      //   axi_req.DW_data   = w_req.data;
-      // end
       S_RDAT: begin
         // axi_req.DR_ready = 1'b1;
         bus_req_o.data_ok = '1;
@@ -860,9 +929,6 @@ module cached_lsu #(
         // axi_req.DR_ready = 1'b1;
         bus_req_o.data_ok = '1;
       end
-      // S_PB: begin
-      //   axi_req.BW_ready = '1;
-      // end
       // S_B: begin
       //   axi_req.BW_ready = '1;
       // end
@@ -884,11 +950,44 @@ module cached_lsu #(
 
   logic [31:0] stage_2_read_result;
   // assign d_resp.data = stage_2_read_result;
-  assign r_data_o = stage_2_read_result;
+  // assign r_data_o = stage_2_read_result;
+  // 输出数据处理
+	always_comb begin
+		case(delay_2_req_type[1:0])
+			`_MEM_TYPE_WORD: begin
+				r_data_o = stage_2_read_result;
+			end
+			`_MEM_TYPE_HALF: begin
+				if(paddr_o[1])
+					r_data_o = {{16{(stage_2_read_result[31] & ~delay_2_req_type[2])}},stage_2_read_result[31:16]};
+				else
+					r_data_o = {{16{(stage_2_read_result[15] & ~delay_2_req_type[2])}},stage_2_read_result[15:0]};
+			end
+			`_MEM_TYPE_BYTE: begin
+				if(paddr_o[1])
+					if(paddr_o[0])
+						r_data_o = {{24{(stage_2_read_result[31] & ~delay_2_req_type[2])}},stage_2_read_result[31:24]};
+					else
+						r_data_o = {{24{(stage_2_read_result[23] & ~delay_2_req_type[2])}},stage_2_read_result[23:16]};
+				else
+					if(paddr_o[0])
+						r_data_o = {{24{(stage_2_read_result[15] & ~delay_2_req_type[2])}},stage_2_read_result[15:8]};
+					else
+						r_data_o = {{24{(stage_2_read_result[7 ] & ~delay_2_req_type[2])}},stage_2_read_result[7 :0]};
+			end
+			default: begin
+				r_data_o = stage_2_read_result;
+			end
+		endcase
+	end
+
   // assign d_resp.tlb_miss = '0;
   // assign d_resp.valid = delay_2_req.ctrl == `_CACHE_CTRL_WRITE || delay_2_req.ctrl == `_CACHE_CTRL_READ;
-  // assign d_resp.vaddr = delay_2_req.vaddr;
-  assign paddr_o = delay_2_req.vaddr;
+  // assign d_resp.vaddr = delay_2_req.paddr;
+  assign paddr_o = delay_2_req.paddr;
+  assign vaddr_o = delay_2_req.vaddr;
+	assign w_data_o = w_req.data & {{8{w_req.byteen[3]}},{8{w_req.byteen[2]}},{8{w_req.byteen[1]}},{8{w_req.byteen[0]}}};
+
   // This block will describe cache data write logic.
   // All write is done in final stage, so we only need to controll it directly in stage 2
   always_comb begin
@@ -901,25 +1000,25 @@ module cached_lsu #(
   always_ff @(posedge clk) begin
     // if (~rst_n) stage_2_passthrough_reg <= '0;
     // else 
-    if (axi_resp.DR_valid & (fsm_state == S_PDR) & axi_resp.DR_last)
-      stage_2_passthrough_reg <= axi_resp.DR_data;
+    if (bus_resp_i.data_ok & (fsm_state == S_PDAT) & bus_resp_i.data_last)
+      stage_2_passthrough_reg <= bus_resp_i.r_data;
   end
   assign stage_2_read_result = delay_2_req.passthrough ? stage_2_passthrough_reg : normal_data_resp_r_data[0][stage_2_hit_index];
   // assign slot_2_resp = delay_2_req.passthrough ? stage_2_passthrough_reg[1] : normal_data_resp_r_data[1][stage_2_hit_index];
   always_comb begin
     if (fsm_state == S_NORMAL) begin
       data_req_w_data = w_req.data;
-      data_req_w_addr = delay_2_req.vaddr[page_shift_len-1:word_shift_len];
+      data_req_w_addr = delay_2_req.paddr[page_shift_len-1:word_shift_len];
       data_req_w_set_sel = stage_2_hit_index;
       data_req_w_enable = {4{(~(stage_2_hit_miss.miss | delay_2_req.passthrough)) && (delay_2_req.ctrl == `_CACHE_CTRL_WRITE)}} & w_req.byteen;
     end else begin
-      data_req_w_data = axi_resp.DR_data;
+      data_req_w_data = bus_resp_i.r_data;
       data_req_w_addr = {
-        delay_2_req.vaddr[page_shift_len-1 : word_shift_len+lane_len],
+        delay_2_req.paddr[page_shift_len-1 : word_shift_len+lane_len],
         data_transfer_counter[lane_len-1 : 0]
       };
       data_req_w_set_sel = stage_2_next_lru_sel;
-      data_req_w_enable = (axi_resp.DR_valid && (fsm_state == S_DR)) ? 4'b1111 : 4'b0000;
+      data_req_w_enable = (bus_resp_i.data_ok && (fsm_state == S_RDAT)) ? 4'b1111 : 4'b0000;
     end
   end
 
@@ -955,7 +1054,7 @@ module cached_lsu #(
   // fifo_fsm controlling logic
   always_comb begin
     uncached_req.req_data = w_req.data;
-    uncached_req.req_addr = {delay_2_req.vaddr[31:0]};
+    uncached_req.req_addr = {delay_2_req.paddr[31:0]};
     uncached_req.req_size = {1'b0, delay_2_req.size};
     uncached_req.req_strobe = w_req.byteen;
     uncached_req_valid = ~stall_pipe && (delay_2_req.ctrl == `_CACHE_CTRL_WRITE) && delay_2_req.passthrough && ~request_clr_m2_i;
@@ -963,9 +1062,11 @@ module cached_lsu #(
 
   // Logic begin
   localparam int S_FIFO_WAIT = 0;
-  localparam int S_FIFO_AW = 1;  // To sppedup, we ensure AW-DW to working together.
-  localparam int S_FIFO_DW = 2;  // We dont need to wait AW-READY, before we sent data-ready.
-  localparam int S_FIFO_BW = 3;  // We dont need to wait AW-READY, before we sent data-ready.
+  // localparam int S_FIFO_AW = 1;  // To sppedup, we ensure AW-DW to working together.
+  localparam int S_FIFO_ADDR = 1;
+  // localparam int S_FIFO_DW = 2;  // We dont need to wait AW-READY, before we sent data-ready.
+  localparam int S_FIFO_DATA = 2;
+  // localparam int S_FIFO_BW = 3;  // We dont need to wait AW-READY, before we sent data-ready.
 
   logic [1:0] fifo_fsm_state;
   logic [1:0] fifo_fsm_next_state;
@@ -979,56 +1080,40 @@ module cached_lsu #(
     case (fifo_fsm_state)
       S_FIFO_WAIT: begin
         if (~uncached_empty) begin
-          fifo_fsm_next_state = S_FIFO_AW;
+          fifo_fsm_next_state = S_FIFO_ADDR;
         end else begin
           fifo_fsm_next_state = S_FIFO_WAIT;
         end
       end
-      S_FIFO_AW: begin
-        if (axi_resp.AW_ready) begin
-          if (axi_resp.DW_ready) begin
-            if (~uncached_empty) begin
-              fifo_fsm_next_state = S_FIFO_AW;
-            end else begin
-              if (axi_resp.BW_valid) begin
-                fifo_fsm_next_state = S_FIFO_WAIT;
-              end else begin
-                fifo_fsm_next_state = S_FIFO_BW;
-              end
-            end
-          end else begin
-            fifo_fsm_next_state = S_FIFO_DW;
-          end
+      S_FIFO_ADDR: begin
+        if (bus_resp_i.ready) begin
+          fifo_fsm_next_state = S_FIFO_DATA;
         end else begin
-          fifo_fsm_next_state = S_FIFO_AW;
+          fifo_fsm_next_state = S_FIFO_ADDR;
         end
       end
-      S_FIFO_DW: begin
-        if (axi_resp.DW_ready) begin
+      S_FIFO_DATA: begin
+        if (bus_resp_i.data_ok) begin
           if (~uncached_empty) begin
-            fifo_fsm_next_state = S_FIFO_AW;
-          end else begin
-            if (axi_resp.BW_valid) begin
-              fifo_fsm_next_state = S_FIFO_WAIT;
-            end else begin
-              fifo_fsm_next_state = S_FIFO_BW;
-            end
-          end
-        end else begin
-          fifo_fsm_next_state = S_FIFO_DW;
-        end
-      end
-      S_FIFO_BW: begin
-        if (axi_resp.BW_valid) begin
-          if (~uncached_empty) begin
-            fifo_fsm_next_state = S_FIFO_AW;
+            fifo_fsm_next_state = S_FIFO_ADDR;
           end else begin
             fifo_fsm_next_state = S_FIFO_WAIT;
           end
         end else begin
-          fifo_fsm_next_state = S_FIFO_BW;
+          fifo_fsm_next_state = S_FIFO_DATA;
         end
       end
+      // S_FIFO_BW: begin
+      //   if (axi_resp.BW_valid) begin
+      //     if (~uncached_empty) begin
+      //       fifo_fsm_next_state = S_FIFO_AW;
+      //     end else begin
+      //       fifo_fsm_next_state = S_FIFO_WAIT;
+      //     end
+      //   end else begin
+      //     fifo_fsm_next_state = S_FIFO_BW;
+      //   end
+      // end
       default: begin
         fifo_fsm_next_state = S_FIFO_WAIT;
       end
@@ -1045,40 +1130,50 @@ module cached_lsu #(
       S_FIFO_WAIT: begin
         uncached_r_valid = ~uncached_empty;
       end
-      S_FIFO_AW: begin
-        uncached_r_valid = (~uncached_empty) & axi_resp.DW_ready & axi_resp.AW_ready;
+      S_FIFO_ADDR: begin
+        uncached_r_valid = '0;
         uncached_fsm_machine_busy = 1'b1;
       end
-      S_FIFO_DW: begin
-        uncached_r_valid = (~uncached_empty) & axi_resp.DW_ready;
+      S_FIFO_DATA: begin
+        uncached_r_valid = (~uncached_empty) & bus_resp_i.data_ok;
         uncached_fsm_machine_busy = 1'b1;
       end
-      S_FIFO_BW: begin
-        uncached_r_valid = (~uncached_empty) && axi_resp.BW_valid;
-        uncached_fsm_machine_busy = 1'b1;
-      end
+      // S_FIFO_BW: begin
+      //   uncached_r_valid = (~uncached_empty) && axi_resp.BW_valid;
+      //   uncached_fsm_machine_busy = 1'b1;
+      // end
     endcase
   end
 
   // Axi signal.
   always_comb begin
     // Write back allocation:
-    uncached_axi_req.DW_data = uncached_handling_req.req_data;
+    // uncached_axi_req.DW_data = uncached_handling_req.req_data;
+    uncached_bus_req_o.w_data = uncached_handling_req.req_data;
 
     // The AW ppn addr is from victim tag, index tag is the same as stage_1 do.
-    uncached_axi_req.AW_burstType = 2'b00;
-    uncached_axi_req.AW_addr = uncached_handling_req.req_addr;
-    // In the future, we may add support for changable length of burst transfer, but not today
-    uncached_axi_req.AW_len = '0;
-    uncached_axi_req.AW_size = uncached_handling_req.req_size;
+    // uncached_axi_req.AW_burstType = 2'b00;
+    // uncached_axi_req.AW_addr = uncached_handling_req.req_addr;
+    uncached_bus_req_o.addr = uncached_handling_req.req_addr;
 
-    uncached_axi_req.AW_valid = fifo_fsm_state == S_FIFO_AW;
-    uncached_axi_req.DW_valid = fifo_fsm_state == S_FIFO_DW || fifo_fsm_state == S_FIFO_AW;
-    uncached_axi_req.DW_last = fifo_fsm_state == S_FIFO_DW || fifo_fsm_state == S_FIFO_AW;
-    uncached_axi_req.DW_strobe = uncached_handling_req.req_strobe;
-    uncached_axi_req.BW_ready = fifo_fsm_state == S_FIFO_BW ||
-                                fifo_fsm_state == S_FIFO_DW || 
-                                fifo_fsm_state == S_FIFO_AW;
+    // In the future, we may add support for changable length of burst transfer, but not today
+    // uncached_axi_req.AW_len = '0;
+    uncached_bus_req_o.burst_size = 4'b0;
+    // uncached_axi_req.AW_size = uncached_handling_req.req_size;
+    uncached_bus_req_o.data_size = uncached_handling_req.req_size;
+
+    // uncached_axi_req.AW_valid = fifo_fsm_state == S_FIFO_AW;
+    uncached_bus_req_o.valid = fifo_fsm_state == S_FIFO_ADDR;
+    uncached_bus_req_o.write = fifo_fsm_state == S_FIFO_ADDR;
+    // uncached_axi_req.DW_valid = fifo_fsm_state == S_FIFO_DATA;
+    // uncached_axi_req.DW_last = fifo_fsm_state == S_FIFO_DATA;
+    uncached_bus_req_o.data_ok = fifo_fsm_state == S_FIFO_DATA;
+    uncached_bus_req_o.data_last = fifo_fsm_state == S_FIFO_DATA;
+    // uncached_axi_req.DW_strobe = uncached_handling_req.req_strobe;
+    uncached_bus_req_o.data_strobe = uncached_handling_req.req_strobe;
+    // uncached_axi_req.BW_ready = fifo_fsm_state == S_FIFO_BW ||
+    //                             fifo_fsm_state == S_FIFO_DW || 
+    //                             fifo_fsm_state == S_FIFO_AW;
   end
 
 endmodule : cached_lsu

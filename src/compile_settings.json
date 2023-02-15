@@ -1,5 +1,8 @@
 {
     "icache" :{
         "module_ver" : "2"
+    },
+    "lsu" :{
+        "module_ver" : "2"
     }
 }

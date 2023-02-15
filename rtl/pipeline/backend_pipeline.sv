@@ -360,6 +360,7 @@ module backend_pipeline #(
 
 			.bus_req_o(bus_req_o),
 			.bus_resp_i(bus_resp_i),
+			.mmu_resp_i(mmu_resp_i),
 
 			.stall_i(|stall_vec_i[2:1]),
 			.busy_o(lsu_busy)

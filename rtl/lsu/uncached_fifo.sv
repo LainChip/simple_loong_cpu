@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+`include "common.svh"
 
 module uncached_fifo #(
     parameter int fifo_depth  = 16,

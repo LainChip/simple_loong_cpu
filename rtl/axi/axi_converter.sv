@@ -18,7 +18,8 @@ module axi_converter#(
 
 	typedef struct packed{
 		logic write;
-		logic burst;
+		logic[3:0] burst_size;
+		logic[1:0] data_size;
 		logic cached;
 		logic[31:0] addr;
 	}inner_cache_req_info_t;
@@ -61,7 +62,7 @@ module axi_converter#(
 	always_comb begin
 		sel_req_comb = '0;
 		for(integer i = 0 ; i < CACHE_PORT_NUM ; i += 1) begin
-			sel_req_comb |= arr_sel_comb[i] ? {req_i[i].write,req_i[i].burst,req_i[i].cached,req_i[i].addr} : '0;
+			sel_req_comb |= arr_sel_comb[i] ? {req_i[i].write,req_i[i].burst_size,req_i[i].data_size,req_i[i].cached,req_i[i].addr} : '0;
 		end
 	end
 	always_ff @(posedge clk) begin : proc_sel_req_r
@@ -151,8 +152,8 @@ module axi_converter#(
 	always_comb begin
 		axi_bus_if.ar_id = '0;
 		axi_bus_if.ar_addr = sel_req_r.addr;
-		axi_bus_if.ar_len = sel_req_r.burst ? `_AXI_BURST_SIZE : '0;
-		axi_bus_if.ar_size = 3'b010;
+		axi_bus_if.ar_len = sel_req_r.burst_size;
+		axi_bus_if.ar_size = {1'b0,sel_req_r.data_size};
 		axi_bus_if.ar_burst = 2'b10; // WARP TYPE
 		axi_bus_if.ar_lock = 1'b0;
 		axi_bus_if.ar_cache = {2'b00,sel_req_r.cached,1'b0};
@@ -164,8 +165,8 @@ module axi_converter#(
 
 		axi_bus_if.aw_id = '0;
 		axi_bus_if.aw_addr = sel_req_r.addr;
-		axi_bus_if.aw_len = sel_req_r.burst ? `_AXI_BURST_SIZE : '0;
-		axi_bus_if.aw_size = 3'b010;
+		axi_bus_if.aw_len = sel_req_r.burst_size;
+		axi_bus_if.aw_size = {1'b0,sel_req_r.data_size};
 		axi_bus_if.aw_burst = 2'b10; // WARP TYPE
 		axi_bus_if.aw_lock = 1'b0;
 		axi_bus_if.aw_cache = {2'b00,sel_req_r.cached,1'b0};

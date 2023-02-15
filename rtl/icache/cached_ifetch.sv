@@ -362,7 +362,8 @@ end
 always_comb begin
 	bus_req_o.valid = fsm_state == STATE_ADDR;
 	bus_req_o.write = '0;
-	bus_req_o.burst =  ~uncached;
+	bus_req_o.burst_size =  ~uncached ? 4'b0011 : 4'b0000;
+    bus_req_o.data_size = 2'b10;
 	bus_req_o.cached = ~uncached;
 	bus_req_o.addr = uncached ? {pa[31:3], fetch_cnt[0], 2'b00} : {pa[31:4], 4'b0000};
 

@@ -147,8 +147,8 @@ module core_top_sv(
       .mem_bus(mem_bus)
     );
 
-    // assign debug0_wb_pc = core.backend.wb_data_flow[0].pc;
-    assign debug0_wb_pc = '0;
+    assign debug0_wb_pc = core.backend.wb_data_flow[0].pc;
+    // assign debug0_wb_pc = '0;
     assign debug0_wb_rf_wen = '0;
     assign debug0_wb_rf_wnum = '0;
     assign debug0_wb_rf_wdata = '0;
