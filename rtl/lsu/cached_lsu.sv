@@ -1010,7 +1010,7 @@ module lsu #(
       data_req_w_data = w_req.data;
       data_req_w_addr = delay_2_req.paddr[page_shift_len-1:word_shift_len];
       data_req_w_set_sel = stage_2_hit_index;
-      data_req_w_enable = {4{(~(stage_2_hit_miss.miss | delay_2_req.passthrough)) && (delay_2_req.ctrl == `_CACHE_CTRL_WRITE)}} & w_req.byteen;
+      data_req_w_enable = {4{(~(stage_2_hit_miss.miss | delay_2_req.passthrough)) && (delay_2_req.ctrl == `_CACHE_CTRL_WRITE) && (~request_clr_m2_i)}} & w_req.byteen;
     end else begin
       data_req_w_data = bus_resp_i.r_data;
       data_req_w_addr = {
