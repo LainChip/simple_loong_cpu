@@ -270,6 +270,7 @@ module lsu #(
       {delay_2_req.vaddr,delay_2_req.ctrl,delay_2_req.size} <= 
       {delay_1_req.vaddr,delay_1_req.ctrl,delay_1_req.size};
       delay_2_req.paddr <= paddr_i;
+      // delay_2_req.passthrough <= ~mmu_resp_i.mat[0];
       delay_2_req.passthrough <= ~mmu_resp_i.mat[0];
     end
   end

@@ -409,7 +409,7 @@ module backend_pipeline #(
 			.mmu_resp_i(m2_mmu_resp)
 
 		`ifdef _DIFFTEST_ENABLE
-    		,.delay_csr_i(delay_csr_i)
+    		,.delay_csr_i('0)
     	`endif
 		);
 		assign m2_csr_vppn = csr_module.reg_tlbehi[31:13];
