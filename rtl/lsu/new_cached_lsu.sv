@@ -316,8 +316,8 @@ module lsu #(
             end
             S_PRADR: begin
                 // 读地址得到响应后继续后面的操作
-                iif(bus_resp_i.ready) begin
-                    fsm_state_next = S_NORMAL;
+                if(bus_resp_i.ready) begin
+                    fsm_state_next = S_PRDAT;
                 end
             end
             S_PRDAT: begin
@@ -408,6 +408,8 @@ module lsu #(
                         // hit invalidate
                         m1_ctrl <= C_HIT_WB;
                     end
+                end else begin
+                    m1_ctrl <= C_NONE;
                 end
                 case(decode_info_i.m1.mem_type[1:0])
                     `_MEM_TYPE_WORD: begin
@@ -471,7 +473,7 @@ module lsu #(
         end else begin
             if(fsm_state_next == S_WDAT) begin
                 wb_w_cnt <= 3'b000;
-            end else if(!wb_w_cnt[2] && mmu_resp_i.data_ok) begin
+            end else if(!wb_w_cnt[2] && bus_resp_i.data_ok) begin
                 // 确保此时必然处于 S_WDAT 状态中
                 wb_w_cnt <= wb_w_cnt + 3'd1;
             end
@@ -621,7 +623,7 @@ module lsu #(
                     ram_we_mask = match;
                 end
             end
-            if(ctrl == INVALID_WB) begin
+            if(ctrl == C_INVALID_WB) begin
                 if(direct_sel_tag.valid && !direct_sel_tag.dirty) begin
                     ram_we_mask[direct_sel_index] = 1'b1;
                 end
@@ -689,7 +691,7 @@ module lsu #(
 
     // finish 寄存器管理
     always_ff @(posedge clk) begin
-        if(fsm_state == S_WDAT || fsm_state == S_PDAT) begin
+        if(fsm_state == S_WDAT || fsm_state == S_PRDAT) begin
             finish <= 1'b1;
         end else if(~stall) begin
             finish <= 1'b0;
@@ -713,7 +715,7 @@ module lsu #(
     always_ff @(posedge clk) begin
         if(~rst_n) begin
             pw_w_ptr <= '0;
-        end else if(pw_w_e && !pw_empty) begin
+        end else if(pw_w_e && !(pw_empty && pw_r_e)) begin
             pw_w_ptr <= pw_w_ptr + 1'd1;
         end
     end
@@ -726,13 +728,13 @@ module lsu #(
     end
     always_ff @(posedge clk) begin
         if(pw_r_e) begin
-            if(!pw_empty) pw_handling <= pw_fifo[pw_r_ptr];
+            if(!pw_empty) pw_handling <= pw_fifo[pw_r_ptr[$clog2(WB_FIFO_DEPTH) - 1: 0]];
             else          pw_handling <= pw_req;
         end
     end
     always_ff @(posedge clk) begin
         if(pw_w_e) begin
-            pw_fifo[pw_w_ptr] <= pw_req;
+            pw_fifo[pw_w_ptr[$clog2(WB_FIFO_DEPTH) - 1: 0]] <= pw_req;
         end
     end
     always_comb begin
@@ -778,7 +780,8 @@ module lsu #(
 
     always_ff @(posedge clk) begin
         if(~stall) begin
-            uncached <= uncached_i;
+            // uncached <= uncached_i;
+            uncached <= '1;
         end
     end
 
