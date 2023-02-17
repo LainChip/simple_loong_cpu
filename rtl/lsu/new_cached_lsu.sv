@@ -59,7 +59,7 @@ module lsu #(
     logic ram_we_tag;
     logic [WAY_CNT - 1 : 0] ram_we_mask; // TODO 写使能mask
 
-    tag_t        ram_w_tag;              // TODO 待写入的tag
+    tag_t        ram_w_tag;
     logic [31:0] ram_w_data;
 
     tag_t [WAY_CNT - 1 : 0]       ram_r_tag;    // M1 级的tag, 暂停时候会保持更新
@@ -83,6 +83,9 @@ module lsu #(
             .tag_o(raw_r_tag),
             .tag_i(ram_w_tag)
         );
+
+        // 脏写回使用
+        assign ram_raw_data[way_id] = raw_r_data;
 
         // 添加寄存器, 处理暂停的情况
         logic [3:0][7:0] m1_data,m1_reg_data;
@@ -246,6 +249,7 @@ module lsu #(
                     // UNCACHED WRITE && FIFO FULL
                     fsm_state_next = S_WAIT_FULL;
                 end
+                // 最高优先级, 当前请求被无效化时, 不可暂停
                 if(request_clr_hint_m2_i) begin
                     fsm_state_next = fsm_state;
                 end
@@ -311,8 +315,12 @@ module lsu #(
             data <= ram_r_data;
         end else begin
             for(integer i = 0; i < WAY_CNT ; i += 1) begin
-                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_tag) begin
+                if(i == 0 && (ram_we_mask[i] || uncached) && ram_we_tag) begin
                     tag[i] <= ram_w_tag;
+                end else if(i != 0 && ram_we_mask[i] && !uncached && ram_we_tag) begin
+                    tag[i] <= ram_w_tag;
+                end else if(i != 0 && !ram_we_mask[i] && uncached && ram_we_tag) begin
+                    tag[i].valid <= '0; // 无效化缓存行避免错误的hit
                 end
                 if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[0] && ram_w_addr[3:2] == paddr[3:2]) begin
                     data[i][ 7: 0] <= ram_w_data[ 7: 0];
@@ -479,6 +487,8 @@ module lsu #(
         end else if(fsm_state == S_RDAT) begin
             // REFILL 状态, 全写
             ram_we_data = 4'b1111;
+        end else if(fsm_state == S_PRDAT) begin
+            // 特别的, 对于 UNCACHED 的读请求, 直接打开ram_we_data, 将第二阶段的数据寄存器直接作为结果寄存器使用
         end
     end
 
@@ -502,14 +512,42 @@ module lsu #(
         // 正常情况时, 在M2级的写请求会触发一次脏写请求, 对于直接无效CACHE行的操作也在此响应
         ram_we_tag = '0;
         if(fsm_state == S_NORMAL) begin
-            if(ctrl == C_WRITE || ctrl == C_INVALID) begin
+            if((ctrl == C_WRITE && !uncached) || ctrl == C_INVALID) begin
                 ram_we_tag = '1;
             end
         end
         // 保证在写回的过程中CACHE行信息保持不变
         // 在写回完成后, 更新CACHE行信息
         else if(fsm_state == S_WDAT && fsm_state_next != S_WDAT) begin
-            ram_we_tag = '0;
+            ram_we_tag = '1;
+        end
+        // 特殊的, 在uncached的读请求完成的时候, 使用ram_we_tag更新寄存器中的地址, 以完成一次UNCACHE读操作
+        else if(fsm_state == S_PRDAT && fsm_state_next != S_PRDAT) begin
+            ram_we_tag = '1;
+        end
+    end
+
+    // ram_w_tag 逻辑 TODO: check
+    always_comb begin
+        // 正常情况时, 检查是WRITE 或是 INVALIDATE CACOP
+        ram_w_tag.valid = 1'b1;
+        ram_w_tag.dirty = 1'b1;
+        ram_w_tag.ppn   = paddr[31:12];
+        if(fsm_state == S_NORMAL) begin
+            if(ctrl == C_INVALID) begin
+                ram_w_tag.valid = 1'b0;
+                ram_w_tag.dirty = 1'b0;
+            end
+            // 对于写请求不需要特别处理
+        end else if(fsm_state == S_WDAT) begin
+            // 这里需要对REFILL 和 HIT/INVALID_WB 做出区别
+            if(ctrl == C_READ || ctrl == C_WRITE) begin
+                ram_w_tag.dirty = 1'b0;
+            end else begin
+                // HIT/INVALID_WB 的情况
+                ram_w_tag.valid = 1'b0;
+                ram_w_tag.dirty = 1'b0;
+            end
         end
     end
 
