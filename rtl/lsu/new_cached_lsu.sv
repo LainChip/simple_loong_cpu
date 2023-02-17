@@ -59,7 +59,7 @@ module lsu #(
     logic [11:2]ram_w_addr;
     logic [3:0] ram_we_data,data_strobe;
     logic ram_we_tag;
-    logic [WAY_CNT - 1 : 0] ram_we_mask; // TODO 写使能mask
+    logic [WAY_CNT - 1 : 0] ram_we_mask;
 
     tag_t        ram_w_tag;
     logic [31:0] ram_w_data;
@@ -150,30 +150,37 @@ module lsu #(
     // 第二阶段数据, 根据第二阶段数据构建状态机
     // 地址
     logic [31:0] paddr,vaddr;
+
     // 缓存状态
     tag_t [WAY_CNT - 1 : 0] tag;
     logic [WAY_CNT - 1 : 0][31:0] data;
 
+    logic [$clog2(WAY_CNT) - 1 : 0] direct_sel_index;
+    tag_t direct_sel_tag;
+    tag_t sel_tag;
+    logic [31:0] sel_data;
+
     // 比较信息
     logic [WAY_CNT - 1 : 0] match;
+    logic [$clog2(WAY_CNT) - 1 : 0] match_index;
     logic miss;
 
     // 控制信息, 顺序编码
-    logic [2:0] m1_ctrl,ctrl;
+    logic [2:0] m1_ctrl,ctrl, m1_req_type,req_type;
     logic [1:0] m1_size,size;
     logic finish;
     logic bus_busy;
     localparam logic[2:0] C_NONE       = 3'd0;
     localparam logic[2:0] C_READ       = 3'd1;
     localparam logic[2:0] C_WRITE      = 3'd2;
-    localparam logic[2:0] C_HITWB      = 3'd3;
+    localparam logic[2:0] C_HIT_WB     = 3'd3;
     localparam logic[2:0] C_INVALID    = 3'd4;
     localparam logic[2:0] C_INVALID_WB = 3'd5;
 
     // 控制信息, 伪随机数
     logic [$clog2(WAY_CNT) - 1 : 0] next_sel;
     logic [WAY_CNT - 1 : 0]         next_sel_onehot;
-    logic next_sel_taken;                            // TODO 接线
+    logic next_sel_taken;
 
     // 控制信息, 主状态机
     localparam logic[3:0] S_NORMAL    = 4'd0;
@@ -204,7 +211,7 @@ module lsu #(
 
     // 控制信息, CACHE行脏写回计数器, 三位, 最高位为结束位
     logic [2:0] wb_r_cnt,wb_delay_cnt,wb_w_cnt;
-    logic [$clog2(WAY_CNT) - 1 : 0] wb_way_sel; // TODO
+    logic [$clog2(WAY_CNT) - 1 : 0] wb_way_sel;
     logic [3:0][31:0] wb_fifo;
     logic [31:0] wb_sel_data;
 
@@ -219,6 +226,16 @@ module lsu #(
         assign match[way_id] = tag[way_id].valid && (tag[way_id].ppn == paddr[31:12]);
     end
     assign miss = ~(|match);
+    always_comb begin
+        sel_tag = '0;
+        sel_data = '0;
+        match_index = '0;
+        for(int i = 0 ; i < WAY_CNT ; i += 1) begin
+            sel_tag  |= match[i] ? tag[i]  : '0;
+            sel_data |= match[i] ? data[i] : '0;
+            match_index = i[$clog2(WAY_CNT) - 1 : 0];
+        end
+    end
 
     // 主状态机
     always_comb begin
@@ -250,6 +267,15 @@ module lsu #(
                 if((ctrl == C_WRITE) && !finish && uncached && fifo_full) begin
                     // UNCACHED WRITE && FIFO FULL
                     fsm_state_next = S_WAIT_FULL;
+                end
+                if(((ctrl == C_INVALID_WB) && direct_sel_tag.valid  && direct_sel_tag.dirty) ||
+                   ((ctrl == C_HIT_WB) && !miss/* && sel_tag.valid*/&&        sel_tag.dirty)) begin
+                    // CACOP WB 请求的CACHE行为脏, 需要写回
+                    if(bus_busy) begin
+                        fsm_state_next = S_WAIT_BUS;
+                    end else begin
+                        fsm_state_next = S_WADR;
+                    end
                 end
                 // 最高优先级, 当前请求被无效化时, 不可暂停
                 if(request_clr_hint_m2_i) begin
@@ -348,6 +374,8 @@ module lsu #(
             paddr <= paddr_i;
         end
     end
+    assign direct_sel_index = vaddr[$clog2(WAY_CNT) - 1 : 0];
+    assign direct_sel_tag = tag[direct_sel_index];
 
     // 控制通路 : m1_ctrl ctrl m1_size size
     always_ff @(posedge clk) begin
@@ -357,8 +385,10 @@ module lsu #(
             m1_size <= 2'b00;
             size    <= 2'b00;
         end else if(~stall) begin
-            ctrl    <= m1_ctrl;
-            size    <= m1_size;
+            m1_req_type <= decode_info_i.m1.mem_type;
+            req_type    <= m1_req_type;
+            ctrl        <= m1_ctrl;
+            size        <= m1_size;
             if(request_valid_i) begin
                 if(decode_info_i.m1.mem_valid) begin
                     if(decode_info_i.m1.mem_write) begin
@@ -376,7 +406,7 @@ module lsu #(
                         m1_ctrl <= C_INVALID_WB;
                     end else begin
                         // hit invalidate
-                        m1_ctrl <= C_HITWB;
+                        m1_ctrl <= C_HIT_WB;
                     end
                 end
                 case(decode_info_i.m1.mem_type[1:0])
@@ -458,6 +488,18 @@ module lsu #(
     // wb_sel_data 逻辑, 带透传的fifo
     assign wb_sel_data = (wb_delay_cnt[1:0] == wb_w_cnt[1:0]) ? ram_raw_data[wb_way_sel] : wb_fifo[wb_w_cnt];
 
+    // wb_way_sel 逻辑
+    always_comb begin
+        wb_way_sel = '0;
+        if(ctrl == C_INVALID_WB) begin
+            wb_way_sel = direct_sel_index;
+        end else if(ctrl == C_HIT_WB) begin
+            wb_way_sel = match_index;
+        end else begin
+            wb_way_sel = next_sel;
+        end
+    end
+
     // refill_cnt 逻辑, 两位循环计数器
     always_ff @(posedge clk) begin
         if(fsm_state_next == S_RDAT) begin
@@ -501,6 +543,7 @@ module lsu #(
             ram_we_data = 4'b1111;
         end else if(fsm_state == S_PRDAT) begin
             // 特别的, 对于 UNCACHED 的读请求, 直接打开ram_we_data, 将第二阶段的数据寄存器直接作为结果寄存器使用
+            ram_we_data = 4'b1111;
         end
     end
 
@@ -524,13 +567,18 @@ module lsu #(
         // 正常情况时, 在M2级的写请求会触发一次脏写请求, 对于直接无效CACHE行的操作也在此响应
         ram_we_tag = '0;
         if(fsm_state == S_NORMAL) begin
-            if((ctrl == C_WRITE && !uncached) || ctrl == C_INVALID) begin
+            if((ctrl == C_WRITE && !uncached) || ctrl == C_INVALID ||
+               (ctrl == C_HIT_WB    && !miss && sel_tag.valid && !sel_tag.dirty) ||
+               (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty)) begin
                 ram_we_tag = '1;
             end
         end
         // 保证在写回的过程中CACHE行信息保持不变
         // 在写回完成后, 更新CACHE行信息
-        else if(fsm_state == S_WDAT && fsm_state_next != S_WDAT) begin
+        else if(fsm_state == S_WDAT && fsm_state_next != S_WDAT && ctrl != C_READ && ctrl != C_WRITE) begin
+            ram_we_tag = '1;
+        end
+        else if(fsm_state == S_RDAT) begin
             ram_we_tag = '1;
         end
         // 特殊的, 在uncached的读请求完成的时候, 使用ram_we_tag更新寄存器中的地址, 以完成一次UNCACHE读操作
@@ -546,22 +594,57 @@ module lsu #(
         ram_w_tag.dirty = 1'b1;
         ram_w_tag.ppn   = paddr[31:12];
         if(fsm_state == S_NORMAL) begin
-            if(ctrl == C_INVALID) begin
+            if(ctrl == C_INVALID || ctrl == C_HIT_WB || ctrl == C_INVALID_WB) begin
                 ram_w_tag.valid = 1'b0;
                 ram_w_tag.dirty = 1'b0;
             end
             // 对于写请求不需要特别处理
         end else if(fsm_state == S_WDAT) begin
-            // 这里需要对REFILL 和 HIT/INVALID_WB 做出区别
-            if(ctrl == C_READ || ctrl == C_WRITE) begin
-                ram_w_tag.dirty = 1'b0;
+            // HIT/INVALID_WB 的情况
+            ram_w_tag.valid = 1'b0;
+            ram_w_tag.dirty = 1'b0;
+        end else if(fsm_state == S_RDAT) begin
+            ram_w_tag.dirty = 1'b0;
+        end
+    end
+
+    // ram_we_mask; // TODO : check
+    always_comb begin
+        ram_we_mask = '0;
+        if(fsm_state == S_NORMAL) begin
+            // 只在 (HIT & WRITE & !UNCACHED)| (VALID !DIRTY INVALID_WB) | (HIT VALID !DIRTY HIT_WB) 的情况下需要写,
+            // 对于第一种情况和第三种情况, 写MASK为MATCH
+            // 对于第二种情况, 进行直接索引
+            if(!miss) begin
+                if((ctrl == C_WRITE  && !uncached) ||
+                   (ctrl == C_HIT_WB/* && sel_tag.valid*/ && !sel_tag.dirty)) begin
+                    ram_we_mask = match;
+                end
+            end
+            if(ctrl == INVALID_WB) begin
+                if(direct_sel_tag.valid && !direct_sel_tag.dirty) begin
+                    ram_we_mask[direct_sel_index] = 1'b1;
+                end
+            end
+        end
+        else if(fsm_state == S_RDAT) begin
+            // REFILL使用 新选择的way
+            ram_we_mask = next_sel_onehot;
+        end
+        else if(fsm_state == S_WDAT) begin
+            // 存在两类情况
+            // 对于 READ | WRITE | HIT_WB 需要处理更新的是命中的行
+            // 对于 INVALID_WB 需要处理的是选中的行
+            if(ctrl == C_INVALID_WB) begin
+                ram_we_mask[direct_sel_index] = 1'b1;
             end else begin
-                // HIT/INVALID_WB 的情况
-                ram_w_tag.valid = 1'b0;
-                ram_w_tag.dirty = 1'b0;
+                ram_we_mask = match;
             end
         end
     end
+    // next_sel_taken 在REFILL 的最后一个阶段
+    assign next_sel_taken = fsm_state == S_RDAT && fsm_state_next != S_RDAT;
+    
 
     // 生成下一个WAY SELECTION
     if(!ENABLE_PLRU) begin
@@ -749,5 +832,37 @@ module lsu #(
             bus_req_o.data_ok    = 1'b1;
         end
     end
+
+    assign vaddr_o = vaddr;
+    assign paddr_o = paddr;
+    // 输出处理逻辑
+	always_comb begin
+		case(req_type[1:0])
+			`_MEM_TYPE_WORD: begin
+				r_data_o = sel_data;
+			end
+			`_MEM_TYPE_HALF: begin
+				if(paddr_o[1])
+					r_data_o = {{16{(sel_data[31] & ~req_type[2])}},sel_data[31:16]};
+				else
+					r_data_o = {{16{(sel_data[15] & ~req_type[2])}},sel_data[15:0]};
+			end
+			`_MEM_TYPE_BYTE: begin
+				if(paddr_o[1])
+					if(paddr_o[0])
+						r_data_o = {{24{(sel_data[31] & ~req_type[2])}},sel_data[31:24]};
+					else
+						r_data_o = {{24{(sel_data[23] & ~req_type[2])}},sel_data[23:16]};
+				else
+					if(paddr_o[0])
+						r_data_o = {{24{(sel_data[15] & ~req_type[2])}},sel_data[15:8]};
+					else
+						r_data_o = {{24{(sel_data[7 ] & ~req_type[2])}},sel_data[7 :0]};
+			end
+			default: begin
+				r_data_o = sel_data;
+			end
+		endcase
+	end
 
 endmodule
