@@ -28,10 +28,10 @@ module arbiter_round_robin #(
 
 	always_comb begin : round_robin_sel_onehot_gen
 		round_robin_sel_onehot = '0;
-		for(integer i = (2 * REQ_NUM) - 1 ; i >= 0 ; i -= 1) begin : round_robin_sel_onehot_loop
+		for(integer i = 0 ; i < (2 * REQ_NUM) ; i += 1) begin : round_robin_sel_onehot_loop
 			if(masked_req[i]) begin
-				round_robin_sel_onehot[i%REQ_NUM] = masked_req[i];
-				break;
+				round_robin_sel_onehot = '0;
+				round_robin_sel_onehot[i[$clog2(REQ_NUM) - 1 : 0]] = 1'b1;
 			end
 		end
 	end

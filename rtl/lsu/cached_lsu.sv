@@ -74,6 +74,7 @@ module lsu #(
 	output cache_bus_req_t bus_req_o,
 	input cache_bus_resp_t bus_resp_i,
   input mmu_s_resp_t mmu_resp_i,
+  input uncached_i,
 
 	// 握手信号
 	output logic busy_o,
@@ -272,7 +273,7 @@ module lsu #(
       {delay_1_req.vaddr,delay_1_req.ctrl,delay_1_req.size};
       delay_2_req.paddr <= paddr_i;
       // delay_2_req.passthrough <= '1;
-      delay_2_req.passthrough <= (mmu_resp_i.mat == 2'b00);
+      delay_2_req.passthrough <= uncached_i;
     end
   end
 
@@ -353,7 +354,8 @@ module lsu #(
   endgenerate
   //assign stage_1_hit_miss.miss = ~(|stage_1_hit_miss.hit);
   always_comb begin
-    if (mmu_resp_i.mat == 2'b00) begin
+    if (uncached_i) begin
+    // if(1'b1) begin
       stage_1_hit_miss.miss = 1;
     end else if(delay_1_req.ctrl == `_CACHE_CTRL_READ || delay_1_req.ctrl == `_CACHE_CTRL_WRITE) begin
       stage_1_hit_miss.miss = ~(|stage_1_hit_miss.hit);
@@ -768,8 +770,7 @@ module lsu #(
       if (delay_2_req.ctrl == `_CACHE_HIT_WRITEBACK_INVALID) begin
         dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][stage_2_hit_index];
       end else if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID) begin
-        dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][delay_2_req.paddr[page_shift_len + $clog2(
-            set_ass)-1 : page_shift_len]];
+        dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][delay_2_req.paddr[$clog2(set_ass)-1:0]];
       end else begin
         dirty_data_fifo[data_fifo_counter[lane_len - 1 : 0]] <= data_resp_r_data[0][stage_2_next_lru_sel];
       end
@@ -877,9 +878,7 @@ module lsu #(
         end else if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID) begin
           // axi_req.AW_addr = {
           bus_req_o.addr = {
-            stage_2_info.cache_lane_info[delay_2_req.paddr[page_shift_len+$clog2(
-                set_ass
-            )-1 : page_shift_len]].ppn,
+            stage_2_info.cache_lane_info[delay_2_req.paddr[$clog2(set_ass)-1 : 0]].ppn,
             delay_2_req.paddr[page_shift_len-1 : (word_shift_len+lane_len)],
             {(word_shift_len + lane_len) {1'b0}}
           };

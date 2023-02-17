@@ -28,6 +28,7 @@ module frontend(
 	// MMU 访问信号
 	output logic[31:0] mmu_req_vpc_o,
 	input mmu_s_resp_t mmu_resp_i,
+    input logic uncached_i,
 
     input logic bus_busy_i
 );
@@ -200,6 +201,7 @@ module frontend(
         .clr_i(frontend_clr),
 
         .bus_busy_i(bus_busy_i),
+        .uncached_i(uncached_i),
 
         .bus_req_o,
         .bus_resp_i

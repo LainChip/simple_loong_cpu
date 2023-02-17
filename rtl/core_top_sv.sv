@@ -111,14 +111,14 @@ module core_top_sv(
 
     assign awid = mem_bus.aw_id;
     assign awaddr = mem_bus.aw_addr;
-    assign awlen = mem_bus.aw_len;
+    assign awlen = {4'b0000,mem_bus.aw_len};
     assign awsize = mem_bus.aw_size;
     assign awburst = mem_bus.aw_burst;
     assign awlock = mem_bus.aw_lock;
     assign awcache = mem_bus.aw_cache;
     assign awprot = mem_bus.aw_prot;
     assign awvalid = mem_bus.aw_valid;
-    assign wid   = '0;
+    assign wid   = mem_bus.aw_id;
     assign wdata = mem_bus.w_data;
     assign wstrb = mem_bus.w_strb;
     assign wlast = mem_bus.w_last;
@@ -126,7 +126,7 @@ module core_top_sv(
     assign bready = mem_bus.b_ready;
     assign arid = mem_bus.ar_id;
     assign araddr = mem_bus.ar_addr;
-    assign arlen = mem_bus.ar_len;
+    assign arlen = {4'b0000,mem_bus.ar_len};
     assign arsize = mem_bus.ar_size;
     assign arburst = mem_bus.ar_burst;
     assign arlock = mem_bus.ar_lock;

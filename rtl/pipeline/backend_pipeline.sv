@@ -338,6 +338,7 @@ module backend_pipeline #(
 		// CACHE 指令
 		logic m2_icache_op_valid,ex_dcache_op_valid;
 		logic[1:0] m2_icache_op,ex_dcache_op;
+		logic m1_uncached;
 		assign ex_dcache_op_valid = ex_ctrl_flow.decode_info.m2.cacop && (ex_ctrl_flow.decode_info.general.inst25_0[2:0] == 3'd1);
 		assign ex_dcache_op = ex_ctrl_flow.decode_info.general.inst25_0[4:3];
 		assign m2_icache_op_valid = ~stall_vec_i[2] && m2_ctrl_flow.decode_info.m2.cacop && (m2_ctrl_flow.decode_info.general.inst25_0[2:0] == 3'd0) && ~m2_lsu_clr_hint;
@@ -364,6 +365,7 @@ module backend_pipeline #(
 			.bus_req_o(bus_req_o),
 			.bus_resp_i(bus_resp_i),
 			.mmu_resp_i(mmu_resp_i),
+			.uncached_i(m1_uncached),
 
 			.stall_i(|stall_vec_i[2:1]),
 			.busy_o(lsu_busy),
@@ -427,6 +429,10 @@ module backend_pipeline #(
 		assign da_mode = csr_module.reg_crmd[`_CRMD_DA] && !csr_module.reg_crmd[`_CRMD_PG];
 		assign dmw0_en = ((csr_module.reg_dmw0[`_DMW_PLV0] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)) || (csr_module.reg_dmw0[`_DMW_PLV3] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd3))) && (m1_saddr[31:29] == csr_module.reg_dmw0[`_DMW_VSEG]);
 		assign dmw1_en = ((csr_module.reg_dmw1[`_DMW_PLV0] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)) || (csr_module.reg_dmw1[`_DMW_PLV3] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd3))) && (m1_saddr[31:29] == csr_module.reg_dmw1[`_DMW_VSEG]);
+		assign m1_uncached = (da_mode && (mmu_resp_i.mat == 2'b00))       || 
+                        	 (dmw0_en && (mmu_resp_i.mat == 2'b00))       ||
+                        	 (dmw1_en && (mmu_resp_i.mat == 2'b00))       ||
+                        	 (m1_trans_en && (mmu_resp_i.mat == 2'b00));
 		always_comb begin
 			mmu_req_o = '{
 				trans_en: m1_trans_en, //TODO: CACHEOP && (m1_ctrl_flow.decode_info.m2.cacheop_i)

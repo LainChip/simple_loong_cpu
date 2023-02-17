@@ -135,7 +135,6 @@
             "mem_type": "`_MEM_TYPE_BYTE",
             "reg_type": "`_REG_TYPE_RR",
             "cacop": 1,
-            "priv_inst": 1,
             "pipe_one_inst": 1,
             "refetch":1
         },

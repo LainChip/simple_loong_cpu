@@ -2,7 +2,7 @@
 `include "decoder.svh"
 `include "lsu_types.svh"
 
-/*--JSON--{"module_name":"lsu","module_ver":"2","module_type":"module"}--JSON--*/
+/*--JSON--{"module_name":"lsu","module_ver":"3","module_type":"module"}--JSON--*/
 
 module lsu #(
     parameter int WAY_CNT = 2,

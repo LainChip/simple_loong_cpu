@@ -44,7 +44,7 @@ always_comb begin
     // end
 end
 
-for (genvar i = 0; i < `_TLB_ENTRY_NUM; i = i + 1) begin
+for (genvar i = 0; i < TLB_ENTRY_NUM; i = i + 1) begin
     assign matched[i] = ((tlb_entry_i[i].ps == 6'd12) ? 
                         (req_i.vppn == tlb_entry_i[i].vppn) :
                         (req_i.vppn[18:9] == tlb_entry_i[i].vppn[18:9]))
@@ -55,7 +55,7 @@ end
 
 always_comb begin
     matched_index = '0;
-    for(int i = `_TLB_ENTRY_NUM - 1; i >= 0; --i) begin
+    for(int i = TLB_ENTRY_NUM - 1; i >= 0; --i) begin
         if(matched[i]) begin
             matched_index = i;
         end

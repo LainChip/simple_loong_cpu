@@ -40,7 +40,8 @@ module icache #(
     input logic bus_busy_i,
 
 	(* mark_debug="true" *) output cache_bus_req_t bus_req_o,
-	(* mark_debug="true" *) input cache_bus_resp_t bus_resp_i
+	(* mark_debug="true" *) input cache_bus_resp_t bus_resp_i,
+    input uncached_i
     // input trans_en_i
 );
 
@@ -134,7 +135,7 @@ always_ff @(posedge clk) begin
         cache_op_type <= cache_op_type_early;
         cache_op <= cache_op_early;
         // uncached <= '1;
-        uncached <= (mmu_resp_i.mat == 2'b00);
+        uncached <= uncached_i;
 
         // vpc_o <= va;
         // ppc_o <= pa;

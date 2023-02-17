@@ -134,42 +134,40 @@ logic [31:0]    reg_dmw1;
 
 (* mark_debug="true" *) logic [63:0]    reg_timer_64;
 
+localparam ADDR_CRMD  = 14'h0;
+localparam ADDR_PRMD  = 14'h1;
+localparam ADDR_EUEN  = 14'h2;
+localparam ADDR_ECTL  = 14'h4;
+localparam ADDR_ESTAT = 14'h5;
+localparam ADDR_ERA   = 14'h6;
+localparam ADDR_BADV  = 14'h7;
+localparam ADDR_EENTRY = 14'hc;
+localparam ADDR_TLBIDX= 14'h10;
+localparam ADDR_TLBEHI= 14'h11;
+localparam ADDR_TLBELO0=14'h12;
+localparam ADDR_TLBELO1=14'h13;
+localparam ADDR_ASID  = 14'h18;
+localparam ADDR_PGDL  = 14'h19;
+localparam ADDR_PGDH  = 14'h1a;
+localparam ADDR_PGD   = 14'h1b;
+localparam ADDR_CPUID = 14'h20;
+localparam ADDR_SAVE0 = 14'h30;
+localparam ADDR_SAVE1 = 14'h31;
+localparam ADDR_SAVE2 = 14'h32;
+localparam ADDR_SAVE3 = 14'h33;
+localparam ADDR_TID   = 14'h40;
+localparam ADDR_TCFG  = 14'h41;
+localparam ADDR_TVAL  = 14'h42;
+localparam ADDR_CNTC  = 14'h43;
+localparam ADDR_TICLR = 14'h44;
+localparam ADDR_LLBCTL= 14'h60;
+localparam ADDR_TLBRENTRY = 14'h88;
+localparam ADDR_CTAG      = 14'd98;
+localparam ADDR_BRK   = 14'h100;
+localparam ADDR_DISABLE_CACHE = 14'h101;
+localparam ADDR_DMW0  = 14'h180;
+localparam ADDR_DMW1  = 14'h181;
 
-
-parameter logic [13:0] ADDR_CRMD             = 14'd0;
-parameter logic [13:0] ADDR_PRMD             = 14'd1;
-parameter logic [13:0] ADDR_EUEN             = 14'd2;
-parameter logic [13:0] ADDR_ECTL             = 14'd4;
-parameter logic [13:0] ADDR_ESTAT            = 14'd5;
-parameter logic [13:0] ADDR_ERA              = 14'd6;
-parameter logic [13:0] ADDR_BADV             = 14'd7;
-parameter logic [13:0] ADDR_EENTRY           = 14'd12;
-parameter logic [13:0] ADDR_TLBIDX           = 14'd16;
-parameter logic [13:0] ADDR_TLBEHI           = 14'd17;
-parameter logic [13:0] ADDR_TLBELO0          = 14'd18;
-parameter logic [13:0] ADDR_TLBELO1          = 14'd19;
-parameter logic [13:0] ADDR_ASID             = 14'd24;
-parameter logic [13:0] ADDR_PGDL             = 14'd25;
-parameter logic [13:0] ADDR_PGDH             = 14'd26;
-parameter logic [13:0] ADDR_PGD              = 14'd27;
-parameter logic [13:0] ADDR_CPUID            = 14'd32;
-parameter logic [13:0] ADDR_SAVE0            = 14'd48;
-parameter logic [13:0] ADDR_SAVE1            = 14'd49;
-parameter logic [13:0] ADDR_SAVE2            = 14'd50;
-parameter logic [13:0] ADDR_SAVE3            = 14'd51;
-parameter logic [13:0] ADDR_TID              = 14'd64;
-parameter logic [13:0] ADDR_TCFG             = 14'd65;
-parameter logic [13:0] ADDR_TVAL             = 14'd66;
-parameter logic [13:0] ADDR_CNTC             = 14'd67;
-parameter logic [13:0] ADDR_TICLR            = 14'd68;
-parameter logic [13:0] ADDR_LLBCTL           = 14'd96;
-parameter logic [13:0] ADDR_TLBRENTRY        = 14'd136;
-parameter logic [13:0] ADDR_CTAG             = 14'd152;
-parameter logic [13:0] ADDR_DMW0             = 14'd384;
-parameter logic [13:0] ADDR_DMW1             = 14'd385;
-
-parameter logic [13:0] ADDR_BRK              = 14'd256;
-parameter logic [13:0] ADDR_DISABLE_CACHE    = 14'd257;
 
 //Read
 logic [31:0] read_reg_result;
@@ -742,7 +740,7 @@ always_ff @(posedge clk) begin
             llbit <= 1'b0;
         end
     end
-    else if(llbit_set_i && ~stall_i && ~lsu_clr_hint_o && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
+    else if(llbit_set_i && ~stall_i && ~lsu_clr_hint_o && ~(do_exception || do_interrupt) && decode_info_i.wb.valid) begin
         llbit <= llbit_i;
     end
 end
@@ -754,6 +752,7 @@ always_comb begin
 end
 
 logic interrupt_need_handle;
+assign interrupt_need_handle = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
 always_comb begin
     tlbehi_update = '0;
     do_refetch = '0;
@@ -761,7 +760,6 @@ always_comb begin
     do_ertn_tlbrefill = reg_estat[`_ESTAT_ECODE] == 6'h3f;
     lsu_clr_hint_o = 1'b0;
     do_ertn = 1'b0;
-    interrupt_need_handle = (|(reg_estat[`_ESTAT_IS] & reg_ectl[`_ECTL_LIE])) & reg_crmd[`_CRMD_IE];
     do_interrupt        = 1'b0;
     do_redirect_o       = 1'b0;
     do_exception        = 1'b0;
@@ -783,7 +781,6 @@ always_comb begin
         redirect_addr_o = reg_eentry;
         lsu_clr_hint_o = 1'b1;
         if(tlbrefill_i) begin
-            do_tlbrefill = '1;
             redirect_addr_o = reg_tlbrentry;
         end
     end else if (ertn_i) begin
@@ -827,19 +824,19 @@ always_comb begin
         ) begin
             va_error = 1'b1;
             bad_va_selected = bad_va_i;
-        end      
+        end
+        if(tlbrefill_i) begin
+            do_tlbrefill = '1;
+        end
     end else if (ertn_i & (~stall_i) & decode_info_i.wb.valid) begin
         do_redirect_o = 1'b1;
         do_ertn = 1'b1;
-    end 
-    else begin
-        do_redirect_o = 1'b0;
-    end
-    
-    if(~ipe_i && decode_info_i.m2.refetch && ~do_redirect_o && (~stall_i) && decode_info_i.wb.valid) begin
+    end else if(decode_info_i.m2.refetch && (~stall_i) && decode_info_i.wb.valid) begin
         do_redirect_o = 1'b1;
         do_refetch = 1'b1;
         redirect_addr_o = instr_pc_i + 32'd4;
+    end else begin
+        do_redirect_o = 1'b0;
     end
 end
 

@@ -15,6 +15,15 @@ module axi_converter#(
 
 	logic take;
 	logic[CACHE_PORT_NUM - 1 : 0] arr_req_valid,arr_sel_comb,arr_sel_r;
+	logic[$clog2(CACHE_PORT_NUM) - 1 : 0] arr_sel_r_index;
+	always_comb begin
+		arr_sel_r_index = '0;
+		for(integer i = 0 ; i < CACHE_PORT_NUM ; i += 1) begin
+			if(arr_sel_r[i]) begin
+				arr_sel_r_index = i[$clog2(CACHE_PORT_NUM) - 1 : 0];
+			end
+		end
+	end
 
 	typedef struct packed{
 		logic write;
@@ -68,6 +77,7 @@ module axi_converter#(
 	always_ff @(posedge clk) begin : proc_sel_req_r
 		if(~rst_n) begin
 			sel_req_r <= '0;
+			arr_sel_r <= '0;
 		end else
 		if(take) begin
 			sel_req_r <= sel_req_comb;
@@ -150,27 +160,29 @@ module axi_converter#(
 	
 	// axi信号控制
 	always_comb begin
-		axi_bus_if.ar_id = '0;
+		axi_bus_if.ar_id = arr_sel_r_index;
 		axi_bus_if.ar_addr = sel_req_r.addr;
 		axi_bus_if.ar_len = sel_req_r.burst_size;
 		axi_bus_if.ar_size = {1'b0,sel_req_r.data_size};
-		axi_bus_if.ar_burst = 2'b10; // WARP TYPE
+		axi_bus_if.ar_burst = 2'b01; // WARP TYPE
 		axi_bus_if.ar_lock = 1'b0;
-		axi_bus_if.ar_cache = {2'b00,sel_req_r.cached,1'b0};
-		axi_bus_if.ar_prot = 3'b001;
+		// axi_bus_if.ar_cache = {2'b00,sel_req_r.cached,1'b0};
+		axi_bus_if.ar_cache = 4'b0000;
+		axi_bus_if.ar_prot = 3'b000;
 		axi_bus_if.ar_qos = '0;
 		axi_bus_if.ar_region = '0;
 		axi_bus_if.ar_user = '0;
 		axi_bus_if.ar_valid = fsm_state[1] & (~sel_req_r.write);
 
-		axi_bus_if.aw_id = '0;
+		axi_bus_if.aw_id = arr_sel_r_index;
 		axi_bus_if.aw_addr = sel_req_r.addr;
 		axi_bus_if.aw_len = sel_req_r.burst_size;
 		axi_bus_if.aw_size = {1'b0,sel_req_r.data_size};
-		axi_bus_if.aw_burst = 2'b10; // WARP TYPE
+		axi_bus_if.aw_burst = 2'b01; // WARP TYPE
 		axi_bus_if.aw_lock = 1'b0;
-		axi_bus_if.aw_cache = {2'b00,sel_req_r.cached,1'b0};
-		axi_bus_if.aw_prot = 3'b001;
+		// axi_bus_if.aw_cache = {2'b00,sel_req_r.cached,1'b0};
+		axi_bus_if.aw_cache = 4'b0000;
+		axi_bus_if.aw_prot = 3'b000;
 		axi_bus_if.aw_qos = '0;
 		axi_bus_if.aw_region = '0;
 		axi_bus_if.aw_user = '0;
@@ -179,8 +191,8 @@ module axi_converter#(
 
 		axi_bus_if.w_data = sel_data_comb.w_data;
 		axi_bus_if.w_strb = sel_data_comb.data_strobe;
-		axi_bus_if.w_valid = sel_data_comb.data_ok & (sel_req_r.write) & (fsm_state == STATE_DATA);
-		axi_bus_if.w_last = sel_data_comb.data_last;
+		axi_bus_if.w_valid =  sel_data_comb.data_ok & (sel_req_r.write) & (fsm_state == STATE_DATA);
+		axi_bus_if.w_last = sel_data_comb.data_last & (sel_req_r.write) & (fsm_state == STATE_DATA);
 
 		axi_bus_if.r_ready = sel_data_comb.data_ok & (~sel_req_r.write) & (fsm_state == STATE_DATA);
 		axi_bus_if.b_ready = fsm_state[3] & (sel_req_r.write);

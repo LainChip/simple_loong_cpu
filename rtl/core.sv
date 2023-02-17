@@ -18,6 +18,7 @@ logic  		     [1:0]inst_valid;
 logic  		     [1:0]issue_num;
 logic  		     backend_stall;
 logic            bus_busy;
+logic            i_uncached;
 bpu_update_t     bpu_feedback;
 priv_req_t   	 priv_req;
 priv_resp_t      priv_resp;
@@ -60,6 +61,7 @@ frontend frontend(
 	// MMU
 	// .mmu_req_vpc_o(),
 	.mmu_resp_i(immu_resp),
+	.uncached_i(i_uncached),
 	.bus_busy_i(bus_busy)
 );
 
@@ -78,6 +80,11 @@ assign immu_req = '{
 	default:  '0
 };
 assign i_trans_en = !backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DA] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PG] && !dmw0_en && !dmw1_en;
+assign i_uncached =  (da_mode && (immu_resp.mat == 2'b0))                 ||
+                     (dmw0_en && (immu_resp.mat == 2'b0))       ||
+                     (dmw1_en && (immu_resp.mat == 2'b0))       ||
+                     (i_trans_en && (immu_resp.mat == 2'b0));
+
 assign frontend.icache_module.plv = backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV];
 assign frontend.icache_module.trans_en_i = i_trans_en;
 
@@ -127,7 +134,7 @@ mmu #(
 ) mmu(
 	.clk(clk),
 	.rst_n(rst_n),
-	.inst_valid_i (backend.pipeline_0.m2_inst_valid),
+	.inst_valid_i (backend.pipeline_0.m2_inst_valid && !backend.pipeline_0.stall_vec_i[2]),
 	.mmu_s_req_i ({immu_req            , backend.mmu_req_o  }),
 	.mmu_s_resp_o({immu_resp           , dmmu_resp          }),
 	.mmu_raw_mat_i({backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATF],

@@ -4,7 +4,7 @@
 module mmu #(
     parameter TLB_ENTRY_NUM = `_TLB_ENTRY_NUM,
     parameter TLB_PORT = 2,
-    parameter bit LFSR_RAND = 1'b1,
+    parameter bit LFSR_RAND = 1'b0,
 
     // DO NOT CHANGE
     parameter INDEX_LEN = $clog2(TLB_ENTRY_NUM)
@@ -148,8 +148,7 @@ generate
             end else if(pg_mode && mmu_s_req_i[i].dmw1_en) begin
                 mmu_s_resp_o[i].paddr = {csr_dmw1_i[`_DMW_PSEG], mmu_s_req_i[i].vaddr[28:0]};
                 mmu_s_resp_o[i].mat = csr_dmw1_i[`_DMW_MAT];
-            end
-            if(pg_mode && mmu_s_req_i[i].trans_en)begin
+            end else if(pg_mode && mmu_s_req_i[i].trans_en)begin
                 mmu_s_resp_o[i].mat = tlb_s_resp[i].mat;
                 if(tlb_s_resp[i].ps == 6'd12)begin
                     mmu_s_resp_o[i].paddr[31:12] = tlb_s_resp[i].ppn;
