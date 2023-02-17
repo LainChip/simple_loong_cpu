@@ -80,9 +80,9 @@ assign immu_req = '{
 	default:  '0
 };
 assign i_trans_en = !backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DA] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PG] && !dmw0_en && !dmw1_en;
-assign i_uncached =  (da_mode && (immu_resp.mat == 2'b0))                 ||
-                     (dmw0_en && (immu_resp.mat == 2'b0))       ||
-                     (dmw1_en && (immu_resp.mat == 2'b0))       ||
+assign i_uncached =  (da_mode    && (immu_resp.mat == 2'b0))       ||
+                     (dmw0_en    && (immu_resp.mat == 2'b0))       ||
+                     (dmw1_en    && (immu_resp.mat == 2'b0))       ||
                      (i_trans_en && (immu_resp.mat == 2'b0));
 
 assign frontend.icache_module.plv = backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV];

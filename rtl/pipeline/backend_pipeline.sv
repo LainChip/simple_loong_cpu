@@ -429,9 +429,9 @@ module backend_pipeline #(
 		assign da_mode = csr_module.reg_crmd[`_CRMD_DA] && !csr_module.reg_crmd[`_CRMD_PG];
 		assign dmw0_en = ((csr_module.reg_dmw0[`_DMW_PLV0] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)) || (csr_module.reg_dmw0[`_DMW_PLV3] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd3))) && (m1_saddr[31:29] == csr_module.reg_dmw0[`_DMW_VSEG]);
 		assign dmw1_en = ((csr_module.reg_dmw1[`_DMW_PLV0] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)) || (csr_module.reg_dmw1[`_DMW_PLV3] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd3))) && (m1_saddr[31:29] == csr_module.reg_dmw1[`_DMW_VSEG]);
-		assign m1_uncached = (da_mode && (mmu_resp_i.mat == 2'b00))       || 
-                        	 (dmw0_en && (mmu_resp_i.mat == 2'b00))       ||
-                        	 (dmw1_en && (mmu_resp_i.mat == 2'b00))       ||
+		assign m1_uncached = (da_mode     && (mmu_resp_i.mat == 2'b00))|| 
+                        	 (dmw0_en     && (mmu_resp_i.mat == 2'b00))||
+                        	 (dmw1_en     && (mmu_resp_i.mat == 2'b00))||
                         	 (m1_trans_en && (mmu_resp_i.mat == 2'b00));
 		always_comb begin
 			mmu_req_o = '{

@@ -101,14 +101,14 @@ module axi_converter#(
 				end
 			end
 			STATE_DATA: begin
-				if(axi_bus_if.r_last & axi_bus_if.r_valid & axi_bus_if.r_ready & (~sel_req_r.write)) begin
+				if(axi_bus_if.r_last & (axi_bus_if.r_valid && (axi_bus_if.r_id == arr_sel_r_index)) & axi_bus_if.r_ready & (~sel_req_r.write)) begin
 					fsm_next_state = STATE_IDLE;
 				end else if(axi_bus_if.w_last & axi_bus_if.w_valid & axi_bus_if.w_ready & (sel_req_r.write)) begin
 					fsm_next_state = STATE_RESP;
 				end
 			end
 			STATE_RESP: begin
-				if(axi_bus_if.b_valid & axi_bus_if.b_ready) begin
+				if(axi_bus_if.b_valid && (axi_bus_if.b_id == arr_sel_r_index) && axi_bus_if.b_ready) begin
 					fsm_next_state = STATE_IDLE;
 				end
 			end
@@ -152,7 +152,7 @@ module axi_converter#(
 	// 对数据信号握手进行回复
 	generate
 		for(genvar i = 0 ; i < CACHE_PORT_NUM ; i += 1) begin
-			assign resp_o[i].data_ok = (((axi_bus_if.w_ready) & (sel_req_r.write)) | ((axi_bus_if.r_valid) & (~sel_req_r.write))) & arr_sel_r[i] & (fsm_state == STATE_DATA);
+			assign resp_o[i].data_ok = (((axi_bus_if.w_ready) & (sel_req_r.write)) | ((axi_bus_if.r_valid && (axi_bus_if.r_id == arr_sel_r_index)) && (~sel_req_r.write))) & arr_sel_r[i] & (fsm_state == STATE_DATA);
 			assign resp_o[i].data_last = axi_bus_if.r_last & arr_sel_r[i] & (~sel_req_r.write) & (fsm_state == STATE_DATA);
 			assign resp_o[i].r_data = axi_bus_if.r_data;
 		end
@@ -160,7 +160,8 @@ module axi_converter#(
 	
 	// axi信号控制
 	always_comb begin
-		axi_bus_if.ar_id = arr_sel_r_index;
+		axi_bus_if.ar_id = '0;
+		axi_bus_if.ar_id[$clog2(CACHE_PORT_NUM) - 1 : 0] = arr_sel_r_index;
 		axi_bus_if.ar_addr = sel_req_r.addr;
 		axi_bus_if.ar_len = sel_req_r.burst_size;
 		axi_bus_if.ar_size = {1'b0,sel_req_r.data_size};
@@ -174,7 +175,8 @@ module axi_converter#(
 		axi_bus_if.ar_user = '0;
 		axi_bus_if.ar_valid = fsm_state[1] & (~sel_req_r.write);
 
-		axi_bus_if.aw_id = arr_sel_r_index;
+		axi_bus_if.aw_id = '0;
+		axi_bus_if.aw_id[$clog2(CACHE_PORT_NUM) - 1 : 0] = arr_sel_r_index;
 		axi_bus_if.aw_addr = sel_req_r.addr;
 		axi_bus_if.aw_len = sel_req_r.burst_size;
 		axi_bus_if.aw_size = {1'b0,sel_req_r.data_size};

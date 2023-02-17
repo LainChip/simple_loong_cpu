@@ -16,7 +16,7 @@ module data_cache_datapath_opt #(
     parameter int page_shift_len = 12,
     parameter int word_shift_len = 2,
     parameter int bank_shift_len = 1,
-    parameter int index_len = 6,
+    parameter int index_len = 8,
     parameter int set_ass = 2
 ) (
     input clk,  // Clock

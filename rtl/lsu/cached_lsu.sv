@@ -209,9 +209,9 @@ module lsu #(
   data_cache_datapath_opt #(
       .set_ass       (set_ass),
       .word_shift_len(2),
-      .index_len     (6),
+      .index_len     (index_len),
       .page_shift_len(12),
-      .bank_shift_len(1)
+      .bank_shift_len(bank_shift_len)
   ) data_path (
       .clk(clk),
       .rst_n(rst_n),
