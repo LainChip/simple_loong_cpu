@@ -6,7 +6,8 @@
 
 module lsu #(
     parameter int WAY_CNT = 2,
-    parameter bit ENABLE_PLRU = 1'b0
+    parameter bit ENABLE_PLRU = 1'b0,
+    parameter int WB_FIFO_DEPTH = 16
 ) (
     input logic clk,
     input logic rst_n,
@@ -55,7 +56,7 @@ module lsu #(
     logic [31:0]m1_vaddr;
     logic [11:2]ram_r_addr;
     logic [11:2]ram_w_addr;
-    logic [3:0] ram_we_data;
+    logic [3:0] ram_we_data,data_strobe;
     logic ram_we_tag;
     logic [WAY_CNT - 1 : 0] ram_we_mask; // TODO 写使能mask
 
@@ -159,8 +160,8 @@ module lsu #(
     // 控制信息, 顺序编码
     logic [2:0] m1_ctrl,ctrl;
     logic [1:0] m1_size,size;
-    logic finish;     // TODO 完成寄存器
-    logic bus_busy;   // TODO 总线忙HINT
+    logic finish;
+    logic bus_busy;
     localparam logic[2:0] C_NONE       = 3'd0;
     localparam logic[2:0] C_READ       = 3'd1;
     localparam logic[2:0] C_WRITE      = 3'd2;
@@ -169,9 +170,9 @@ module lsu #(
     localparam logic[2:0] C_INVALID_WB = 3'd5;
 
     // 控制信息, 伪随机数
-    logic [$clog2(WAY_CNT) - 1 : 0] next_sel;        // TODO 接线
-    logic [WAY_CNT - 1 : 0]         next_sel_onehot; // TODO 接线
-    logic next_sel_taken;                              // TODO 接线
+    logic [$clog2(WAY_CNT) - 1 : 0] next_sel;
+    logic [WAY_CNT - 1 : 0]         next_sel_onehot;
+    logic next_sel_taken;                            // TODO 接线
 
     // 控制信息, 主状态机
     localparam logic[3:0] S_NORMAL    = 4'd0;
@@ -193,8 +194,8 @@ module lsu #(
     localparam logic[1:0] S_FEMPTY = 2'd0;
     localparam logic[1:0] S_FADR   = 2'd1;
     localparam logic[1:0] S_FDAT   = 2'd2;
-    logic[1:0] fifo_fsm_state,fifo_fsm_next_state; // TODO 接线
-    logic fifo_full // TODO 接线
+    logic[1:0] fifo_fsm_state,fifo_fsm_next_state;
+    logic fifo_full;
     always_ff @(posedge clk) begin
         if(~rst_n) fifo_fsm_state <= S_FEMPTY;
         else fifo_fsm_state <= fifo_fsm_next_state;
@@ -404,6 +405,10 @@ module lsu #(
         delay_stall <= stall;
     end
 
+    // BUS忙信号
+    assign bus_busy   = bus_busy_i || (fifo_fsm_state != S_FEMPTY);
+    assign bus_busy_o = busy_o || (fifo_fsm_state != S_FEMPTY);
+
     // ram_r_addr 信号控制
     always_comb begin
         // 正常状态时, 直接从ex级别获得地址进行访问
@@ -473,17 +478,23 @@ module lsu #(
         end
     end
 
+    // data_strobe 逻辑
+    always_comb begin
+        data_strobe = 4'b0000;
+        case(size)
+            2'b10:   data_strobe = 4'b1111; // WORD
+            2'b01:   data_strobe = 4'b0011 << {paddr_o[1],1'b0};
+            2'b00:   data_strobe = 4'b0001 <<  paddr_o[1:0];
+            default: data_strobe = 4'b0000; // IMPOSIBLE
+        endcase
+    end
+
     // ram_we_data 逻辑
     always_comb begin
         // 正常状态时, 响应在M2级的写请求
         ram_we_data = 4'b0000;
         if(fsm_state == S_NORMAL && ctrl == C_WRITE) begin
-            case(size)
-                2'b10: ram_we_data = 4'b1111; // WORD
-                2'b01: ram_we_data = 4'b0011 << {paddr_o[1],1'b0};
-                2'b00: ram_we_data = 4'b0001 << paddr_o[1:0];
-                default: ram_we_data = 4'b0000; // IMPOSIBLE
-            endcase
+            ram_we_data = data_strobe;
         end else if(fsm_state == S_RDAT) begin
             // REFILL 状态, 全写
             ram_we_data = 4'b1111;
@@ -591,5 +602,93 @@ module lsu #(
             end
         end
     end
+
+    // finish 寄存器管理
+    always_ff @(posedge clk) begin
+        if(fsm_state == S_WDAT || fsm_state == S_PDAT) begin
+            finish <= 1'b1;
+        end else if(~stall) begin
+            finish <= 1'b0;
+        end
+    end
+
+    // 写回 FIFO 状态机
+    typedef struct packed {
+        logic [31:0] addr;
+        logic [31:0] data;
+        logic [ 3:0] strobe;
+        logic [ 2:0] size;
+    } pw_fifo_t;
+    pw_fifo_t [WB_FIFO_DEPTH - 1 : 0] pw_fifo;
+    pw_fifo_t pw_req,pw_handling;
+    logic pw_w_e,pw_r_e,pw_empty;
+    logic[$clog2(WB_FIFO_DEPTH) : 0] pw_w_ptr,pw_r_ptr,pw_cnt;
+    assign pw_cnt = pw_w_ptr - pw_r_ptr;
+    assign pw_empty = pw_cnt == '0;
+    assign fifo_full = pw_cnt[$clog2(WB_FIFO_DEPTH)];
+    always_ff @(posedge clk) begin
+        if(~rst_n) begin
+            pw_w_ptr <= '0;
+        end else if(pw_w_e && !pw_empty) begin
+            pw_w_ptr <= pw_w_ptr + 1'd1;
+        end
+    end
+    always_ff @(posedge clk) begin
+        if(~rst_n) begin
+            pw_r_ptr <= '0;
+        end else if(pw_r_e && !pw_empty) begin
+            pw_r_ptr <= pw_r_ptr + 1'd1;
+        end
+    end
+    always_ff @(posedge clk) begin
+        if(pw_r_e) begin
+            if(!pw_empty) pw_handling <= pw_fifo[pw_r_ptr];
+            else          pw_handling <= pw_req;
+        end
+    end
+    always_ff @(posedge clk) begin
+        if(pw_w_e) begin
+            pw_fifo[pw_w_ptr] <= pw_req;
+        end
+    end
+    always_comb begin
+        pw_req.addr   = paddr;
+        pw_req.data   = w_data_i << {paddr_o[1:0],3'b000};
+        pw_req.strong = data_strobe;
+        pw_req.size   = size;
+    end
+    always_comb begin
+        fifo_fsm_next_state = fifo_fsm_state;
+        case(fifo_fsm_state)
+            S_FEMPTY: begin
+                if(pw_w_e) begin
+                    fifo_fsm_next_state = S_FADR;
+                end
+            end
+            S_FADR: begin
+                if(bus_resp_i.ready) begin
+                    fifo_fsm_next_state = S_FDAT;
+                end
+            end
+            S_FDAT: begin
+                if(bus_resp_i.data_ok) begin
+                    if(pw_empty && !pw_w_e) begin
+                        // 没有后续请求
+                        fifo_fsm_next_state = S_FEMPTY;
+                    end else begin
+                        // 有后续请求
+                        fifo_fsm_next_state = S_FADR;
+                    end
+                end
+            end
+        endcase
+    end
+    always_ff @(posedge clk) begin
+        fifo_fsm_state <= fifo_fsm_next_state;
+    end
+    // W-R使能
+    // pw_r_e pw_w_e
+    assign pw_r_e = (fifo_fsm_state == S_FDAT && fifo_fsm_next_state == S_FADR) || (fifo_fsm_state == S_FEMPTY && fifo_fsm_next_state == S_FADR);
+    assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_hint_m2_i;
 
 endmodule
