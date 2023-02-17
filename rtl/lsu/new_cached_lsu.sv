@@ -34,7 +34,8 @@ module lsu #(
 	// 连接内存总线
 	output cache_bus_req_t bus_req_o,
 	input cache_bus_resp_t bus_resp_i,
-  input mmu_s_resp_t mmu_resp_i,
+    input mmu_s_resp_t mmu_resp_i,
+    input uncached_i,
 
 	// 握手信号
 	output logic busy_o,
@@ -211,7 +212,7 @@ module lsu #(
     logic [1:0] refill_cnt;
 
     // cached 信息
-    logic uncached; // TODO 接线
+    logic uncached;
 
     // 生成比较信息
     for(genvar way_id = 0; way_id < WAY_CNT ; way_id += 1) begin
@@ -617,7 +618,7 @@ module lsu #(
         logic [31:0] addr;
         logic [31:0] data;
         logic [ 3:0] strobe;
-        logic [ 2:0] size;
+        logic [ 1:0] size;
     } pw_fifo_t;
     pw_fifo_t [WB_FIFO_DEPTH - 1 : 0] pw_fifo;
     pw_fifo_t pw_req,pw_handling;
@@ -654,7 +655,7 @@ module lsu #(
     always_comb begin
         pw_req.addr   = paddr;
         pw_req.data   = w_data_i << {paddr_o[1:0],3'b000};
-        pw_req.strong = data_strobe;
+        pw_req.strobe = data_strobe;
         pw_req.size   = size;
     end
     always_comb begin
@@ -686,9 +687,67 @@ module lsu #(
     always_ff @(posedge clk) begin
         fifo_fsm_state <= fifo_fsm_next_state;
     end
+
     // W-R使能
     // pw_r_e pw_w_e
     assign pw_r_e = (fifo_fsm_state == S_FDAT && fifo_fsm_next_state == S_FADR) || (fifo_fsm_state == S_FEMPTY && fifo_fsm_next_state == S_FADR);
     assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_hint_m2_i;
+
+    always_ff @(posedge clk) begin
+        if(~stall) begin
+            uncached <= uncached_i;
+        end
+    end
+
+    // BUS REQ 赋值
+    always_ff @(posedge clk) begin
+        bus_req_o.valid       = 1'b0;
+        bus_req_o.write       = 1'b0;
+        bus_req_o.burst_size  = 4'b0011;
+        bus_req_o.cached      = 1'b0;
+        bus_req_o.data_size   = 2'b10;
+        bus_req_o.addr        = paddr;
+
+        bus_req_o.data_ok     = 1'b0;
+        bus_req_o.data_last   = 1'b0;
+        bus_req_o.data_strobe = 4'b1111;
+        bus_req_o.w_data      = wb_sel_data;
+        // 优先级最高的是UNCACHED FIFO
+        if(fifo_fsm_state != S_FEMPTY) begin
+            if(fifo_fsm_state == S_FADR) begin
+                bus_req_o.valid      = 1'b1;
+                bus_req_o.write      = 1'b1;
+                bus_req_o.burst_size = 4'b0000;
+                bus_req_o.data_size  = pw_handling.size;
+                bus_req_o.addr       = pw_handling.addr;
+            end else begin
+                // S_FDAT
+                bus_req_o.data_ok     = 1'b1;
+                bus_req_o.data_last   = 1'b1;
+                bus_req_o.data_strobe = pw_handling.strobe;
+                bus_req_o.w_data      = pw_handling.data;
+            end
+        end else if(fsm_state == S_RADR) begin
+            // REFILL 的请求
+            bus_req_o.valid      = 1'b1;
+            bus_req_o.addr       = {paddr[31:4],4'd0};
+        end else if(fsm_state == S_RDAT) begin
+            bus_req_o.data_ok    = 1'b1;
+        end else if(fsm_state == S_WADR) begin
+            // 写回的请求
+            bus_req_o.valid      = 1'b1;
+            bus_req_o.write      = 1'b1;
+            bus_req_o.addr       = {tag[next_sel].ppn,paddr[11:4],4'd0};
+        end else if(fsm_state == S_WDAT) begin
+            bus_req_o.data_ok    = 1'b1;
+            bus_req_o.data_last  = wb_w_cnt == 3'b011;
+        end else if(fsm_state == S_PRADR) begin
+            bus_req_o.valid      = 1'b1;
+            bus_req_o.burst_size = 4'b0000;
+            bus_req_o.data_size  = size;
+        end else if(fsm_state == S_PRDAT) begin
+            bus_req_o.data_ok    = 1'b1;
+        end
+    end
 
 endmodule
