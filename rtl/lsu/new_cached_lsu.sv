@@ -538,7 +538,7 @@ module lsu #(
     always_comb begin
         // 正常状态时, 响应在M2级的写请求
         ram_we_data = 4'b0000;
-        if(fsm_state == S_NORMAL && ctrl == C_WRITE) begin
+        if(fsm_state == S_NORMAL && ctrl == C_WRITE && !request_clr_m2_i) begin
             ram_we_data = data_strobe;
         end else if(fsm_state == S_RDAT) begin
             // REFILL 状态, 全写
@@ -569,9 +569,9 @@ module lsu #(
         // 正常情况时, 在M2级的写请求会触发一次脏写请求, 对于直接无效CACHE行的操作也在此响应
         ram_we_tag = '0;
         if(fsm_state == S_NORMAL) begin
-            if((ctrl == C_WRITE && !uncached) || ctrl == C_INVALID ||
-               (ctrl == C_HIT_WB    && !miss && sel_tag.valid && !sel_tag.dirty) ||
-               (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty)) begin
+            if(((ctrl == C_WRITE && !uncached) || ctrl == C_INVALID ||
+                (ctrl == C_HIT_WB    && !miss && sel_tag.valid && !sel_tag.dirty) ||
+                (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty) && !request_clr_m2_i)) begin
                 ram_we_tag = '1;
             end
         end
@@ -619,7 +619,7 @@ module lsu #(
             // 对于第二种情况, 进行直接索引
             if(!miss) begin
                 if((ctrl == C_WRITE  && !uncached) ||
-                   (ctrl == C_HIT_WB/* && sel_tag.valid*/ && !sel_tag.dirty)) begin
+                   (ctrl == C_HIT_WB/* && sel_tag.valid*/ && !sel_tag.dirty && !request_clr_m2_i)) begin
                     ram_we_mask = match;
                 end
             end
@@ -776,7 +776,7 @@ module lsu #(
     // W-R使能
     // pw_r_e pw_w_e
     assign pw_r_e = (fifo_fsm_state == S_FDAT && fifo_fsm_next_state == S_FADR) || (fifo_fsm_state == S_FEMPTY && fifo_fsm_next_state == S_FADR);
-    assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_hint_m2_i;
+    assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_m2_i;
 
     always_ff @(posedge clk) begin
         if(~stall) begin
