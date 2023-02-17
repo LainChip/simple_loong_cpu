@@ -64,7 +64,7 @@ module lsu #(
 
     tag_t [WAY_CNT - 1 : 0]       ram_r_tag;    // M1 级的tag, 暂停时候会保持更新
     logic [WAY_CNT - 1 : 0][31:0] ram_r_data;   // M1 级的数据, 暂停时候会保持更新
-    logic [WAY_CNT - 1 : 0][31:0] ram_raw_data;  // TODO WRITE BACK 使用的原始信号
+    logic [WAY_CNT - 1 : 0][31:0] ram_raw_data;
 
 
     for(genvar way_id = 0 ; way_id < WAY_CNT ; way_id += 1) begin
@@ -147,7 +147,7 @@ module lsu #(
 
     // 第二阶段数据, 根据第二阶段数据构建状态机
     // 地址
-    logic [31:0] paddr,vaddr;           // TODO 接线
+    logic [31:0] paddr,vaddr;
     // 缓存状态
     tag_t [WAY_CNT - 1 : 0] tag;
     logic [WAY_CNT - 1 : 0][31:0] data;
@@ -157,7 +157,7 @@ module lsu #(
     logic miss;
 
     // 控制信息, 顺序编码
-    logic [2:0] m1_ctrl,ctrl; // TODO 控制信号
+    logic [2:0] m1_ctrl,ctrl;
     logic [1:0] m1_size,size;
     logic finish;     // TODO 完成寄存器
     logic bus_busy;   // TODO 总线忙HINT
@@ -171,7 +171,7 @@ module lsu #(
     // 控制信息, 伪随机数
     logic [$clog2(WAY_CNT) - 1 : 0] next_sel;        // TODO 接线
     logic [WAY_CNT - 1 : 0]         next_sel_onehot; // TODO 接线
-    logic random_taken;                              // TODO 接线
+    logic next_sel_taken;                              // TODO 接线
 
     // 控制信息, 主状态机
     localparam logic[3:0] S_NORMAL    = 4'd0;
@@ -547,6 +547,47 @@ module lsu #(
                 // HIT/INVALID_WB 的情况
                 ram_w_tag.valid = 1'b0;
                 ram_w_tag.dirty = 1'b0;
+            end
+        end
+    end
+
+    // 生成下一个WAY SELECTION
+    if(!ENABLE_PLRU) begin
+        lfsr #(
+            .LfsrWidth((8 * $clog2(WAY_CNT)) >= 64 ? 64 : (8 * $clog2(WAY_CNT))),
+            .OutWidth($clog2(WAY_CNT))
+        ) lfsr (
+            .clk(clk),
+            .rst_n(rst_n),
+            .en_i(next_sel_taken),
+            .out_o(next_sel)
+        );
+        always_comb begin
+            next_sel_onehot = '0;
+            next_sel_onehot[next_sel] = 1'b1;
+        end
+    end else begin
+        // PLRU
+        logic[WAY_CNT - 1 : 0] use_vec;
+        logic[255:0][WAY_CNT - 1 : 0] sel_vec;
+        for(genvar cache_index = 0; cache_index < 256; cache_index += 1) begin : cache_line
+            plru_tree #(
+                .ENTRIES(WAY_CNT)
+            )plru(
+                .clk(clk),
+                .rst_n(rst_n),
+                .used_i(paddr[11:4] == cache_index[7:0] ? use_vec : '0),
+                .plru_o(sel_vec[cache_index])
+            );
+        end
+        assign next_sel_onehot = sel_vec[paddr[11:4]];
+        assign use_vec = match & {WAY_CNT{(fsm_state == S_NORMAL) && (ctrl == C_READ || ctrl == C_WRITE) && (!uncached)}};
+        always_comb begin
+            next_sel = '0;
+            for(integer i = 0; i < WAY_CNT ; i += 1) begin
+                if(next_sel_onehot[i]) begin
+                    next_sel = i[$clog2(WAY_CNT) - 1 : 0];
+                end
             end
         end
     end
