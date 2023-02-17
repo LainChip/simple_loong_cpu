@@ -243,7 +243,7 @@ module lsu #(
         case(fsm_state)
             S_NORMAL: begin
                 // NORMAL下, 遇到需要处理的MISS或者缓存操作需要切换状态
-                if((ctrl == C_READ || ctrl == C_WRITE) && !finish && !uncached && miss) begin
+                if((ctrl == C_READ || ctrl == C_WRITE) && !uncached && miss) begin
                     // CACHED READ | WRITE MISS
                     if(bus_busy) begin
                         fsm_state_next = S_WAIT_BUS;
@@ -256,7 +256,7 @@ module lsu #(
                         end
                     end
                 end
-                if((ctrl == C_READ) && !finish && uncached) begin
+                if((ctrl == C_READ) && uncached && !finish) begin
                     // UNCACHED READ
                     if(bus_busy) begin
                         fsm_state_next = S_WAIT_BUS;
@@ -264,12 +264,12 @@ module lsu #(
                         fsm_state_next = S_PRADR;
                     end
                 end
-                if((ctrl == C_WRITE) && !finish && uncached && fifo_full) begin
+                if((ctrl == C_WRITE) && uncached && fifo_full) begin
                     // UNCACHED WRITE && FIFO FULL
                     fsm_state_next = S_WAIT_FULL;
                 end
-                if(((ctrl == C_INVALID_WB) && direct_sel_tag.valid  && direct_sel_tag.dirty) ||
-                   ((ctrl == C_HIT_WB) && !miss/* && sel_tag.valid*/&&        sel_tag.dirty)) begin
+                if((((ctrl == C_INVALID_WB) && direct_sel_tag.valid  && direct_sel_tag.dirty) ||
+                    ((ctrl == C_HIT_WB) && !miss/* && sel_tag.valid*/&&        sel_tag.dirty)) && !finish) begin
                     // CACOP WB 请求的CACHE行为脏, 需要写回
                     if(bus_busy) begin
                         fsm_state_next = S_WAIT_BUS;
@@ -308,7 +308,7 @@ module lsu #(
             end
             S_WDAT: begin
                 // 最后一个写数据得到总线响应后开始后续操作
-                if(bus_resp_i.data_ok && bus_resp_i.data_last) begin
+                if(bus_resp_i.data_ok && bus_req_o.data_last) begin
                     // 区别INVALIDATE情况和MISS REFETCH情况
                     if(ctrl == C_READ || ctrl == C_WRITE) fsm_state_next = S_RADR;
                     else fsm_state_next = S_NORMAL;
@@ -457,7 +457,7 @@ module lsu #(
         if(~rst_n) begin
             wb_r_cnt <= 3'b100;
         end else begin
-            if(fsm_state_next == S_WADR) begin
+            if(fsm_state != S_WADR && fsm_state_next == S_WADR) begin
                 wb_r_cnt <= 3'b000;
             end else if(!wb_r_cnt[2]) begin
                 wb_r_cnt <= wb_r_cnt + 3'd1;
@@ -471,7 +471,7 @@ module lsu #(
         if(~rst_n) begin
             wb_w_cnt <= 3'b100;
         end else begin
-            if(fsm_state_next == S_WDAT) begin
+            if(fsm_state != S_WDAT && fsm_state_next == S_WDAT) begin
                 wb_w_cnt <= 3'b000;
             end else if(!wb_w_cnt[2] && bus_resp_i.data_ok) begin
                 // 确保此时必然处于 S_WDAT 状态中
@@ -504,7 +504,7 @@ module lsu #(
 
     // refill_cnt 逻辑, 两位循环计数器
     always_ff @(posedge clk) begin
-        if(fsm_state_next == S_RDAT) begin
+        if(fsm_state != S_RDAT && fsm_state_next == S_RDAT) begin
             refill_cnt <= 2'b00;
         end else begin
             if(bus_resp_i.data_ok) begin
@@ -786,7 +786,7 @@ module lsu #(
     end
 
     // BUS REQ 赋值
-    always_ff @(posedge clk) begin
+    always_comb begin
         bus_req_o.valid       = 1'b0;
         bus_req_o.write       = 1'b0;
         bus_req_o.burst_size  = 4'b0011;
@@ -826,7 +826,7 @@ module lsu #(
             bus_req_o.addr       = {tag[next_sel].ppn,paddr[11:4],4'd0};
         end else if(fsm_state == S_WDAT) begin
             bus_req_o.data_ok    = 1'b1;
-            bus_req_o.data_last  = wb_w_cnt == 3'b011;
+            bus_req_o.data_last  = (wb_w_cnt == 3'b011);
         end else if(fsm_state == S_PRADR) begin
             bus_req_o.valid      = 1'b1;
             bus_req_o.burst_size = 4'b0000;

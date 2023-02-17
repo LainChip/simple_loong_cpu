@@ -44,8 +44,8 @@ module dcache_datapath(
         .addressA(w_addr_i[11:4]),
         .we(tag_we_i),
         .addressB(r_addr_i[11:4]),
-        .inData(data_i),
-        .outData(data_o)
+        .inData(tag_i),
+        .outData(tag_o)
     );
 
 
