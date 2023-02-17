@@ -780,8 +780,8 @@ module lsu #(
 
     always_ff @(posedge clk) begin
         if(~stall) begin
-            // uncached <= uncached_i;
-            uncached <= '1;
+            uncached <= uncached_i;
+            // uncached <= '1;
         end
     end
 
