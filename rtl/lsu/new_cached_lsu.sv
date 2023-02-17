@@ -54,93 +54,95 @@ module lsu #(
     // 数据通路
     logic [31:0]m1_vaddr;
     logic [11:2]ram_r_addr;
-    logic [11:2]ram_waddr;               // TODO
-    logic [3:0] ram_we_data;             // TODO 写数据位使能
-    logic ram_we_tag;                    // TODO 写tag使能
+    logic [11:2]ram_w_addr;
+    logic [3:0] ram_we_data;
+    logic ram_we_tag;
     logic [WAY_CNT - 1 : 0] ram_we_mask; // TODO 写使能mask
 
     tag_t        ram_w_tag;              // TODO 待写入的tag
-    logic [31:0] ram_w_data;             // TODO 待写入的data
+    logic [31:0] ram_w_data;
 
-    tag_t [WAY_CNT - 1 : 0]       ram_r_tag;    // M1 级的tag，暂停时候会保持更新
-    logic [WAY_CNT - 1 : 0][31:0] ram_r_data;   // M1 级的数据，暂停时候会保持更新
+    tag_t [WAY_CNT - 1 : 0]       ram_r_tag;    // M1 级的tag, 暂停时候会保持更新
+    logic [WAY_CNT - 1 : 0][31:0] ram_r_data;   // M1 级的数据, 暂停时候会保持更新
     logic [WAY_CNT - 1 : 0][31:0] ram_raw_data;  // TODO WRITE BACK 使用的原始信号
 
 
     for(genvar way_id = 0 ; way_id < WAY_CNT ; way_id += 1) begin
         logic [3:0][7:0] raw_r_data;
-        logic [21:0]     raw_rtag;
+        logic [21:0]     raw_r_tag;
         dcache_datapath datapath(
             .clk(clk),
             .rst_n(rst_n),
             .data_we_i(ram_we_data & {4{ram_we_mask[way_id]}}),
             .tag_we_i(ram_we_tag & ram_we_mask[way_id]),
             .r_addr_i(ram_r_addr),
-            .w_addr_i(ram_waddr),
+            .w_addr_i(ram_w_addr),
             .data_o(raw_r_data),
             .data_i(ram_w_data),
 
-            .tag_o(raw_rtag),
+            .tag_o(raw_r_tag),
             .tag_i(ram_w_tag)
         );
 
-        // 添加寄存器，处理暂停的情况
-        logic [3:0][7:0] m1_reg_data;
-        tag_t            m1_reg_tag;
+        // 添加寄存器, 处理暂停的情况
+        logic [3:0][7:0] m1_data,m1_reg_data;
+        tag_t            m1_tag,m1_reg_tag;
 
-        logic [3:0][7:0] m1_data,m2_data,wb_data;
-        tag_t            m2_tag,wb_tag;
+        logic [3:0][7:0] m2_w_data,wb_w_data;
+        tag_t            m2_w_tag,wb_w_tag;
 
         logic [11:2] m1_r_addr,m2_w_addr,wb_w_addr;
         logic [3:0]  m2_w_byteen,wb_w_byteen;
         logic        m2_tag_we,wb_tag_we;
 
         // 数据流水
-        // always_ff @(posedge clk) begin
-        //     m1_r_addr <= ram_r_addr;
-        // end
-        assign m1_r_addr = m1_vaddr[11:2];
-        assign m2_w_addr = ram_waddr;
+        assign m1_r_addr   = m1_vaddr[11:2];
+        assign m2_w_addr   = ram_w_addr;
         assign m2_w_byteen = ram_we_data & {4{ram_we_mask[way_id]}};
-        assign m2_tag_we = ram_we_tag & ram_we_mask[way_id];
+        assign m2_tag_we   = ram_we_tag & ram_we_mask[way_id];
+        assign m2_w_tag    = ram_w_tag;
+        assign m2_w_data   = ram_w_data;
         always_ff @(posedge clk) begin
             wb_w_addr   <= m2_w_addr;
             wb_w_byteen <= m2_w_byteen;
             wb_tag_we   <= m2_tag_we;
+            wb_w_tag    <= m2_w_tag;
+            wb_w_data   <= m2_w_data;
         end
 
         // stall处理
         always_ff @(posedge clk) begin
             m1_reg_data <= m1_data;
-            m1_reg_tag  <= ram_r_tag[way_id];
+            m1_reg_tag  <= m1_tag;
         end
 
-        // 前馈，保证M2级产生的请求可以被正确的转发到EX,M1级
-        // M2级别的写请求对EX,M1不可见，WB级别的请求对M1不可见，故在M1对M2和WB级的请求进行转发，优先级M2高于WB
+        // 前馈, 保证M2级产生的请求可以被正确的转发到EX,M1级
+        // M2级别的写请求对EX,M1不可见, WB级别的请求对M1不可见, 故在M1对M2和WB级的请求进行转发, 优先级M2高于WB
         always_comb begin
-            ram_r_tag[way_id] = delay_stall ? m1_reg_tag : raw_rtag;
+            m1_tag = delay_stall ? m1_reg_tag : raw_r_tag;
             if(wb_tag_we && (wb_w_addr[11:4] == m1_r_addr[11:4])) begin
-                ram_r_tag[way_id] = wb_tag;
+                m1_tag = wb_w_tag;
             end
             if(m2_tag_we && (m2_w_addr[11:4] == m1_r_addr[11:4])) begin
-                ram_r_tag[way_id] = m2_tag;
+                m1_tag = m2_w_tag;
             end
         end
         for(genvar byte_id = 0; byte_id < 4 ; byte_id += 1) begin
             always_comb begin
                 m1_data[byte_id] = delay_stall ? m1_reg_data[byte_id] : raw_r_data[byte_id];
                 if(wb_w_byteen[byte_id] && (wb_w_addr == m1_r_addr)) begin
-                    m1_data[byte_id] = wb_data[byte_id];
+                    m1_data[byte_id] = wb_w_data[byte_id];
                 end
                 if(m2_w_byteen[byte_id] && (m2_w_addr == m1_r_addr)) begin
-                    m1_data[byte_id] = m2_data[byte_id];
+                    m1_data[byte_id] = m2_w_data[byte_id];
                 end
             end
         end
         assign ram_r_data[way_id] = m1_data;
+        assign ram_r_tag[way_id]  = m1_tag;
     end
 
-    // 第二阶段数据，根据第二阶段数据构建状态机
+    // 第二阶段数据, 根据第二阶段数据构建状态机
     // 地址
     logic [31:0] paddr,vaddr;           // TODO 接线
     // 缓存状态
@@ -168,7 +170,7 @@ module lsu #(
     logic [WAY_CNT - 1 : 0]         next_sel_onehot; // TODO 接线
     logic random_taken;                              // TODO 接线
 
-    // 控制信息，主状态机
+    // 控制信息, 主状态机
     localparam logic[3:0] S_NORMAL    = 4'd0;
     localparam logic[3:0] S_WAIT_BUS  = 4'd1;
     localparam logic[3:0] S_RADR      = 4'd2;
@@ -184,7 +186,7 @@ module lsu #(
         else fsm_state <= fsm_state_next;
     end
 
-    // 控制信息，FIFO写回状态机
+    // 控制信息, FIFO写回状态机
     localparam logic[1:0] S_FEMPTY = 2'd0;
     localparam logic[1:0] S_FADR   = 2'd1;
     localparam logic[1:0] S_FDAT   = 2'd2;
@@ -201,6 +203,9 @@ module lsu #(
     logic [3:0][31:0] wb_fifo;
     logic [31:0] wb_sel_data;
 
+    // 控制信息, CACHE行REFILL计数器, 两位
+    logic [1:0] refill_cnt;
+
     // cached 信息
     logic uncached; // TODO 接线
 
@@ -215,7 +220,7 @@ module lsu #(
         fsm_state_next = fsm_state;
         case(fsm_state)
             S_NORMAL: begin
-                // NORMAL下，遇到需要处理的MISS或者缓存操作需要切换状态
+                // NORMAL下, 遇到需要处理的MISS或者缓存操作需要切换状态
                 if((ctrl == C_READ || ctrl == C_WRITE) && !finish && !uncached && miss) begin
                     // CACHED READ | WRITE MISS
                     if(bus_busy) begin
@@ -299,7 +304,7 @@ module lsu #(
     end
 
     // 第二阶段 tag data 维护
-    // 对于UNCACHED 的读请求，将读取到的数据写入data寄存器，并修改tag寄存器，使其输出上可减少一个mux位
+    // 对于UNCACHED 的读请求, 将读取到的数据写入data寄存器, 并修改tag寄存器, 使其输出上可减少一个mux位
     always_ff @(posedge clk) begin
         if(~stall) begin
             tag  <= ram_r_tag;
@@ -309,16 +314,16 @@ module lsu #(
                 if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_tag) begin
                     tag[i] <= ram_w_tag;
                 end
-                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[0] && ram_waddr[3:2] == paddr[3:2]) begin
+                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[0] && ram_w_addr[3:2] == paddr[3:2]) begin
                     data[i][ 7: 0] <= ram_w_data[ 7: 0];
                 end
-                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[1] && ram_waddr[3:2] == paddr[3:2]) begin
+                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[1] && ram_w_addr[3:2] == paddr[3:2]) begin
                     data[i][15: 8] <= ram_w_data[15: 8];
                 end
-                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[2] && ram_waddr[3:2] == paddr[3:2]) begin
+                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[2] && ram_w_addr[3:2] == paddr[3:2]) begin
                     data[i][23:16] <= ram_w_data[23:16];
                 end
-                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[3] && ram_waddr[3:2] == paddr[3:2]) begin
+                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data[3] && ram_w_addr[3:2] == paddr[3:2]) begin
                     data[i][31:24] <= ram_w_data[31:24];
                 end
             end
@@ -393,9 +398,9 @@ module lsu #(
 
     // ram_r_addr 信号控制
     always_comb begin
-        // 正常状态时，直接从ex级别获得地址进行访问
+        // 正常状态时, 直接从ex级别获得地址进行访问
         ram_r_addr = vaddr_i[11:2];
-        // 需要WB时，按照计数器读取cache行
+        // 需要WB时, 按照计数器读取cache行
         if(fsm_state == S_WADR || fsm_state == S_WDAT) begin
             ram_r_addr = {paddr[11:4], wb_r_cnt[1:0]};
         end
@@ -436,7 +441,76 @@ module lsu #(
         end
     end
 
-    // wb_data 逻辑, 带透传的fifo
+    // wb_sel_data 逻辑, 带透传的fifo
     assign wb_sel_data = (wb_delay_cnt[1:0] == wb_w_cnt[1:0]) ? ram_raw_data[wb_way_sel] : wb_fifo[wb_w_cnt];
+
+    // refill_cnt 逻辑, 两位循环计数器
+    always_ff @(posedge clk) begin
+        if(fsm_state_next == S_RDAT) begin
+            refill_cnt <= 2'b00;
+        end else begin
+            if(bus_resp_i.data_ok) begin
+                refill_cnt <= refill_cnt + 2'd1;
+            end
+        end
+    end
+
+    // ram_w_addr 逻辑
+    always_comb begin
+        // 正常状态时响应在M2级的写请求
+        ram_w_addr = paddr[11:2];
+        if(fsm_state == S_RDAT) begin
+            // 当发生refill时, 从refill_cnt获得当前refill的offset
+            ram_w_addr = {paddr[11:4], refill_cnt};
+        end
+    end
+
+    // ram_we_data 逻辑
+    always_comb begin
+        // 正常状态时, 响应在M2级的写请求
+        ram_we_data = 4'b0000;
+        if(fsm_state == S_NORMAL && ctrl == C_WRITE) begin
+            case(size)
+                2'b10: ram_we_data = 4'b1111; // WORD
+                2'b01: ram_we_data = 4'b0011 << {paddr_o[1],1'b0};
+                2'b00: ram_we_data = 4'b0001 << paddr_o[1:0];
+                default: ram_we_data = 4'b0000; // IMPOSIBLE
+            endcase
+        end else if(fsm_state == S_RDAT) begin
+            // REFILL 状态, 全写
+            ram_we_data = 4'b1111;
+        end
+    end
+
+    // ram_w_data 逻辑
+    always_comb begin
+        ram_w_data = w_data_i << {paddr_o[1:0],3'b000};
+        if(fsm_state == S_NORMAL) begin
+            // 正常情况下, 可以直接使用 w_data_o 作为带写入的信息
+            ram_w_data = w_data_i << {paddr_o[1:0],3'b000};
+        end else begin
+            // 在REFILL过程中, 写数据直接来自总线
+            ram_w_data = bus_resp_i.r_data;
+        end
+    end
+
+    // w_data_o 逻辑
+    assign w_data_o = ram_w_data & {{8{ram_we_data[3]}},{8{ram_we_data[2]}},{8{ram_we_data[1]}},{8{ram_we_data[0]}}};
+
+    // ram_we_tag 逻辑 TODO: check
+    always_comb begin 
+        // 正常情况时, 在M2级的写请求会触发一次脏写请求, 对于直接无效CACHE行的操作也在此响应
+        ram_we_tag = '0;
+        if(fsm_state == S_NORMAL) begin
+            if(ctrl == C_WRITE || ctrl == C_INVALID) begin
+                ram_we_tag = '1;
+            end
+        end
+        // 保证在写回的过程中CACHE行信息保持不变
+        // 在写回完成后, 更新CACHE行信息
+        else if(fsm_state == S_WDAT && fsm_state_next != S_WDAT) begin
+            ram_we_tag = '0;
+        end
+    end
 
 endmodule
