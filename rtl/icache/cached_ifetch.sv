@@ -37,6 +37,8 @@ module icache #(
 	output logic ready_o, // TO NPC/BPU
 	input  logic clr_i,
 
+    input logic bus_busy_i,
+
 	(* mark_debug="true" *) output cache_bus_req_t bus_req_o,
 	(* mark_debug="true" *) input cache_bus_resp_t bus_resp_i
     // input trans_en_i
@@ -75,13 +77,14 @@ logic[1:0] cache_op_type_early;
 logic fetch_excp_adef_early;
 
 // FSM 控制信号 (独热码)
-(* mark_debug="true" *) logic [5:0] fsm_state,fsm_state_next;
-localparam logic[5:0] STATE_NORM = 6'b000001;
-localparam logic[5:0] STATE_INVA = 6'b000010;
-localparam logic[5:0] STATE_ADDR = 6'b000100;
-localparam logic[5:0] STATE_FETC = 6'b001000;
-localparam logic[5:0] STATE_SYNC = 6'b010000;
-localparam logic[5:0] STATE_SYN2 = 6'b100000;
+(* mark_debug="true" *) logic [6:0] fsm_state,fsm_state_next;
+localparam logic[6:0] STATE_NORM = 7'b0000001;
+localparam logic[6:0] STATE_INVA = 7'b0000010;
+localparam logic[6:0] STATE_ADDR = 7'b0000100;
+localparam logic[6:0] STATE_FETC = 7'b0001000;
+localparam logic[6:0] STATE_SYNC = 7'b0010000;
+localparam logic[6:0] STATE_SYN2 = 7'b0100000;
+localparam logic[6:0] STATE_WAIT = 7'b1000000;
 
 // 指令fetch的计数器,最高位有效时，表示fetch已结束。
 logic [1:0] fetch_cnt;
@@ -131,7 +134,7 @@ always_ff @(posedge clk) begin
         cache_op_type <= cache_op_type_early;
         cache_op <= cache_op_early;
         // uncached <= '1;
-        uncached <= ~mmu_resp_i.mat[0];
+        uncached <= (mmu_resp_i.mat == 2'b00);
 
         // vpc_o <= va;
         // ppc_o <= pa;
@@ -269,8 +272,17 @@ always_comb begin
             end
             else if(~fetched & valid_req) begin
                 if((uncached | inv) & ~fetch_excp) begin
-                    fsm_state_next = STATE_ADDR;
+                    if(~bus_busy_i) begin
+                        fsm_state_next = STATE_ADDR;
+                    end else begin
+                        fsm_state_next = STATE_WAIT;
+                    end
                 end
+            end
+        end
+        STATE_WAIT: begin
+            if(~bus_busy_i) begin
+                fsm_state_next = STATE_ADDR;
             end
         end
         STATE_ADDR: begin

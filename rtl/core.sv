@@ -17,6 +17,7 @@ inst_t 		     [1:0]inst;
 logic  		     [1:0]inst_valid;
 logic  		     [1:0]issue_num;
 logic  		     backend_stall;
+logic            bus_busy;
 bpu_update_t     bpu_feedback;
 priv_req_t   	 priv_req;
 priv_resp_t      priv_resp;
@@ -58,7 +59,8 @@ frontend frontend(
 
 	// MMU
 	// .mmu_req_vpc_o(),
-	.mmu_resp_i(immu_resp)
+	.mmu_resp_i(immu_resp),
+	.bus_busy_i(bus_busy)
 );
 
 (* mark_debug="true" *) logic pg_mode,da_mode,dmw0_en,dmw1_en,i_trans_en;
@@ -114,7 +116,9 @@ backend backend(
 
 	// MMU
 	.mmu_resp_i(dmmu_resp),
-	.tlb_entry_i(r_tlbentry)
+	.tlb_entry_i(r_tlbentry),
+
+	.bus_busy_o(bus_busy)
 );
 
 // MMU

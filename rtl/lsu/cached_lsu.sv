@@ -20,7 +20,7 @@ module lsu #(
     parameter int page_shift_len = 12,
     parameter int word_shift_len = 2,
     parameter int bank_shift_len = 1,
-    parameter int index_len = 6,
+    parameter int index_len = 8,
     parameter int set_ass = 2,
     parameter int axi_id = 0,
     // parameter int slot_2_8_byte = 0,
@@ -64,6 +64,7 @@ module lsu #(
 	output logic[31:0] w_data_o,
 	input logic request_clr_m2_i,
 	input logic request_clr_m1_i,
+  input logic request_clr_hint_m2_i,
 	output logic[31:0] r_data_o,
 
 	output logic[31:0] vaddr_o,
@@ -160,7 +161,7 @@ module lsu #(
 
   // stall logic
   logic stall_pipe;
-  assign stall_pipe = busy_o | stall_i;
+  assign stall_pipe = stall_i;
   logic delay_stall;
   logic delay_stall_outside;
   logic bus_busy;
@@ -270,8 +271,8 @@ module lsu #(
       {delay_2_req.vaddr,delay_2_req.ctrl,delay_2_req.size} <= 
       {delay_1_req.vaddr,delay_1_req.ctrl,delay_1_req.size};
       delay_2_req.paddr <= paddr_i;
-      // delay_2_req.passthrough <= ~mmu_resp_i.mat[0];
-      delay_2_req.passthrough <= ~mmu_resp_i.mat[0];
+      // delay_2_req.passthrough <= '1;
+      delay_2_req.passthrough <= (mmu_resp_i.mat == 2'b00);
     end
   end
 
@@ -352,7 +353,7 @@ module lsu #(
   endgenerate
   //assign stage_1_hit_miss.miss = ~(|stage_1_hit_miss.hit);
   always_comb begin
-    if (~mmu_resp_i.mat[0]) begin
+    if (mmu_resp_i.mat == 2'b00) begin
       stage_1_hit_miss.miss = 1;
     end else if(delay_1_req.ctrl == `_CACHE_CTRL_READ || delay_1_req.ctrl == `_CACHE_CTRL_WRITE) begin
       stage_1_hit_miss.miss = ~(|stage_1_hit_miss.hit);
@@ -498,7 +499,7 @@ module lsu #(
 
 
   always_ff @(posedge clk) begin : proc_fsm_state
-    if (~rst_n) begin
+    if (~rst_n || request_clr_m2_i) begin
       fsm_state <= S_NORMAL;
     end else begin
       fsm_state <= fsm_state_next;
@@ -509,9 +510,10 @@ module lsu #(
     fsm_state_next = fsm_state;
     case (fsm_state)
       S_NORMAL: begin
-        if(request_clr_m2_i) begin
+        if(request_clr_hint_m2_i) begin
             fsm_state_next = fsm_state;
-        end else if((delay_2_req.ctrl == `_CACHE_CTRL_READ || delay_2_req.ctrl == `_CACHE_CTRL_WRITE) && ~delay_2_req.passthrough && stage_2_hit_miss.miss) begin
+        end else
+        if((delay_2_req.ctrl == `_CACHE_CTRL_READ || delay_2_req.ctrl == `_CACHE_CTRL_WRITE) && ~delay_2_req.passthrough && stage_2_hit_miss.miss) begin
           fsm_state_next = S_UPDATE;
         end else if(delay_2_req.ctrl == `_CACHE_CTRL_READ && delay_2_req.passthrough && stage_2_hit_miss.miss) begin
           // 读透传
@@ -562,12 +564,8 @@ module lsu #(
               fsm_state_next = S_SYNC;
             end
           end else if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID) begin
-            if (stage_2_info.cache_lane_info[delay_2_req.paddr[page_shift_len+$clog2(
-                    set_ass
-                )-1 : page_shift_len]].dirty &&
-                    stage_2_info.cache_lane_info[delay_2_req.paddr[page_shift_len+$clog2(
-                    set_ass
-                )-1 : page_shift_len]].valid) begin
+            if (stage_2_info.cache_lane_info[delay_2_req.paddr[$clog2(set_ass)-1 : 0]].dirty &&
+                stage_2_info.cache_lane_info[delay_2_req.paddr[$clog2(set_ass)-1 : 0]].valid) begin
               fsm_state_next = S_WADR;
             end else begin
               fsm_state_next = S_SYNC;
@@ -684,7 +682,7 @@ module lsu #(
     stage_2_waddr = stage_2_index_addr;
     stage_2_set_sel = stage_2_next_lru_sel;
     if (delay_2_req.ctrl == `_CACHE_INDEX_INVALID || delay_2_req.ctrl == `_CACHE_INDEX_STORE_TAG) begin
-      stage_2_set_sel = delay_2_req.paddr[page_shift_len+$clog2(set_ass)-1:page_shift_len];
+      stage_2_set_sel = delay_2_req.paddr[$clog2(set_ass)-1:0];
       stage_2_write_info.dirty = 0;
       stage_2_write_info.valid = 0;
     end else if(delay_2_req.ctrl == `_CACHE_HIT_INVALID || delay_2_req.ctrl == `_CACHE_HIT_WRITEBACK_INVALID) begin
@@ -800,7 +798,7 @@ module lsu #(
     if (~rst_n) data_transfer_counter <= '0;
     else if (r_set_counter) data_transfer_counter <= {1'b1, {(lane_len) {1'b0}}};
     else if (data_transfer_counter[lane_len])
-      data_transfer_counter <= data_transfer_counter + (((bus_resp_i.data_ok && (fsm_state == S_RDAT)) || (bus_resp_i.data_ok && (fsm_state == S_WDAT))) ? 1 : 0);
+      data_transfer_counter <= data_transfer_counter + ((bus_resp_i.data_ok && (fsm_state == S_RDAT || fsm_state == S_WDAT)) ? 1 : 0);
   end
 
   always_ff @(posedge clk) begin
@@ -1177,4 +1175,4 @@ module lsu #(
     //                             fifo_fsm_state == S_FIFO_AW;
   end
 
-endmodule : cached_lsu
+endmodule

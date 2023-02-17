@@ -27,7 +27,9 @@ module frontend(
 
 	// MMU 访问信号
 	output logic[31:0] mmu_req_vpc_o,
-	input mmu_s_resp_t mmu_resp_i
+	input mmu_s_resp_t mmu_resp_i,
+
+    input logic bus_busy_i
 );
     // 这个function应该放在前端，在fetch阶段和写入fifo阶段之间，合成inst_t的阶段进行。
     function register_info_t get_register_info(
@@ -196,6 +198,8 @@ module frontend(
         .ready_i(fetch_ready),
         .ready_o(icache_ready),
         .clr_i(frontend_clr),
+
+        .bus_busy_i(bus_busy_i),
 
         .bus_req_o,
         .bus_resp_i

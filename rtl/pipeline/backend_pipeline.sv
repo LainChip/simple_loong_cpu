@@ -56,7 +56,9 @@ module backend_pipeline #(
 	output mmu_s_req_t mmu_req_o,			  // attached in m1
 	input mmu_s_resp_t mmu_resp_i,		      // response in m1
 
-	input tlb_entry_t tlb_entry_i
+	input tlb_entry_t tlb_entry_i,
+
+	output logic bus_busy_o
 
     `ifdef _DIFFTEST_ENABLE
     ,input logic delay_csr_i
@@ -355,6 +357,7 @@ module backend_pipeline #(
 			.w_data_i(m2_data_flow_forwarding.reg_data[0]),
 			.w_data_o(m2_wdata),
 			.request_clr_m2_i(clr_vec_i[2] || m2_lsu_clr_hint || (m2_ctrl_flow.decode_info.wb.valid && m2_ctrl_flow.decode_info.m2.llsc && m2_ctrl_flow.decode_info.m1.mem_write && !llbit)),
+			.request_clr_hint_m2_i(m2_lsu_clr_hint || (m2_ctrl_flow.decode_info.wb.valid && m2_ctrl_flow.decode_info.m2.llsc && m2_ctrl_flow.decode_info.m1.mem_write && !llbit)),
 			.request_clr_m1_i(clr_vec_i[1]),
 			.r_data_o(m2_lsu_read),
 
@@ -363,7 +366,10 @@ module backend_pipeline #(
 			.mmu_resp_i(mmu_resp_i),
 
 			.stall_i(|stall_vec_i[2:1]),
-			.busy_o(lsu_busy)
+			.busy_o(lsu_busy),
+
+			.bus_busy_i(1'b0),
+			.bus_busy_o(bus_busy_o)
 		);
 		// CSR connection here
 		logic [5:0]  ecode;
@@ -419,8 +425,8 @@ module backend_pipeline #(
 		logic da_mode,pg_mode,dmw0_en,dmw1_en;
 		assign pg_mode = !csr_module.reg_crmd[`_CRMD_DA] && csr_module.reg_crmd[`_CRMD_PG];
 		assign da_mode = csr_module.reg_crmd[`_CRMD_DA] && !csr_module.reg_crmd[`_CRMD_PG];
-		assign dmw0_en = ((csr_module.reg_dmw0[`_DMW_PLV0] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd0) || (csr_module.reg_dmw0[`_DMW_PLV3] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) && (m1_saddr[31:29] == csr_module.reg_dmw0[`_DMW_VSEG]);
-		assign dmw1_en = ((csr_module.reg_dmw1[`_DMW_PLV0] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd0) || (csr_module.reg_dmw1[`_DMW_PLV3] && csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) && (m1_saddr[31:29] == csr_module.reg_dmw1[`_DMW_VSEG]);
+		assign dmw0_en = ((csr_module.reg_dmw0[`_DMW_PLV0] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)) || (csr_module.reg_dmw0[`_DMW_PLV3] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd3))) && (m1_saddr[31:29] == csr_module.reg_dmw0[`_DMW_VSEG]);
+		assign dmw1_en = ((csr_module.reg_dmw1[`_DMW_PLV0] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)) || (csr_module.reg_dmw1[`_DMW_PLV3] && (csr_module.reg_crmd[`_CRMD_PLV] == 2'd3))) && (m1_saddr[31:29] == csr_module.reg_dmw1[`_DMW_VSEG]);
 		always_comb begin
 			mmu_req_o = '{
 				trans_en: m1_trans_en, //TODO: CACHEOP && (m1_ctrl_flow.decode_info.m2.cacheop_i)

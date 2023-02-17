@@ -34,6 +34,7 @@ module backend(
 	// MMU 访问信号
 	output mmu_s_req_t mmu_req_o,
 	input mmu_s_resp_t mmu_resp_i,
+	output logic bus_busy_o,
 
 	input tlb_entry_t tlb_entry_i
 );
@@ -170,7 +171,9 @@ module backend(
     .bpu_feedback_o,
 	.tlb_entry_i,
 	.mmu_req_o,
-	.mmu_resp_i
+	.mmu_resp_i,
+
+	.bus_busy_o(bus_busy_o)
 
 	`ifdef _DIFFTEST_ENABLE
     ,.delay_csr_i(~wb_ctrl_flow[0].decode_info.wb.valid && wb_ctrl_flow[1].decode_info.wb.valid)
