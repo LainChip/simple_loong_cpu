@@ -136,7 +136,8 @@
             "reg_type": "`_REG_TYPE_RR",
             "cacop": 1,
             "pipe_one_inst": 1,
-            "refetch":1
+            "refetch":1,
+            "priv_inst": 1
         },
         "dbar":{
             "opcode":"00111000011100100",

@@ -66,7 +66,7 @@ module lsu #(
 
     tag_t [WAY_CNT - 1 : 0]       ram_r_tag;    // M1 级的tag, 暂停时候会保持更新
     logic [WAY_CNT - 1 : 0][31:0] ram_r_data;   // M1 级的数据, 暂停时候会保持更新
-    logic [WAY_CNT - 1 : 0][31:0] ram_raw_data;
+    logic [WAY_CNT - 1 : 0][31:0] ram_raw_data; // 脏写回使用
 
 
     for(genvar way_id = 0 ; way_id < WAY_CNT ; way_id += 1) begin
@@ -569,9 +569,9 @@ module lsu #(
         // 正常情况时, 在M2级的写请求会触发一次脏写请求, 对于直接无效CACHE行的操作也在此响应
         ram_we_tag = '0;
         if(fsm_state == S_NORMAL) begin
-            if(((ctrl == C_WRITE && !uncached) || ctrl == C_INVALID ||
+            if(((ctrl == C_WRITE && !uncached) || (ctrl == C_INVALID) ||
                 (ctrl == C_HIT_WB    && !miss && sel_tag.valid && !sel_tag.dirty) ||
-                (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty) && !request_clr_m2_i)) begin
+                (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty)) && !request_clr_m2_i) begin
                 ram_we_tag = '1;
             end
         end
@@ -613,13 +613,13 @@ module lsu #(
     // ram_we_mask; // TODO : check
     always_comb begin
         ram_we_mask = '0;
-        if(fsm_state == S_NORMAL) begin
+        if(fsm_state == S_NORMAL && !uncached) begin
             // 只在 (HIT & WRITE & !UNCACHED)| (VALID !DIRTY INVALID_WB) | (HIT VALID !DIRTY HIT_WB) 的情况下需要写,
             // 对于第一种情况和第三种情况, 写MASK为MATCH
             // 对于第二种情况, 进行直接索引
             if(!miss) begin
-                if((ctrl == C_WRITE  && !uncached) ||
-                   (ctrl == C_HIT_WB/* && sel_tag.valid*/ && !sel_tag.dirty && !request_clr_m2_i)) begin
+                if(((ctrl == C_WRITE) ||
+                    (ctrl == C_HIT_WB/* && sel_tag.valid*/ && !sel_tag.dirty)) && !request_clr_m2_i) begin
                     ram_we_mask = match;
                 end
             end
@@ -768,9 +768,6 @@ module lsu #(
                 end
             end
         endcase
-    end
-    always_ff @(posedge clk) begin
-        fifo_fsm_state <= fifo_fsm_next_state;
     end
 
     // W-R使能
