@@ -389,7 +389,7 @@ module lsu #(
             req_type    <= m1_req_type;
             ctrl        <= m1_ctrl;
             size        <= m1_size;
-            if(request_valid_i) begin
+            if(request_valid_i && decode_info_i.wb.valid) begin
                 if(decode_info_i.m1.mem_valid) begin
                     if(decode_info_i.m1.mem_write) begin
                         m1_ctrl <= C_WRITE;
@@ -538,7 +538,7 @@ module lsu #(
     always_comb begin
         // 正常状态时, 响应在M2级的写请求
         ram_we_data = 4'b0000;
-        if(fsm_state == S_NORMAL && ctrl == C_WRITE && !request_clr_m2_i) begin
+        if(fsm_state == S_NORMAL && ctrl == C_WRITE && !uncached && !stall && !request_clr_m2_i) begin
             ram_we_data = data_strobe;
         end else if(fsm_state == S_RDAT) begin
             // REFILL 状态, 全写
@@ -551,10 +551,10 @@ module lsu #(
 
     // ram_w_data 逻辑
     always_comb begin
-        ram_w_data = w_data_i << {paddr_o[1:0],3'b000};
+        ram_w_data = w_data_i << {paddr[1:0],3'b000};
         if(fsm_state == S_NORMAL) begin
             // 正常情况下, 可以直接使用 w_data_o 作为带写入的信息
-            ram_w_data = w_data_i << {paddr_o[1:0],3'b000};
+            ram_w_data = w_data_i << {paddr[1:0],3'b000};
         end else begin
             // 在REFILL过程中, 写数据直接来自总线
             ram_w_data = bus_resp_i.r_data;
@@ -562,7 +562,7 @@ module lsu #(
     end
 
     // w_data_o 逻辑
-    assign w_data_o = ram_w_data & {{8{ram_we_data[3]}},{8{ram_we_data[2]}},{8{ram_we_data[1]}},{8{ram_we_data[0]}}};
+    assign w_data_o = ram_w_data & {{8{data_strobe[3]}},{8{data_strobe[2]}},{8{data_strobe[1]}},{8{data_strobe[0]}}};
 
     // ram_we_tag 逻辑 TODO: check
     always_comb begin 
@@ -739,7 +739,7 @@ module lsu #(
     end
     always_comb begin
         pw_req.addr   = paddr;
-        pw_req.data   = w_data_i << {paddr_o[1:0],3'b000};
+        pw_req.data   = w_data_i << {paddr[1:0],3'b000};
         pw_req.strobe = data_strobe;
         pw_req.size   = size;
     end
@@ -773,10 +773,10 @@ module lsu #(
     // W-R使能
     // pw_r_e pw_w_e
     assign pw_r_e = (fifo_fsm_state == S_FDAT && fifo_fsm_next_state == S_FADR) || (fifo_fsm_state == S_FEMPTY && fifo_fsm_next_state == S_FADR);
-    assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_m2_i;
+    assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_m2_i && !fifo_full;
 
     always_ff @(posedge clk) begin
-        if(~stall) begin
+        if(!stall) begin
             uncached <= uncached_i;
             // uncached <= '1;
         end
