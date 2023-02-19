@@ -231,9 +231,11 @@ module lsu #(
         sel_data = '0;
         match_index = '0;
         for(int i = 0 ; i < WAY_CNT ; i += 1) begin
-            sel_tag  |= match[i] ? tag[i]  : '0;
-            sel_data |= match[i] ? data[i] : '0;
-            match_index = i[$clog2(WAY_CNT) - 1 : 0];
+            if(match[i]) begin
+                sel_tag     |= tag[i];
+                sel_data    |= data[i];
+                match_index |= i[$clog2(WAY_CNT) - 1 : 0];
+            end
         end
     end
 
@@ -570,7 +572,7 @@ module lsu #(
         ram_we_tag = '0;
         if(fsm_state == S_NORMAL) begin
             if(((ctrl == C_WRITE && !uncached && !miss) || (ctrl == C_INVALID) ||
-                (ctrl == C_HIT_WB     && !miss && sel_tag.valid && !sel_tag.dirty) ||
+                (ctrl == C_HIT_WB     && !miss /*&& sel_tag.valid */&& !sel_tag.dirty) ||
                 (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty)) && !request_clr_m2_i) begin
                 ram_we_tag = '1;
             end
@@ -580,7 +582,7 @@ module lsu #(
         else if(fsm_state == S_WDAT && fsm_state_next != S_WDAT && ctrl != C_READ && ctrl != C_WRITE) begin
             ram_we_tag = '1;
         end
-        else if(fsm_state == S_RDAT) begin
+        else if(fsm_state == S_RDAT && fsm_state_next != S_RDAT) begin
             ram_we_tag = '1;
         end
         // 特殊的, 在uncached的读请求完成的时候, 使用ram_we_tag更新寄存器中的地址, 以完成一次UNCACHE读操作
@@ -626,7 +628,7 @@ module lsu #(
             if(ctrl == C_INVALID_WB && !request_clr_m2_i && direct_sel_tag.valid && !direct_sel_tag.dirty) begin
                 ram_we_mask[direct_sel_index] = 1'b1;
             end
-            if(ctrl == C_INVALID) begin
+            if(ctrl == C_INVALID && !request_clr_m2_i) begin
                 ram_we_mask[direct_sel_index] = 1'b1;
             end
         end
@@ -636,7 +638,7 @@ module lsu #(
         end
         else if(fsm_state == S_WDAT) begin
             // 存在两类情况
-            // 对于 READ | WRITE | HIT_WB 需要处理更新的是命中的行
+            // 对于 HIT_WB 需要处理更新的是命中的行
             // 对于 INVALID_WB 需要处理的是选中的行
             if(ctrl == C_INVALID_WB) begin
                 ram_we_mask[direct_sel_index] = 1'b1;

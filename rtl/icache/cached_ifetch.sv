@@ -425,8 +425,8 @@ assign page_index_raw = mmu_resp_i.paddr[31:12];
 
 // FETCH异常逻辑
 assign fetch_excp_o.adef = fetch_excp_adef || (va[31] && (plv == 2'd3) && ~cache_op && trans_en);
-assign fetch_excp_o.tlbr = !mmu_resp.found && trans_en && ~cache_op;
-assign fetch_excp_o.pif = mmu_resp.found && !mmu_resp.v && trans_en && ~cache_op;
-assign fetch_excp_o.ppi = (plv > mmu_resp.plv) && trans_en && mmu_resp.v && ~cache_op;
+assign fetch_excp_o.tlbr = !mmu_resp.found && trans_en    && ~cache_op;
+assign fetch_excp_o.pif  = mmu_resp.found  && !mmu_resp.v && trans_en && ~cache_op;
+assign fetch_excp_o.ppi  = mmu_resp.found  && (plv > mmu_resp.plv) && trans_en && mmu_resp.v && ~cache_op;
 assign fetch_excp = |fetch_excp_o;
 endmodule

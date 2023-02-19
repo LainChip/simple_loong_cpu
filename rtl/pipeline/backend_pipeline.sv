@@ -432,7 +432,9 @@ module backend_pipeline #(
 		assign m1_uncached = (da_mode     && (csr_module.reg_crmd[`_CRMD_DATM] == 2'b00))|| 
                         	 (dmw0_en     && (csr_module.reg_dmw0[`_DMW_MAT]   == 2'b00))||
                         	 (dmw1_en     && (csr_module.reg_dmw1[`_DMW_MAT]   == 2'b00))||
-                        	 (m1_trans_en && (mmu_resp_i.mat == 2'b00));
+                        	 (m1_trans_en && (mmu_resp_i.mat == 2'b00))
+							//  || 1'b1
+							 ;
 		always_comb begin
 			mmu_req_o = '{
 				trans_en: m1_trans_en, //TODO: CACHEOP && (m1_ctrl_flow.decode_info.m2.cacheop_i)

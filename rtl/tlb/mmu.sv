@@ -92,7 +92,7 @@ endgenerate
 
 assign tlb_w_req.we = (decode_info_i.m2.tlbfill_en | decode_info_i.m2.tlbwr_en) && inst_valid_i;
 assign tlb_w_req.index = ({5{decode_info_i.m2.tlbfill_en}} & rand_index) 
-               | ({5{decode_info_i.m2.tlbwr_en}} & tlbidx_i[`_TLBIDX_INDEX]);
+                       | ({5{decode_info_i.m2.tlbwr_en}}   & tlbidx_i[`_TLBIDX_INDEX]);
 assign tlb_w_req.vppn  = tlbehi_i[`_TLBEHI_VPPN];
 assign tlb_w_req.asid  = asid;
 assign tlb_w_req.g     = tlbelo0_i[`_TLBELO_TLB_G] && tlbelo1_i[`_TLBELO_TLB_G];

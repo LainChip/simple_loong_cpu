@@ -679,11 +679,11 @@ always_ff @(posedge clk) begin
         reg_tlbelo1[7] <= 1'b0;
     end
     else if (wen_tlbelo1) begin
-        reg_tlbelo1[`_TLBELO_TLB_V]   <= wr_data[`_TLBELO_TLB_V];
-        reg_tlbelo1[`_TLBELO_TLB_D]   <= wr_data[`_TLBELO_TLB_D];
-        reg_tlbelo1[`_TLBELO_TLB_PLV] <= wr_data[`_TLBELO_TLB_PLV];
-        reg_tlbelo1[`_TLBELO_TLB_MAT] <= wr_data[`_TLBELO_TLB_MAT];
-        reg_tlbelo1[`_TLBELO_TLB_G]   <= wr_data[`_TLBELO_TLB_G];
+        reg_tlbelo1[`_TLBELO_TLB_V]      <= wr_data[`_TLBELO_TLB_V];
+        reg_tlbelo1[`_TLBELO_TLB_D]      <= wr_data[`_TLBELO_TLB_D];
+        reg_tlbelo1[`_TLBELO_TLB_PLV]    <= wr_data[`_TLBELO_TLB_PLV];
+        reg_tlbelo1[`_TLBELO_TLB_MAT]    <= wr_data[`_TLBELO_TLB_MAT];
+        reg_tlbelo1[`_TLBELO_TLB_G]      <= wr_data[`_TLBELO_TLB_G];
         reg_tlbelo1[`_TLBELO_TLB_PPN_EN] <= wr_data[`_TLBELO_TLB_PPN_EN];
     end
     else if (decode_info_i.m2.tlbrd_en && tlb_entry_i.e && ~(do_exception || do_interrupt) && ~stall_i && decode_info_i.wb.valid) begin
