@@ -13,7 +13,7 @@ module icache_datapath#(
     input [11:2] addr_i,
 
     output [FETCH_SIZE - 1 : 0][31 : 0] data_o,
-    input [31:0] data_i,
+    input  [31:0] data_i,
 
     output [21:0] tag_o,
     input  [21:0] tag_i

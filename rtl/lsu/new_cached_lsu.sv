@@ -79,6 +79,7 @@ module lsu #(
             .tag_we_i(ram_we_tag & ram_we_mask[way_id]),
             .r_addr_i(ram_r_addr),
             .w_addr_i(ram_w_addr),
+
             .data_o(raw_r_data),
             .data_i(ram_w_data),
 
@@ -144,7 +145,7 @@ module lsu #(
             end
         end
         assign ram_r_data[way_id] = m1_data;
-        assign ram_r_tag[way_id]  = m1_tag;
+        assign ram_r_tag[way_id]  = m1_tag ;
     end
 
     // 第二阶段数据, 根据第二阶段数据构建状态机
