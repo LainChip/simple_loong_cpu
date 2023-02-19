@@ -401,10 +401,10 @@ module lsu #(
                     if(decode_info_i.general.inst25_0[4:3] == 2'b00) begin
                         // store tag
                         m1_ctrl <= C_INVALID;
-                    end else if(decode_info_i.general.inst25_0[4:3] == 2'b01) begin
+                    end else if(decode_info_i.general.inst25_0[4:3] == 2'b01 || decode_info_i.general.inst25_0[4:3] == 2'b11) begin
                         // invalid_wb
                         m1_ctrl <= C_INVALID_WB;
-                    end else begin
+                    end else if(decode_info_i.general.inst25_0[4:3] == 2'b10) begin
                         // hit invalidate
                         m1_ctrl <= C_HIT_WB;
                     end
@@ -570,7 +570,7 @@ module lsu #(
         ram_we_tag = '0;
         if(fsm_state == S_NORMAL) begin
             if(((ctrl == C_WRITE && !uncached && !miss) || (ctrl == C_INVALID) ||
-                (ctrl == C_HIT_WB    && !miss && sel_tag.valid && !sel_tag.dirty) ||
+                (ctrl == C_HIT_WB     && !miss && sel_tag.valid && !sel_tag.dirty) ||
                 (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty)) && !request_clr_m2_i) begin
                 ram_we_tag = '1;
             end
@@ -623,10 +623,11 @@ module lsu #(
                     ram_we_mask = match;
                 end
             end
-            if(ctrl == C_INVALID_WB && !request_clr_m2_i) begin
-                if(direct_sel_tag.valid && !direct_sel_tag.dirty) begin
-                    ram_we_mask[direct_sel_index] = 1'b1;
-                end
+            if(ctrl == C_INVALID_WB && !request_clr_m2_i && direct_sel_tag.valid && !direct_sel_tag.dirty) begin
+                ram_we_mask[direct_sel_index] = 1'b1;
+            end
+            if(ctrl == C_INVALID) begin
+                ram_we_mask[direct_sel_index] = 1'b1;
             end
         end
         else if(fsm_state == S_RDAT) begin
