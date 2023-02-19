@@ -648,9 +648,9 @@ module lsu #(
             end
         end
     end
+
     // next_sel_taken 在REFILL 的最后一个阶段
     assign next_sel_taken = fsm_state == S_RDAT && fsm_state_next != S_RDAT;
-    
 
     // 生成下一个WAY SELECTION
     if(!ENABLE_PLRU) begin

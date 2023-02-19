@@ -22,14 +22,14 @@ module icache #(
 	input  logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_i,
 
 	// MMU 访问信号
-	output logic[31:0] mmu_req_vpc_o, // TODO
+	output logic[31:0] mmu_req_vpc_o,
 	input mmu_s_resp_t mmu_resp_i,
 
-	output logic [31:0]vpc_o, // TODO
-	output logic [31:0]ppc_o, // TODO
-	output logic [FETCH_SIZE - 1 : 0] valid_o, // TODO
+	output logic [31:0]vpc_o,
+	output logic [31:0]ppc_o,
+	output logic [FETCH_SIZE - 1 : 0] valid_o,
 	output logic [ATTACHED_INFO_WIDTH - 1 : 0] attached_o,
-    output logic [FETCH_SIZE - 1 : 0][31:0] inst_o, // TODO
+    output logic [FETCH_SIZE - 1 : 0][31:0] inst_o,
     (* mark_debug="true" *) output fetch_excp_t fetch_excp_o,
 	// output decode_info_t [FETCH_SIZE - 1 : 0] decode_output_o,
 
@@ -48,6 +48,13 @@ module icache #(
     // 全局控制信号
     logic stall;
     logic delay_stall;
+
+    // 异常控制信号
+    mmu_s_resp_t mmu_resp;
+    logic [1:0] plv;
+    logic trans_en,trans_en_i;
+    logic adef,tlbr,pif,ppi;
+    logic excp_inv;
 
     // ATTACHED valid 掩码信息传递
     logic f1_valid_mask,valid_mask; 
@@ -70,11 +77,11 @@ module icache #(
     // 数据通路
     logic [31:0] f1_vaddr;
     logic [11:2] ram_rw_addr;
-    logic        ram_we_data,ram_we_tag; // TODO CONNECTION
-    logic [WAY_CNT - 1 : 0] ram_we_mask; // TODO CONNECTION
+    logic        ram_we_data,ram_we_tag;
+    logic [WAY_CNT - 1 : 0] ram_we_mask;
 
-    tag_t        ram_w_tag;              // TODO CONNECTION
-    logic [31:0] ram_w_data;             // TODO CONNECTION
+    tag_t        ram_w_tag;
+    logic [31:0] ram_w_data;
 
     tag_t [WAY_CNT - 1 : 0]                           ram_r_tag;  // F1 STAGE
     logic [WAY_CNT - 1 : 0][FETCH_SIZE - 1 : 0][31:0] ram_r_data; // F1 STAGE
@@ -154,34 +161,34 @@ module icache #(
 
     // 第二阶段数据, 根据第二阶段的数据构造状态机
     // 地址
-    logic [31:0] paddr,vaddr; // TODO
+    logic [31:0] paddr,vaddr;
 
     // 缓存状态
-    tag_t [WAY_CNT - 1 : 0] tag; // TODO
-    logic [WAY_CNT - 1 : 0][FETCH_SIZE - 1 : 0][31:0] data; // TODO
+    tag_t [WAY_CNT - 1 : 0] tag;
+    logic [WAY_CNT - 1 : 0][FETCH_SIZE - 1 : 0][31:0] data; 
 
-    logic [$clog2(WAY_CNT) - 1 : 0] direct_sel_index; // TODO
-    logic [FETCH_SIZE - 1 : 0][31:0] sel_data;        // TODO
+    logic [$clog2(WAY_CNT) - 1 : 0] direct_sel_index;
+    logic [FETCH_SIZE - 1 : 0][31:0] sel_data;
 
     // 比较信息
-    logic [WAY_CNT - 1 : 0] match;// TODO
-    logic [$clog2(WAY_CNT) - 1 : 0] match_index;// TODO
-    logic miss;// TODO
+    logic [WAY_CNT - 1 : 0] match;
+    logic [$clog2(WAY_CNT) - 1 : 0] match_index;
+    logic miss;
 
     // 控制信息, 顺序编码
-    logic [1:0] f1_ctrl,ctrl;// TODO
-    logic finish;// TODO
-    logic bus_busy;// TODO
-    localparam logic[1:0] C_NONE    = 2'd0;// TODO
-    localparam logic[1:0] C_FETC    = 2'd1;// TODO
+    logic [1:0] f1_ctrl,ctrl;
+    logic finish;
+    logic bus_busy;
+    localparam logic[1:0] C_NONE    = 2'd0;
+    localparam logic[1:0] C_FETC    = 2'd1;
     // 对于ICACHE来说, INVALID 和 STORE TAG 是完全等价的
-    localparam logic[1:0] C_INVALID = 2'd2;// TODO
-    localparam logic[1:0] C_HIT     = 2'd3;// TODO
+    localparam logic[1:0] C_INVALID = 2'd2;
+    localparam logic[1:0] C_HIT     = 2'd3;
 
     // 控制信息, 伪随机数
-    logic [$clog2(WAY_CNT) - 1 : 0] next_sel;// TODO
-    logic [WAY_CNT - 1 : 0]         next_sel_onehot;// TODO
-    logic next_sel_taken;// TODO
+    logic [$clog2(WAY_CNT) - 1 : 0] next_sel;
+    logic [WAY_CNT - 1 : 0]         next_sel_onehot;
+    logic next_sel_taken;
 
     // 控制信息, 主状态机
     localparam logic[2:0] S_NORMAL    = 3'd0;
@@ -190,17 +197,17 @@ module icache #(
     localparam logic[2:0] S_RDAT      = 3'd3;
     localparam logic[2:0] S_PRADR     = 3'd4;
     localparam logic[2:0] S_PRDAT     = 3'd5;
-    logic[2:0] fsm_state,fsm_state_next;// TODO
+    logic[2:0] fsm_state,fsm_state_next;
     always_ff @(posedge clk) begin
         if(~rst_n) fsm_state <= S_NORMAL;
         else fsm_state <= fsm_state_next;
     end
 
     // 控制信息, CACHE行REFILL计数器, 两位
-    logic [1:0] refill_cnt;// TODO
+    logic [1:0] refill_cnt;
 
     // cached 信息
-    logic uncached;// TODO
+    logic uncached;
 
     // 生成比较信息
     for(genvar way_id = 0; way_id < WAY_CNT ; way_id += 1) begin
@@ -208,12 +215,12 @@ module icache #(
     end
     assign miss = ~(|match);
     always_comb begin
-        sel_data = '0;
+        sel_data = data[0];
         match_index = '0;
         for(int i = 0 ; i < WAY_CNT ; i += 1) begin
             if(match[i]) begin
-                sel_data    |= data[i];
-                match_index |= i[$clog2(WAY_CNT) - 1 : 0];
+                sel_data    = data[i];
+                match_index = i[$clog2(WAY_CNT) - 1 : 0];
             end
         end
     end
@@ -224,14 +231,14 @@ module icache #(
         case(fsm_state)
             S_NORMAL: begin
                 // 在NORMAL状态下, 只需要处理REFILL 或者 UNCACHED 两种请求
-                if(ctrl == C_FETC && !uncached && miss   && !clr_i) begin
+                if(ctrl == C_FETC && !uncached && miss   && !clr_i && !excp_inv) begin
                     if(bus_busy) begin
                         fsm_state_next = S_WAIT_BUS;
                     end else begin
                         fsm_state_next = S_RADR;
                     end
                 end
-                if(ctrl == C_FETC && uncached && !finish && !clr_i) begin
+                if(ctrl == C_FETC && uncached && !finish && !clr_i && !excp_inv) begin
                     if(bus_busy) begin
                         fsm_state_next = S_WAIT_BUS;
                     end else begin
@@ -269,8 +276,11 @@ module icache #(
             end
             S_PRDAT: begin
                 // 读数据得到响应后继续后面的操作
-                if(bus_resp_i.data_ok && bus_resp_i.data_last) begin
+                if(bus_resp_i.data_ok && bus_resp_i.data_last &&  refill_cnt[0]) begin
                     fsm_state_next = S_NORMAL;
+                end else 
+                if(bus_resp_i.data_ok && bus_resp_i.data_last && !refill_cnt[0]) begin
+                    fsm_state_next = S_PRADR;
                 end
             end
         endcase
@@ -362,10 +372,11 @@ module icache #(
 
     // refill_cnt 逻辑, 两位循环计数器
     always_ff @(posedge clk) begin
-        if(fsm_state != S_RDAT && fsm_state_next == S_RDAT) begin
+        if((fsm_state == S_NORMAL && fsm_state_next == S_RADR ) ||
+           (fsm_state == S_NORMAL && fsm_state_next == S_PRADR)) begin
             refill_cnt <= 2'b00;
         end else begin
-            if(bus_resp_i.data_ok) begin
+            if(bus_resp_i.data_ok && (fsm_state == S_RDAT || (fsm_state == S_PRDAT && bus_resp_i.data_last))) begin
                 refill_cnt <= refill_cnt + 2'd1;
             end
         end
@@ -391,7 +402,7 @@ module icache #(
     always_comb begin
         // 在F2的请求, 若为CACHE指令, 则需要无效化对应的CACHE行进行写操作
         ram_we_tag = '0;
-        if(fsm_state == S_NORMAL && (ctrl == C_INVALID || ctrl == C_HIT)) begin
+        if(fsm_state == S_NORMAL && (ctrl == C_INVALID || ctrl == C_HIT) && !clr_i && !excp_inv) begin
             ram_we_tag = '1;
         end else if(fsm_state == S_RDAT)  begin
             // refill 时 更新tag
@@ -415,5 +426,130 @@ module icache #(
     end
 
     // ram_we_mask 逻辑 // TODO : check
+    always_comb begin
+        ram_we_mask = '0;
+        if(fsm_state == S_NORMAL) begin
+            // 只在INVALIDATE 的时候需要写
+            if(ctrl == C_INVALID) begin
+                ram_we_mask[direct_sel_index] = 1'b1;
+            end else if(ctrl == C_HIT) begin
+                ram_we_mask = match;
+            end
+        end
+        else if(fsm_state == S_RDAT) begin
+            ram_we_mask = next_sel_onehot;
+        end
+    end
+
+    // next_sel_taken 在REFILL 的最后一个阶段
+    assign next_sel_taken = fsm_state == S_RDAT && fsm_state_next != S_RDAT;
+
+    // 生成下一个WAY SELECTION
+    if(!ENABLE_PLRU) begin
+        lfsr #(
+            .LfsrWidth((8 * $clog2(WAY_CNT)) >= 64 ? 64 : (8 * $clog2(WAY_CNT))),
+            .OutWidth($clog2(WAY_CNT))
+        ) lfsr (
+            .clk(clk),
+            .rst_n(rst_n),
+            .en_i(next_sel_taken),
+            .out_o(next_sel)
+        );
+        always_comb begin
+            next_sel_onehot = '0;
+            next_sel_onehot[next_sel] = 1'b1;
+        end
+    end else begin
+        // PLRU
+        logic[WAY_CNT - 1 : 0] use_vec;
+        logic[255:0][WAY_CNT - 1 : 0] sel_vec;
+        for(genvar cache_index = 0; cache_index < 256; cache_index += 1) begin : cache_line
+            plru_tree #(
+                .ENTRIES(WAY_CNT)
+            )plru(
+                .clk(clk),
+                .rst_n(rst_n),
+                .used_i(paddr[11:4] == cache_index[7:0] ? use_vec : '0),
+                .plru_o(sel_vec[cache_index])
+            );
+        end
+        assign next_sel_onehot = sel_vec[paddr[11:4]];
+        assign use_vec = match & {WAY_CNT{(fsm_state == S_NORMAL) && ctrl == C_FETC && !uncached}};
+        always_comb begin
+            next_sel = '0;
+            for(integer i = 0; i < WAY_CNT ; i += 1) begin
+                if(next_sel_onehot[i]) begin
+                    next_sel = i[$clog2(WAY_CNT) - 1 : 0];
+                end
+            end
+        end
+    end
+
+    // finish 寄存器管理
+    always_ff @(posedge clk) begin
+        if(fsm_state == S_PRDAT) begin
+            finish <= 1'b1;
+        end else if(~stall) begin
+            finish <= 1'b0;
+        end
+    end
+
+    // uncached 逻辑
+    always_ff @(posedge clk) begin
+        if(!stall) begin
+            uncached <= uncached_i;
+            // uncached <= '1;
+        end
+    end
+
+    // BUS REQ 赋值
+    always_comb begin
+        bus_req_o.valid       = 1'b0;
+        bus_req_o.write       = 1'b0;
+        bus_req_o.burst_size  = 4'b0011;
+        bus_req_o.cached      = 1'b0;
+        bus_req_o.data_size   = 2'b10;
+        bus_req_o.addr        = {paddr[31:2],2'b00};
+
+        bus_req_o.data_ok     = 1'b0;
+        bus_req_o.data_last   = 1'b0;
+        bus_req_o.data_strobe = 4'b0000;
+        bus_req_o.w_data      = '0;
+        if(fsm_state == S_RADR) begin
+            bus_req_o.valid = 1'b1;
+            bus_req_o.addr  = {paddr[31:4],4'd0};
+        end else if(fsm_state == S_RDAT || fsm_state == S_PRDAT) begin
+            bus_req_o.data_ok    = 1'b1;
+        end else if(fsm_state == S_PRADR) begin
+            bus_req_o.valid      = 1'b1;
+            bus_req_o.burst_size = 4'b0000;
+        end
+    end
+
+    // 异常处理
+    always_ff @(posedge clk) begin
+        if(!stall) begin
+            trans_en <= trans_en_i;
+            mmu_resp <= mmu_resp_i;
+        end
+    end
+    assign excp_inv = adef|tlbr|pif|ppi;
+    assign adef =(vaddr[1:0] || (vaddr[31] && (plv == 2'd3) && trans_en)) && ctrl == C_FETC;
+    assign tlbr = !mmu_resp.found && trans_en    && ctrl == C_FETC;
+    assign pif  = mmu_resp.found  && !mmu_resp.v && trans_en && ctrl == C_FETC;
+    assign ppi  = mmu_resp.found  && (plv > mmu_resp.plv) && trans_en && mmu_resp.v && ctrl == C_FETC;
+    assign fetch_excp_o = '{
+        adef: adef,
+        tlbr: tlbr,
+        pif : pif,
+        ppi : ppi
+    };
+
+    // 输出逻辑
+    assign vpc_o = vaddr;
+    assign ppc_o = paddr;
+    assign mmu_req_vpc_o = f1_vaddr;
+    assign inst_o = sel_data;
+    assign valid_o = valid_mask & {FETCH_SIZE{ctrl == C_FETC && !clr_i && !excp_inv}};
 
 endmodule
