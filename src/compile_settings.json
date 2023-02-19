@@ -1,6 +1,6 @@
 {
     "icache" :{
-        "module_ver" : "2"
+        "module_ver" : "3"
     },
     "lsu" :{
         "module_ver" : "3"

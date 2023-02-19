@@ -57,13 +57,13 @@ module icache #(
     logic excp_inv;
 
     // ATTACHED valid 掩码信息传递
-    logic f1_valid_mask,valid_mask; 
+    logic [FETCH_SIZE - 1 : 0] f1_valid_mask,valid_mask; 
     logic [ATTACHED_INFO_WIDTH - 1 : 0] f1_attached;
     always_ff @(posedge clk) begin
         if(!stall) begin
             f1_attached   <= attached_i ;
             attached_o    <= f1_attached;
-            f1_valid_mask <= valid_i ;
+            f1_valid_mask <= cacheop_valid_i ? '0 : valid_i;
             valid_mask    <= f1_valid_mask;
         end
     end
@@ -121,7 +121,7 @@ module icache #(
         assign f1_r_addr  = f1_vaddr[11:2];
         assign f2_w_addr  = ram_rw_addr;
         assign f2_data_we = ram_we_data && ram_we_mask[way_id];
-        assign f2_we_tag  = ram_we_tag  && ram_we_mask[way_id];
+        assign f2_tag_we  = ram_we_tag  && ram_we_mask[way_id];
         assign f2_w_data  = ram_w_data;
         assign f2_w_tag   = ram_w_tag ;
         always_ff @(posedge clk) begin
@@ -197,6 +197,7 @@ module icache #(
     localparam logic[2:0] S_RDAT      = 3'd3;
     localparam logic[2:0] S_PRADR     = 3'd4;
     localparam logic[2:0] S_PRDAT     = 3'd5;
+    localparam logic[2:0] S_SYNC      = 3'd6;
     logic[2:0] fsm_state,fsm_state_next;
     always_ff @(posedge clk) begin
         if(~rst_n) fsm_state <= S_NORMAL;
@@ -244,6 +245,9 @@ module icache #(
                     end else begin
                         fsm_state_next = S_PRADR;
                     end
+                end
+                if((ctrl == C_INVALID || (ctrl == C_HIT && !miss)) && !finish) begin
+                    
                 end
             end
             S_WAIT_BUS: begin
@@ -301,11 +305,11 @@ module icache #(
                 end else if(i != 0 && !ram_we_mask[i] && uncached && ram_we_tag) begin
                     tag[i].valid <= '0;
                 end
-                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data && ram_w_addr[3:2 + $clog2(FETCH_SIZE)] == paddr[3:2 + $clog2(FETCH_SIZE)]) begin
+                if((ram_we_mask[i] || (i == 0 && uncached)) && ram_we_data && ram_rw_addr[3:2 + $clog2(FETCH_SIZE)] == paddr[3:2 + $clog2(FETCH_SIZE)]) begin
                     if(FETCH_SIZE == 1) begin
                         data[i] <= ram_w_data;
                     end else begin
-                        data[i][2 + $clog2(FETCH_SIZE) - 1 : 2] <= ram_w_data;
+                        data[i][ram_rw_addr[2 + $clog2(FETCH_SIZE) - 1 : 2]] <= ram_w_data;
                     end
                 end
             end
@@ -366,7 +370,7 @@ module icache #(
             ram_rw_addr = {paddr[11:4], refill_cnt};
         end else if(fsm_state == S_PRDAT) begin
             // 读透传模式, 保证总线的数据可以写入输出用的data寄存器
-            ram_rw_addr = paddr[11:2];
+            ram_rw_addr = {paddr[11:3], refill_cnt[0]};
         end
     end
 
@@ -509,7 +513,7 @@ module icache #(
         bus_req_o.burst_size  = 4'b0011;
         bus_req_o.cached      = 1'b0;
         bus_req_o.data_size   = 2'b10;
-        bus_req_o.addr        = {paddr[31:2],2'b00};
+        bus_req_o.addr        = {paddr[31:3],refill_cnt[0],2'd0};
 
         bus_req_o.data_ok     = 1'b0;
         bus_req_o.data_last   = 1'b0;
@@ -550,6 +554,6 @@ module icache #(
     assign ppc_o = paddr;
     assign mmu_req_vpc_o = f1_vaddr;
     assign inst_o = sel_data;
-    assign valid_o = valid_mask & {FETCH_SIZE{ctrl == C_FETC && !clr_i && !excp_inv}};
+    assign valid_o = valid_mask & {FETCH_SIZE{ctrl == C_FETC && !clr_i && !stall}};
 
 endmodule
