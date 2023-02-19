@@ -141,15 +141,14 @@ generate
     always_comb begin
         for(integer i = 0; i < TLB_PORT; i += 1) begin
             mmu_s_resp_o[i].paddr = mmu_s_req_i[i].vaddr;
-            mmu_s_resp_o[i].mat = mmu_raw_mat_i[i];
+            mmu_s_resp_o[i].mat   =  tlb_s_resp[i].mat;
             if(pg_mode && mmu_s_req_i[i].dmw0_en) begin
                 mmu_s_resp_o[i].paddr = {csr_dmw0_i[`_DMW_PSEG], mmu_s_req_i[i].vaddr[28:0]};
-                mmu_s_resp_o[i].mat = csr_dmw0_i[`_DMW_MAT];
-            end else if(pg_mode && mmu_s_req_i[i].dmw1_en) begin
+            end else 
+            if(pg_mode && mmu_s_req_i[i].dmw1_en) begin
                 mmu_s_resp_o[i].paddr = {csr_dmw1_i[`_DMW_PSEG], mmu_s_req_i[i].vaddr[28:0]};
-                mmu_s_resp_o[i].mat = csr_dmw1_i[`_DMW_MAT];
-            end else if(pg_mode && mmu_s_req_i[i].trans_en)begin
-                mmu_s_resp_o[i].mat = tlb_s_resp[i].mat;
+            end else 
+            if(pg_mode && mmu_s_req_i[i].trans_en)begin
                 if(tlb_s_resp[i].ps == 6'd12)begin
                     mmu_s_resp_o[i].paddr[31:12] = tlb_s_resp[i].ppn;
                 end else begin

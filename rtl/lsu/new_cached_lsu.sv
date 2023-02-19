@@ -488,7 +488,7 @@ module lsu #(
     end
 
     // wb_sel_data 逻辑, 带透传的fifo
-    assign wb_sel_data = (wb_delay_cnt[1:0] == wb_w_cnt[1:0]) ? ram_raw_data[wb_way_sel] : wb_fifo[wb_w_cnt];
+    assign wb_sel_data = (wb_delay_cnt[1:0] == wb_w_cnt[1:0] && !wb_delay_cnt[2]) ? ram_raw_data[wb_way_sel] : wb_fifo[wb_w_cnt];
 
     // wb_way_sel 逻辑
     always_comb begin
@@ -526,11 +526,11 @@ module lsu #(
     // data_strobe 逻辑
     always_comb begin
         data_strobe = 4'b0000;
-        case(size)
-            2'b10:   data_strobe = 4'b1111; // WORD
-            2'b01:   data_strobe = 4'b0011 << {paddr_o[1],1'b0};
-            2'b00:   data_strobe = 4'b0001 <<  paddr_o[1:0];
-            default: data_strobe = 4'b0000; // IMPOSIBLE
+        case(req_type[1:0])
+            `_MEM_TYPE_WORD:   data_strobe = 4'b1111; // WORD
+            `_MEM_TYPE_HALF:   data_strobe = 4'b0011 << {paddr[1],1'b0};
+            `_MEM_TYPE_BYTE:   data_strobe = 4'b0001 <<  paddr[1:0];
+            default:           data_strobe = 4'b0000; // IMPOSIBLE
         endcase
     end
 
@@ -538,11 +538,11 @@ module lsu #(
     always_comb begin
         // 正常状态时, 响应在M2级的写请求
         ram_we_data = 4'b0000;
-        if(fsm_state == S_NORMAL && ctrl == C_WRITE && !uncached && !stall && !request_clr_m2_i) begin
+        if(fsm_state == S_NORMAL && ctrl == C_WRITE && !uncached && !stall && !request_clr_m2_i && !miss) begin
             ram_we_data = data_strobe;
         end else if(fsm_state == S_RDAT) begin
             // REFILL 状态, 全写
-            ram_we_data = 4'b1111;
+            ram_we_data = bus_resp_i.data_ok ? 4'b1111 : 4'b0000;
         end else if(fsm_state == S_PRDAT) begin
             // 特别的, 对于 UNCACHED 的读请求, 直接打开ram_we_data, 将第二阶段的数据寄存器直接作为结果寄存器使用
             ram_we_data = 4'b1111;
@@ -569,7 +569,7 @@ module lsu #(
         // 正常情况时, 在M2级的写请求会触发一次脏写请求, 对于直接无效CACHE行的操作也在此响应
         ram_we_tag = '0;
         if(fsm_state == S_NORMAL) begin
-            if(((ctrl == C_WRITE && !uncached) || (ctrl == C_INVALID) ||
+            if(((ctrl == C_WRITE && !uncached && !miss) || (ctrl == C_INVALID) ||
                 (ctrl == C_HIT_WB    && !miss && sel_tag.valid && !sel_tag.dirty) ||
                 (ctrl == C_INVALID_WB && direct_sel_tag.valid && !direct_sel_tag.dirty)) && !request_clr_m2_i) begin
                 ram_we_tag = '1;
@@ -613,17 +613,17 @@ module lsu #(
     // ram_we_mask; // TODO : check
     always_comb begin
         ram_we_mask = '0;
-        if(fsm_state == S_NORMAL && !uncached) begin
+        if(fsm_state == S_NORMAL) begin
             // 只在 (HIT & WRITE & !UNCACHED)| (VALID !DIRTY INVALID_WB) | (HIT VALID !DIRTY HIT_WB) 的情况下需要写,
             // 对于第一种情况和第三种情况, 写MASK为MATCH
             // 对于第二种情况, 进行直接索引
             if(!miss) begin
-                if(((ctrl == C_WRITE) ||
-                    (ctrl == C_HIT_WB/* && sel_tag.valid*/ && !sel_tag.dirty)) && !request_clr_m2_i) begin
+                if(((ctrl == C_WRITE && !uncached) ||
+                    (ctrl == C_HIT_WB/* && sel_tag.valid*/ && !sel_tag.dirty))) begin
                     ram_we_mask = match;
                 end
             end
-            if(ctrl == C_INVALID_WB) begin
+            if(ctrl == C_INVALID_WB && !request_clr_m2_i) begin
                 if(direct_sel_tag.valid && !direct_sel_tag.dirty) begin
                     ram_we_mask[direct_sel_index] = 1'b1;
                 end
@@ -820,7 +820,14 @@ module lsu #(
             // 写回的请求
             bus_req_o.valid      = 1'b1;
             bus_req_o.write      = 1'b1;
+            // if(ctrl == C_WRITE || ctrl == C_READ) begin
             bus_req_o.addr       = {tag[next_sel].ppn,paddr[11:4],4'd0};
+            // end else 
+            if(ctrl == C_HIT_WB) begin
+                bus_req_o.addr   = {sel_tag.ppn,paddr[11:4],4'd0};
+            end else if(ctrl == C_INVALID_WB) begin
+                bus_req_o.addr   = {direct_sel_tag.ppn,paddr[11:4],4'd0};
+            end
         end else if(fsm_state == S_WDAT) begin
             bus_req_o.data_ok    = 1'b1;
             bus_req_o.data_last  = (wb_w_cnt == 3'b011);

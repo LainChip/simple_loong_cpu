@@ -82,9 +82,9 @@ assign immu_req = '{
 assign da_mode = backend.pipeline_0.sp_inst_blk.da_mode;
 assign pg_mode = backend.pipeline_0.sp_inst_blk.pg_mode;
 assign i_trans_en = !backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DA] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PG] && !dmw0_en && !dmw1_en;
-assign i_uncached =  (da_mode    && (immu_resp.mat == 2'b00))       ||
-                     (dmw0_en    && (immu_resp.mat == 2'b00))       ||
-                     (dmw1_en    && (immu_resp.mat == 2'b00))       ||
+assign i_uncached =  (da_mode    && (backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATF] == 2'b00))       ||
+                     (dmw0_en    && (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_MAT]   == 2'b00))       ||
+                     (dmw1_en    && (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_MAT]   == 2'b00))       ||
                      (i_trans_en && (immu_resp.mat == 2'b00));
 
 assign frontend.icache_module.plv = backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV];
