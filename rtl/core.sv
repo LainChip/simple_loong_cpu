@@ -19,12 +19,13 @@ logic  		     [1:0]issue_num;
 logic  		     backend_stall;
 logic            bus_busy;
 logic            i_uncached;
+logic            [31:0]i_mmu_req_vpc;
 bpu_update_t     bpu_feedback;
 priv_req_t   	 priv_req;
 priv_resp_t      priv_resp;
 cache_bus_req_t	 ibus_req , dbus_req;
 cache_bus_resp_t ibus_resp, dbus_resp;
-mmu_s_req_t      immu_req;
+mmu_s_req_t      immu_req , dmmu_req;
 mmu_s_resp_t     immu_resp, dmmu_resp;
 tlb_entry_t      r_tlbentry;
 
@@ -59,7 +60,7 @@ frontend frontend(
     .bus_resp_i(ibus_resp),      // cache的访问应答
 
 	// MMU
-	// .mmu_req_vpc_o(),
+	.mmu_req_vpc_o(i_mmu_req_vpc),
 	.mmu_resp_i(immu_resp),
 	.uncached_i(i_uncached),
 	.bus_busy_i(bus_busy)
@@ -68,20 +69,20 @@ frontend frontend(
 (* mark_debug="true" *) logic pg_mode,da_mode,dmw0_en,dmw1_en,i_trans_en;
 assign dmw0_en = ((backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_PLV0] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)
                || (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_PLV3] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd3)) 
-			  && (frontend.mmu_req_vpc_o[31:29] == backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_VSEG]);
+			  && (i_mmu_req_vpc[31:29] == backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_VSEG]);
 assign dmw1_en = ((backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_PLV0] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd0)
                || (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_PLV3] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PLV] == 2'd3))
-			  && (frontend.mmu_req_vpc_o[31:29] == backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_VSEG]);
+			  && (i_mmu_req_vpc[31:29] == backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_VSEG]);
 assign immu_req = '{
 	trans_en: i_trans_en,
-	vaddr:    frontend.mmu_req_vpc_o,
+	vaddr:    i_mmu_req_vpc,
 	dmw0_en:  dmw0_en ,
 	dmw1_en:  dmw1_en ,
 	default:  '0
 };
 assign da_mode = backend.pipeline_0.sp_inst_blk.da_mode;
 assign pg_mode = backend.pipeline_0.sp_inst_blk.pg_mode;
-assign i_trans_en = !backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DA] && backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_PG] && !dmw0_en && !dmw1_en;
+assign i_trans_en = pg_mode && !dmw0_en && !dmw1_en;
 assign i_uncached =  (da_mode    && (backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATF] == 2'b00))       ||
                      (dmw0_en    && (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw0[`_DMW_MAT]   == 2'b00))       ||
                      (dmw1_en    && (backend.pipeline_0.sp_inst_blk.csr_module.reg_dmw1[`_DMW_MAT]   == 2'b00))       ||
@@ -125,6 +126,7 @@ backend backend(
 
 	// MMU
 	.mmu_resp_i(dmmu_resp),
+	.mmu_req_o(dmmu_req),
 	.tlb_entry_i(r_tlbentry),
 
 	.bus_busy_o(bus_busy)
@@ -137,7 +139,7 @@ mmu #(
 	.clk(clk),
 	.rst_n(rst_n),
 	.inst_valid_i (backend.pipeline_0.m2_inst_valid && !backend.pipeline_0.stall_vec_i[2]),
-	.mmu_s_req_i ({immu_req            , backend.mmu_req_o  }),
+	.mmu_s_req_i ({immu_req            , dmmu_req           }),
 	.mmu_s_resp_o({immu_resp           , dmmu_resp          }),
 	.mmu_raw_mat_i({backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATF],
 					backend.pipeline_0.sp_inst_blk.csr_module.reg_crmd[`_CRMD_DATM]}),

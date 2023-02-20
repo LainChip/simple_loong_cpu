@@ -164,6 +164,7 @@ module backend(
 	.reg_w_data_o(reg_w_data[0]),
 	
 	// FOR MAIN PIPE
+	.int_i(int_i),
 	.bus_req_o,         // cache的访问请求
     .bus_resp_i,        // cache的访问应答
     .priv_resp_i,
