@@ -108,7 +108,7 @@ class decoder_parser:
 
     def gen_sv_module(self):
         str_builder = "`include \"common.svh\"\n`include \"decoder.svh\"\n\n"
-        str_builder += "module decoder(\n    input logic[31:0] inst_i,\n    output decode_info_t decode_info_o,\n    output logic[31:0][7:0] inst_string_o\n);\n\n"
+        str_builder += "module decoder(\n    input logic[31:0] inst_i,\n    input logic fetch_err_i,\n    output decode_info_t decode_info_o,\n    output logic[31:0][7:0] inst_string_o\n);\n\n"
         
         # main combine logic
         depth = 1

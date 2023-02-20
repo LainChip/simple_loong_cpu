@@ -211,11 +211,11 @@ module frontend(
     // FIFO 模块
     multi_channel_fifo #(
         .DATA_WIDTH(64 + $bits(bpu_predict_t) + $bits(fetch_excp_t)),
-        .DEPTH(2),
+        .DEPTH(8),
         .BANK(4),
         .WRITE_PORT(2),
         .READ_PORT(2)
-    ) inst_fifo(
+    ) inst_fifo (
         .clk,
         .rst_n,
 
@@ -244,11 +244,13 @@ module frontend(
     // INST 结构体组装模块
 	decoder decoder_module_0(
 		.inst_i(fetch_fifo_out[0][31:0]),
-		.decode_info_o(fifo_decode_info[0]),
+		.fetch_err_i(|fetch_fifo_out[0][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)]),
+        .decode_info_o(fifo_decode_info[0]),
 		.inst_string_o(/*NC*/)
 	);
 	decoder decoder_module_1(
 		.inst_i(fetch_fifo_out[1][31:0]),
+        .fetch_err_i(|fetch_fifo_out[1][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)]),
 		.decode_info_o(fifo_decode_info[1]),
 		.inst_string_o(/*NC*/)
 	);

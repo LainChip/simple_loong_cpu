@@ -3,6 +3,7 @@
 
 module decoder(
     input logic[31:0] inst_i,
+    input logic fetch_err_i,
     output decode_info_t decode_info_o,
     output logic[31:0][7:0] inst_string_o
 );
