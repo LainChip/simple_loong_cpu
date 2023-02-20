@@ -247,8 +247,11 @@ module icache #(
                     end
                 end
                 if((ctrl == C_INVALID || (ctrl == C_HIT && !miss)) && !finish) begin
-                    
+                    fsm_state_next = S_SYNC;
                 end
+            end
+            S_SYNC: begin
+                fsm_state_next = S_NORMAL;
             end
             S_WAIT_BUS: begin
                 // WAIT_BUS 需要等待让出总线后继续后面的操作
@@ -330,9 +333,7 @@ module icache #(
     always_ff @(posedge clk) begin
         if(~rst_n || clr_i) begin
             f1_ctrl <= C_NONE;
-            ctrl    <= C_NONE;
         end else if (~stall) begin
-            ctrl <= f1_ctrl;
             if(cacheop_valid_i) begin
                 // 强制优先接受CACHEOP的请求
                 if(cacheop_i == 2'b10) begin
@@ -344,6 +345,26 @@ module icache #(
                 f1_ctrl <= C_FETC;
             end else begin
                 f1_ctrl <= C_NONE;
+            end
+        end
+    end
+    always_ff @(posedge clk) begin
+        if(~rst_n) begin
+            ctrl <= C_NONE;
+        end else
+        if(!fsm_busy) begin
+            if(clr_i) begin
+                if(f1_ctrl != C_INVALID && f1_ctrl != C_HIT) begin
+                    ctrl <= C_NONE;
+                end else begin
+                    ctrl <= f1_ctrl;
+                end
+            end else begin
+                ctrl <= f1_ctrl;
+            end
+        end else begin
+            if(clr_i && ctrl != C_INVALID && ctrl != C_HIT) begin
+                ctrl <= C_NONE;
             end
         end
     end
@@ -371,6 +392,8 @@ module icache #(
         end else if(fsm_state == S_PRDAT) begin
             // 读透传模式, 保证总线的数据可以写入输出用的data寄存器
             ram_rw_addr = {paddr[11:3], refill_cnt[0]};
+        end else if(fsm_state == S_SYNC) begin
+            ram_rw_addr = {paddr[11:4], refill_cnt};
         end
     end
 
@@ -406,7 +429,7 @@ module icache #(
     always_comb begin
         // 在F2的请求, 若为CACHE指令, 则需要无效化对应的CACHE行进行写操作
         ram_we_tag = '0;
-        if(fsm_state == S_NORMAL && (ctrl == C_INVALID || ctrl == C_HIT) && !clr_i && !excp_inv) begin
+        if(fsm_state == S_SYNC) begin
             ram_we_tag = '1;
         end else if(fsm_state == S_RDAT)  begin
             // refill 时 更新tag
@@ -422,17 +445,15 @@ module icache #(
         // 正常情况时, 检查是否是 INVALIDATE CACOP 或者 REFILL
         ram_w_tag.valid = 1'b1;
         ram_w_tag.ppn   = paddr[31:12];
-        if(fsm_state == S_NORMAL) begin
-            if(ctrl == C_INVALID || ctrl == C_HIT) begin
-                ram_w_tag.valid = 1'b0;
-            end
+        if(fsm_state == S_SYNC) begin
+            ram_w_tag.valid = 1'b0;
         end
     end
 
     // ram_we_mask 逻辑 // TODO : check
     always_comb begin
         ram_we_mask = '0;
-        if(fsm_state == S_NORMAL) begin
+        if(fsm_state == S_SYNC) begin
             // 只在INVALIDATE 的时候需要写
             if(ctrl == C_INVALID) begin
                 ram_we_mask[direct_sel_index] = 1'b1;
@@ -491,7 +512,7 @@ module icache #(
 
     // finish 寄存器管理
     always_ff @(posedge clk) begin
-        if(fsm_state == S_PRDAT) begin
+        if(fsm_state == S_PRDAT || fsm_state == S_SYNC) begin
             finish <= 1'b1;
         end else if(~stall) begin
             finish <= 1'b0;
