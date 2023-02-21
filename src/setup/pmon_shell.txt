@@ -1,7 +1,7 @@
 ifconfig dmfe0 192.168.0.2
 load tftp://192.168.0.1/vmlinux
 g console=ttyS0,115200 rdinit=sbin/init
-devcp tftp://192.168.0.1/vmlinux /dev/mtd0
+
 
 mtd_erase /dev/mtd0r
 mtd_erase /dev/mtd1r
