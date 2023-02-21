@@ -105,8 +105,8 @@ module frontend(
         end
     end
     fetch_excp_t fetch_excp;
-    bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict;
-    bpu_predict_t bpu_predict,fetch_predict, bpf_front_predict;
+    bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict, bpf_front_predict;
+    bpu_predict_t bpu_predict,fetch_predict;
     bpu_update_t bpf_front_update;
     decode_info_t [1:0]fifo_decode_info;
     logic [31:0] bpu_vpc,bpu_ppc,fetch_vpc,fifo_vpc;
@@ -116,7 +116,7 @@ module frontend(
     logic[1:0][31:0] fetch_inst,fetch_inst_fifo;
     logic[1:0][63 + $bits(bpu_predict_t) + $bits(fetch_excp_t):0] fetch_fifo_out;
     inst_t [1:0] fifo_inst;
-    logic [1:0] fifo_write_num,fetch_write_num;
+    logic [1:0] fifo_write_num,fetch_write_num,bpf_front_valid;
 
     // NPC / BPU 模块
     // npc npc_module(
@@ -137,7 +137,7 @@ module frontend(
     (
         .clk,
         .rst_n,
-        .stall_i(bpu_stall),
+        .stall_i(bpu_stall | idle_lock),
         .update_back_i(bpu_feedback_i),
         .update_front_i(bpf_front_update),
         .predict_o(bpu_predict),
@@ -254,24 +254,27 @@ module frontend(
     (
         .clk       (clk),
         .rst_n     (rst_n),
-        .pc_i      (fetch_fifo_out[0][63:32]),
+        .fifo_ready_i (fifo_ready),
+        .pc0_i     (fetch_fifo_out[0][63:32]),
+        .pc1_i     (fetch_fifo_out[1][63:32]),
         .valid_i   (fetch_valid),
         .decode_i  (fifo_decode_info),
-        .predict_i (fetch_fifo_out[0][63+$bits(bpu_predict_t):64]),
+        .predict0_i(fetch_fifo_out[0][63+$bits(bpu_predict_t):64]),
+        .predict1_i(fetch_fifo_out[1][63+$bits(bpu_predict_t):64]),
         .update_o  (bpf_front_update),
-        .predict_o (bpf_front_predict)
+        .predict_o (bpf_front_predict),
+        .valid_o   (bpf_front_valid)
     );
 
-
     always_comb begin
-        fifo_write_num = {fetch_valid[0] & fetch_valid[1], fetch_valid[0] ^ fetch_valid[1]};
-        fifo_inst[0].bpu_predict = bpf_front_predict; // fetch_fifo_out[0][63+$bits(bpu_predict_t):64];
+        fifo_write_num = {bpf_front_valid[0] & bpf_front_valid[1], bpf_front_valid[0] ^ bpf_front_valid[1]};
+        fifo_inst[0].bpu_predict = bpf_front_predict[0]; // fetch_fifo_out[0][63+$bits(bpu_predict_t):64];
         fifo_inst[0].decode_info = fifo_decode_info[0];
         fifo_inst[0].pc = fetch_fifo_out[0][63:32];
         fifo_inst[0].valid = 1'b1;
         fifo_inst[0].register_info = get_register_info(fifo_decode_info[0]);
         fifo_inst[0].fetch_excp = fetch_fifo_out[0][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
-        fifo_inst[1].bpu_predict = bpf_front_predict; // fetch_fifo_out[1][63+$bits(bpu_predict_t):64];
+        fifo_inst[1].bpu_predict = bpf_front_predict[1]; // fetch_fifo_out[1][63+$bits(bpu_predict_t):64];
         fifo_inst[1].decode_info = fifo_decode_info[1];
         fifo_inst[1].pc = fetch_fifo_out[1][63:32];
         fifo_inst[1].valid = 1'b1;
