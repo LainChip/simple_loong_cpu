@@ -269,7 +269,9 @@ module backend_pipeline #(
 
 	if (~MAIN_PIPE) begin : mdu_module
 		// MDU here
-		mdu mdu_module (
+		mdu #(
+			.SIMPLIFIED_MODULE(`_SIMPLIFY_MUL)
+		) mdu_module (
 			.clk(clk),
     		.rst_n(rst_n),
 
