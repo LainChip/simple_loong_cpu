@@ -279,9 +279,6 @@ module frontend(
         fifo_inst[1].fetch_excp = fetch_fifo_out[1][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
     end
 
-    
-
-
     multi_channel_fifo #(
         .DATA_WIDTH($bits(inst_t)),
         .DEPTH(2),
