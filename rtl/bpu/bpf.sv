@@ -44,7 +44,10 @@ module bpf (
 					     						 (branch_type_i == `_BRANCH_CONDITION && taken) ? (pc_i + (offs_16)) :(
 								   						       			// pc_i + 4;
 								   						       			{pc_i[31:3] + 29'd1, 3'b000})));
+
+	wire predict_taken = predict_i.fsc == pc_i[2] ? predict_i.taken : 1'b0;
 	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
+	
 	
 	always_comb begin : proc_taken
 		if (branch_type_i == `_BRANCH_CONDITION) begin
@@ -73,7 +76,7 @@ module bpf (
 	// 添加taken的判断，因为有分支指令的目标为pc+8，如果bpu未预测到则pc+4的指令会被标记为有效
 	// 需要在此处检查这样的预测错误
 	wire target_miss = predict_npc != target;
-	wire direction_miss = predict_i.taken != taken;
+	wire direction_miss = predict_taken != taken;
 	wire predict_miss = (target_miss & predict_i.taken) | direction_miss;
 	assign update_o.flush = (~stall_i & predict_miss & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
@@ -101,12 +104,6 @@ module bpf (
 	assign update_o.lpht_update = 1'b1;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
-
-	// debug
-	wire wb_valid = decode_i.wb.valid;
-	wire flush = update_o.flush;
-	wire predict_taken = predict_i.taken;
-	wire [1:0] br_type = update_o.br_type;
 	
 endmodule : bpf
 
