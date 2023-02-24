@@ -214,7 +214,7 @@ module frontend(
     // FIFO 模块
     multi_channel_fifo #(
         .DATA_WIDTH(64 + $bits(bpu_predict_t) + $bits(fetch_excp_t)),
-        .DEPTH(8),
+        .DEPTH(16),
         .BANK(4),
         .WRITE_PORT(2),
         .READ_PORT(2)

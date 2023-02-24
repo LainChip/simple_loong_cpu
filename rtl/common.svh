@@ -15,6 +15,6 @@
 
 `define _CACHE_BUS_DATA_LEN (32)
 `define _AXI_BURST_SIZE (4'b0011)
-`define _SIMPLIFY_MUL (0)    // 0 for using multiplier 
+`define _SIMPLIFY_MUL (1)    // 0 for using multiplier 
 
 `endif
