@@ -93,6 +93,7 @@ int main(int argc, char **argv, char **env)
             }
             // Assign some other inputs
             top->req_i = (rand() & 0x1) | ((rand() & 0x1) << 1) |  ((rand() & 0x1) << 2) |  ((rand() & 0x1) << 3);
+            // top->req_i = 0xf;
         }
 
         // Evaluate model

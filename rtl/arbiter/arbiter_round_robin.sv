@@ -22,9 +22,15 @@ module arbiter_round_robin #(
 
 	assign valid_sel = |req_i;
 	assign masked_req = round_robin_mask & {req_i,req_i};
-	assign round_robin_mask_next = {(round_robin_sel_onehot - {REQ_NUM{1'd1}}),(~(round_robin_sel_onehot - {REQ_NUM{1'd1}}))};
+	assign round_robin_mask_next = {(round_robin_sel_onehot - {{(REQ_NUM-1){1'd0}},1'd1}),(~(round_robin_sel_onehot - {{(REQ_NUM-1){1'd0}},1'd1}))};
+		/* 去除mask中非request位后，置1的最高位即为下一个sel_o
+	     * sel_o | mask_next 
+		 * 1000  | 0111_1000
+		 * 0100  | 0011_1100
+		 * 0010  | 0001_1110
+		 * 0001  | 0000_1111
+		 * */
 	assign sel_o = round_robin_sel_onehot;
-	// assign sel_o = '0;
 
 	always_comb begin : round_robin_sel_onehot_gen
 		round_robin_sel_onehot = '0;
