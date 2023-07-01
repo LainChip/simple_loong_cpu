@@ -3,7 +3,7 @@ import re
 import json
 try_chiplab_home = os.getenv('CHIPLAB_HOME')
 target_path = '../dist'
-if try_chiplab_home != '':
+if try_chiplab_home != '' and try_chiplab_home is not None:
     target_path = try_chiplab_home + '/IP/myCPU/'
 print("target_path: " + target_path)
 
