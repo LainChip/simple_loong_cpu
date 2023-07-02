@@ -1,7 +1,7 @@
 module mycpu_mega_top(
     input           aclk,
     input           aresetn,
-    output          cpu_global_reset,
+    output          global_reset,
     input    [ 7:0] ext_int, 
     //AXI interface 
     //read reqest

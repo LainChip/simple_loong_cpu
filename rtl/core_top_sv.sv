@@ -54,7 +54,7 @@ module core_top_sv(
     output [31:0] debug0_wb_inst
 );
 
-    AXI_BUS mem_bus();
+    LA_AXI_BUS mem_bus();
 
     // assign mem_bus.Slave.aw_ready = awready;
     // assign mem_bus.Slave.w_ready = wready;

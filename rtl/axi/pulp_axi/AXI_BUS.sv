@@ -16,7 +16,7 @@
 `include "common.svh"
 
 /// An AXI4 interface.
-interface AXI_BUS #(
+interface LA_AXI_BUS #(
   parameter int unsigned AXI_ADDR_WIDTH = 32,
   parameter int unsigned AXI_DATA_WIDTH = 32,
   parameter int unsigned AXI_ID_WIDTH   = 4,

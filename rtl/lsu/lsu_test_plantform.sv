@@ -25,7 +25,7 @@ module lsu_test_plantform (
 	cache_bus_req_t bus_req;
 	cache_bus_resp_t bus_resp;
 
-	AXI_BUS #(.AXI_ADDR_WIDTH(32),
+	LA_AXI_BUS #(.AXI_ADDR_WIDTH(32),
 		.AXI_ID_WIDTH  (4),
 		.AXI_USER_WIDTH(1),
 		.AXI_DATA_WIDTH(32)) mem_bus;
