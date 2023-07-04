@@ -10,7 +10,7 @@ module forwarding_unit#(
 	parameter int PIPE_NUM = 2
 )(
 	input [$clog2(PIPE_NUM) - 1 : 0] pipe_sel_i,
-	input [SOURCE_NUM : 0] sel_vec_i, // 0 for not forwarding
+	input [SOURCE_NUM : 0] sel_vec_i, // [0] for not forwarding
 	input [PIPE_NUM - 1 : 0][SOURCE_NUM - 1: 0][DATA_WIDTH - 1 : 0] data_vec_i,
 	input [DATA_WIDTH - 1 : 0] old_data_i,
 
