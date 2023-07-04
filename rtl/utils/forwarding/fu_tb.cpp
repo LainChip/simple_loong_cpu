@@ -28,9 +28,14 @@
         top->eval();          \
     } while (0)
 
-struct DivRes {
-    uint32_t q = 0;
-    uint32_t s = 0;
+struct forwarding_data {
+    uint32_t data;
+    uint8_t  addr : 5;
+    uint8_t  valid: 1;
+};
+
+struct forwarding_bus {
+    forwarding_data forwarding_src[2][3];
 };
 
 // Legacy function required only so linking works on Cygwin and MSVC++
@@ -75,7 +80,14 @@ int main(int argc, char** argv) {
     // "TOP" will be the hierarchical name of the module.
     const std::unique_ptr<Vdyn_forwarding_unit> top{new Vdyn_forwarding_unit{contextp.get(), "TOP"}};
 
-    
+    forwarding_data data_raw_i;
+    data_raw_i.addr = 7;
+    data_raw_i.data = 0x12345678;
+    data_raw_i.valid = 1;
+    top->data_raw_i = *((uint64_t*)&data_raw_i);
+    top->eval();
+    contextp->timeInc(3);
+    top->eval();
 
     finished:
     // Final model cleanup

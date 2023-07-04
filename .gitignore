@@ -16,3 +16,6 @@ src/inst/decoder.sv
 src/inst/decoder.svh
 .gitconfig
 dist
+
+# self trial
+rtl/test    
