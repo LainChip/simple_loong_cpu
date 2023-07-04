@@ -30,8 +30,11 @@ mmu_s_resp_t     immu_resp, dmmu_resp;
 tlb_entry_t      r_tlbentry;
 
 // axi converter
-axi_converter #(.CACHE_PORT_NUM(2))axi_converter(
-	.clk(clk),.rst_n(rst_n),
+axi_converter #(
+	.CACHE_PORT_NUM(2)
+) axi_converter (
+	.clk(clk),
+	.rst_n(rst_n),
 	.axi_bus_if(mem_bus),
 	.req_i({dbus_req,ibus_req}),
 	.resp_o({dbus_resp,ibus_resp})
