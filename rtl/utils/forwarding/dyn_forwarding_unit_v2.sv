@@ -30,7 +30,7 @@ module dyn_forwarding_unit #(
             end
         end
         for (genvar i = 0; i < SRC_NUM; i++) begin
-            cmp_res[i] = (data_raw_i.addr == forwarding_src[i].addr);
+            assign cmp_res[i] = (data_raw_i.addr == forwarding_src[i].addr);
         end
     endgenerate
 
