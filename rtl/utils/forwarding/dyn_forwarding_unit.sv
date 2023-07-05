@@ -36,16 +36,16 @@ module dyn_forwarding_unit #(
         end
     endgenerate
 
-    function integer hsbit(logic [$:0] vector); // [$:0] is not allowed
-        integer highest_set_bit = -1;
-        for (integer i = $bit(vector); i >= 0; i -= 1) begin
-            if (vector[i]) begin
-                highest_set_bit = i;
-                break;
-            end
-        end
-        return highest_set_bit;
-    endfunction
+    // function integer hsbit(logic [$:0] vector); // [$:0] is not allowed
+    //     integer highest_set_bit = -1;
+    //     for (integer i = $bit(vector); i >= 0; i -= 1) begin
+    //         if (vector[i]) begin
+    //             highest_set_bit = i;
+    //             break;
+    //         end
+    //     end
+    //     return highest_set_bit;
+    // endfunction
 
     logic [PIPE_NUM -1 : 0] pipe_sel;
     logic [STAGE_NUM-1 : 0] stage_sel;
