@@ -9,7 +9,7 @@ module qpram_32x2(
     input  wire [1:0] DI,
     output wire [1:0] Q0,
     output wire [1:0] Q1,
-    output wire [1:0] Q2,
+    output wire [1:0] Q2
 );
 
 wire [1:0] Q3;

@@ -7,6 +7,6 @@ module la_mux2 #(
     input wire sel_i
 );
 
-    assign r_o = sel_is ? d1_i : d0_i;
+    assign r_o = sel_i ? d1_i : d0_i;
 
 endmodule

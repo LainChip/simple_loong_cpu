@@ -1,7 +1,6 @@
 module ram_3r1w_32d#(
-    parameter int WIDTH = 32,
-)
-( 
+    parameter int WIDTH = 32
+)( 
     input                          clk,
     input  [4 : 0] addr0,
     input  [4 : 0] addr1,
@@ -15,7 +14,7 @@ module ram_3r1w_32d#(
 );
 
     for(genvar i = 0 ; i < ((WIDTH - 1) / 2) ; i++) begin
-        qpram_32x2 ram_(
+        qpram_32x2 ram_1(
             .CLK(clk),
             .CEN(1'b1), 
             .WEN(wea),
@@ -26,7 +25,7 @@ module ram_3r1w_32d#(
             .DI(  din[(2 * i) + 3 - (WIDTH % 2) -: 2]),
             .Q0(dout0[(2 * i) + 3 - (WIDTH % 2) -: 2]),
             .Q1(dout1[(2 * i) + 3 - (WIDTH % 2) -: 2]),
-            .Q2(dout2[(2 * i) + 3 - (WIDTH % 2) -: 2]),
+            .Q2(dout2[(2 * i) + 3 - (WIDTH % 2) -: 2])
         );
     end
     if((WIDTH % 2) != 0) begin
@@ -41,7 +40,7 @@ module ram_3r1w_32d#(
             .DI({1'b0,din[0]}),
             .Q0({1'b0,dout0[0]}),
             .Q1({1'b0,dout1[0]}),
-            .Q2({1'b0,dout2[0]}),
+            .Q2({1'b0,dout2[0]})
         );
     end
 

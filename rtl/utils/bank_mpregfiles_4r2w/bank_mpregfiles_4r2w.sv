@@ -31,7 +31,7 @@ module bank_mpregfiles_4r2w #(
     logic[WIDTH - 1 : 0] wd_0,wd_1;
     logic we_0,we_1;
 
-    logic[3:0] rst_cnt_q;
+    logic[3:0] rst_cnt_q;   // 2 banks and each manage 16 regs, at most 16 cycles
     if(RESET_NEED) begin
         always @(posedge clk) begin
             if(~rst_n) begin
@@ -49,12 +49,12 @@ module bank_mpregfiles_4r2w #(
     la_mux2 #(WIDTH)output_mux2(rd2_0,rd2_1,rd2_o,ra2_i[0]);
     la_mux2 #(WIDTH)output_mux3(rd3_0,rd3_1,rd3_o,ra3_i[0]);
 
-    assign conflict_o = wa1_i[0] == wa2_i[0];
+    assign conflict_o = wa0_i[0] == wa1_i[0];
 
     la_mux2 #(WIDTH + 6)write_mux0({wa0_i[4:0],wd0_i,we0_i},{wa1_i[4:0],wd1_i,we1_i},{wa_0,wd_0,we_0},wa0_i[0]);
     la_mux2 #(WIDTH + 6)write_mux1({wa0_i[4:0],wd0_i,we0_i},{wa1_i[4:0],wd1_i,we1_i},{wa_1,wd_1,we_1},wa1_i[0]);
 
-    ram_3r1w_32 qram_b0_0(
+    ram_3r1w_32d qram_b0_0(
         .clk,
         .addr0(ra0_i[4:0]),
         .addr1(ra1_i[4:0]),
@@ -66,19 +66,19 @@ module bank_mpregfiles_4r2w #(
         .din(rst_n ? wd_0 : '0),
         .wea(we_0 | ~rst_n)
     );
-    ram_3r1w_32 qram_b0_1(
+    ram_3r1w_32d qram_b0_1(
         .clk,
         .addr0(ra3_i[4:0]),
         .addr1('0),
         .addr2('0),
         .addrw(rst_cnt_q ^ wa_0),
         .dout0(rd3_0),
-        .dout1('0),
-        .dout2('0),
+        .dout1(),
+        .dout2(),
         .din(rst_n ? wd_0 : '0),
         .wea(we_0 | ~rst_n)
     );
-    ram_3r1w_32 qram_b1_0(
+    ram_3r1w_32d qram_b1_0(
         .clk,
         .addr0(ra0_i[4:0]),
         .addr1(ra1_i[4:0]),
@@ -90,15 +90,15 @@ module bank_mpregfiles_4r2w #(
         .din(rst_n ? wd_1 : '0),
         .wea(we_1 | ~rst_n)
     );
-    ram_3r1w_32 qram_b1_1(
+    ram_3r1w_32d qram_b1_1(
         .clk,
         .addr0(ra3_i[4:0]),
         .addr1('0),
         .addr2('0),
         .addrw(rst_cnt_q ^ wa_1),
         .dout0(rd3_1),
-        .dout1('0),
-        .dout2('0),
+        .dout1(),
+        .dout2(),
         .din(rst_n ? wd_1 : '0),
         .wea(we_1 | ~rst_n)
     );
