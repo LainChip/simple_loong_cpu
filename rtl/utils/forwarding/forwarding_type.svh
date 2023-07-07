@@ -7,5 +7,6 @@ typedef struct packed {
     logic valid;        // whether data is valid
 } forwarding_data_t;
 
+`define FWD_DATA_SIZE ($bits(forwarding_data_t))
 
 `endif
