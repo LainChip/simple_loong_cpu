@@ -1,6 +1,11 @@
+`ifndef _FPGA
+    `include "../../ram_wrapper/ram_3r1w_32d.sv"
+    `include "../../ram_wrapper/qpram_32x2.v"
+`endif
+
 module bank_mpregfiles_4r2w #(
     parameter int WIDTH = 32,
-    parameter bit RESET_NEED = 1'b0
+    parameter bit RESET_NEED = 1'b1
 )(
     input clk,
     input rst_n,
@@ -24,6 +29,13 @@ module bank_mpregfiles_4r2w #(
 
     output wire conflict_o
 );
+
+    `ifndef _FPGA
+        initial begin
+        	$dumpfile("logs/vlt_dump.vcd");
+        	$dumpvars();
+        end
+    `endif
 
     logic[4:0] wa_0,wa_1;
     logic[WIDTH - 1 : 0] rd0_0,rd1_0,rd2_0,rd3_0;
@@ -62,7 +74,7 @@ module bank_mpregfiles_4r2w #(
         .addr0(ra0_i[4:0]),
         .addr1(ra1_i[4:0]),
         .addr2(ra2_i[4:0]),
-        .addrw({rst_cnt_q, 1'b0} ^ wa_0),
+        .addrw({rst_cnt_q, 1'b0} ^ (wa_0 & {5{rst_n}})),
         .dout0(rd0_0),
         .dout1(rd1_0),
         .dout2(rd2_0),
@@ -74,7 +86,7 @@ module bank_mpregfiles_4r2w #(
         .addr0(ra3_i[4:0]),
         .addr1('0),
         .addr2('0),
-        .addrw({rst_cnt_q, 1'b0} ^ wa_0),
+        .addrw({rst_cnt_q, 1'b0} ^ (wa_0 & {5{rst_n}})),
         .dout0(rd3_0),
         .dout1(),
         .dout2(),
@@ -88,7 +100,8 @@ module bank_mpregfiles_4r2w #(
         .addr0(ra0_i[4:0]),
         .addr1(ra1_i[4:0]),
         .addr2(ra2_i[4:0]),
-        .addrw({rst_cnt_q, (1'b1 & ~rst_n)} ^ wa_1),
+        .addrw({rst_cnt_q, (1'b1 & ~rst_n)} ^ (wa_0 & {5{rst_n}})),
+        // or .addrw(rst_n ? wa_0 : {rst_cnt_q, 1'b1}),
         .dout0(rd0_1),
         .dout1(rd1_1),
         .dout2(rd2_1),
@@ -100,7 +113,7 @@ module bank_mpregfiles_4r2w #(
         .addr0(ra3_i[4:0]),
         .addr1('0),
         .addr2('0),
-        .addrw({rst_cnt_q, (1'b1 & ~rst_n)} ^ wa_1),
+        .addrw({rst_cnt_q, (1'b1 & ~rst_n)} ^ (wa_0 & {5{rst_n}})),
         .dout0(rd3_1),
         .dout1(),
         .dout2(),
