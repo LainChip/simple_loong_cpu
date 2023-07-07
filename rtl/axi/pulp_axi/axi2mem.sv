@@ -26,7 +26,7 @@ module axi2mem #(
 )(
     input logic                         clk_i,    // Clock
     input logic                         rst_ni,  // Asynchronous reset active low
-    AXI_BUS.Slave                       slave,
+    LA_AXI_BUS.Slave                       slave,
     output logic                        req_o,
     output logic                        we_o,
     output logic [AXI_ADDR_WIDTH-1:0]   addr_o,

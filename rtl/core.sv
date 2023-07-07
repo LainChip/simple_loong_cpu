@@ -10,7 +10,7 @@ module core(
     input clk,
     input rst_n,
     input [7:0] int_i,
-    AXI_BUS.Master mem_bus
+    LA_AXI_BUS.Master mem_bus
 );
 
 inst_t 		     [1:0]inst;

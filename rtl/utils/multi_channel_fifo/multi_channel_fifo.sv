@@ -71,7 +71,7 @@ module multi_channel_fifo #(
 			assign data_in[i] = write_data_i[port_write_index[i][$clog2(WRITE_PORT) - 1: 0]];
 
 			// FIFO 生成
-			fifo_v3 #(
+			la_fifo_v3 #(
 				.DEPTH       (DEPTH),
 				.DATA_WIDTH  (DATA_WIDTH),
 				.dtype       (dtype)

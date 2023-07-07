@@ -15,16 +15,31 @@ module spram_256x32(
 //        .A     (A),
 //        .D     (D)
 // );
-sim_sram #(
-    .WIDTH(32),
-    .DEPTH(256)
-) ram(
-    .addra(A),
-    .clka(CLK),
-    .dina(D),
-    .douta(Q),
-    .ena(CEN),
-    .wea(WEN)
-);
+// sim_sram #(
+//     .WIDTH(32),
+//     .DEPTH(256)
+// ) ram(
+//     .addra(A),
+//     .clka(CLK),
+//     .dina(D),
+//     .douta(Q),
+//     .ena(CEN),
+//     .wea(WEN)
+// );
+
+    simpleDualPortRam #(
+        .dataWidth(32),
+        .ramSize(256),
+        .readMuler(1),
+        .latency(1)
+    ) tag_ram (
+        .clk(CLK),
+        .rst_n(1'd1),
+        .addressA(A),
+        .we(WEN & CEN),
+        .addressB(A),
+        .inData(D),
+        .outData(Q)
+    );
 
 endmodule

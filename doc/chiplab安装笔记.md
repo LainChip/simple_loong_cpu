@@ -8,11 +8,13 @@
 
 https://verilator.org/guide/latest/install.html
 
-​	sudo apt-get install git perl python3 make autoconf g++ flex bison ccache
-​	sudo apt-get install libgoogle-perftools-dev numactl perl-doc
-​	sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
-​	sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
-​	sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+```
+​sudo apt-get install git perl python3 make autoconf g++ flex bison ccache
+​sudo apt-get install libgoogle-perftools-dev numactl perl-doc
+​sudo apt-get install libfl2  # Ubuntu only (ignore if gives error)
+​sudo apt-get install libfl-dev  # Ubuntu only (ignore if gives error)
+​sudo apt-get install zlibc zlib1g zlib1g-dev  # Ubuntu only (ignore if gives error)
+```
 
 （以上为verilator编译需要的库）
 
@@ -22,18 +24,17 @@ https://verilator.org/guide/latest/install.html
 
    ubuntu上必须要安装这些库：
 
-   sudo apt install libsdl2-2.0-0
-
-   sudo apt install readline-common
-
-   sudo apt install libreadline-dev
-
+```
+sudo apt install libsdl2-2.0-0
+sudo apt install readline-common
+sudo apt install libreadline-dev
+```
 
 
 3. 对于交叉编译器，提供的是一个x86版本，需要自行编译x64版本
 
-   ```c
-   sudo apt-get install binutils-dev
-   ```
+```c
+sudo apt-get install binutils-dev
+```
 
    

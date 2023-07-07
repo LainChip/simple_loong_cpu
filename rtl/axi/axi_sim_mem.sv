@@ -4,7 +4,7 @@ module axi_sim_mem#(
 	parameter int valid_addr_len = 14
 )(
 	input clk, input rst_n,
-	AXI_BUS.Slave slave
+	LA_AXI_BUS.Slave slave
 );
 
 	logic [(1 << valid_addr_len) - 1 : 0][7:0]mem;
