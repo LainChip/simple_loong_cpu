@@ -44,6 +44,7 @@ module bank_mpregfiles_4r2w #(
         assign rst_cnt_q = '0;
     end
 
+    /* read port out mux */
     la_mux2 #(WIDTH)output_mux0(rd0_0,rd0_1,rd0_o,ra0_i[0]);
     la_mux2 #(WIDTH)output_mux1(rd1_0,rd1_1,rd1_o,ra1_i[0]);
     la_mux2 #(WIDTH)output_mux2(rd2_0,rd2_1,rd2_o,ra2_i[0]);
@@ -51,15 +52,17 @@ module bank_mpregfiles_4r2w #(
 
     assign conflict_o = wa0_i[0] == wa1_i[0];
 
+    /* write port in mux */
     la_mux2 #(WIDTH + 6)write_mux0({wa0_i[4:0],wd0_i,we0_i},{wa1_i[4:0],wd1_i,we1_i},{wa_0,wd_0,we_0},wa0_i[0]);
     la_mux2 #(WIDTH + 6)write_mux1({wa0_i[4:0],wd0_i,we0_i},{wa1_i[4:0],wd1_i,we1_i},{wa_1,wd_1,we_1},wa1_i[0]);
 
+    /* bank0 : manage even addr */
     ram_3r1w_32d qram_b0_0(
         .clk,
         .addr0(ra0_i[4:0]),
         .addr1(ra1_i[4:0]),
         .addr2(ra2_i[4:0]),
-        .addrw(rst_cnt_q ^ wa_0),
+        .addrw({rst_cnt_q, 1'b0} ^ wa_0),
         .dout0(rd0_0),
         .dout1(rd1_0),
         .dout2(rd2_0),
@@ -71,19 +74,21 @@ module bank_mpregfiles_4r2w #(
         .addr0(ra3_i[4:0]),
         .addr1('0),
         .addr2('0),
-        .addrw(rst_cnt_q ^ wa_0),
+        .addrw({rst_cnt_q, 1'b0} ^ wa_0),
         .dout0(rd3_0),
         .dout1(),
         .dout2(),
         .din(rst_n ? wd_0 : '0),
         .wea(we_0 | ~rst_n)
     );
+
+    /* bank1 : manage odd addr */
     ram_3r1w_32d qram_b1_0(
         .clk,
         .addr0(ra0_i[4:0]),
         .addr1(ra1_i[4:0]),
         .addr2(ra2_i[4:0]),
-        .addrw(rst_cnt_q ^ wa_1),
+        .addrw({rst_cnt_q, (1'b1 & ~rst_n)} ^ wa_1),
         .dout0(rd0_1),
         .dout1(rd1_1),
         .dout2(rd2_1),
@@ -95,7 +100,7 @@ module bank_mpregfiles_4r2w #(
         .addr0(ra3_i[4:0]),
         .addr1('0),
         .addr2('0),
-        .addrw(rst_cnt_q ^ wa_1),
+        .addrw({rst_cnt_q, (1'b1 & ~rst_n)} ^ wa_1),
         .dout0(rd3_1),
         .dout1(),
         .dout2(),
