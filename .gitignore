@@ -10,7 +10,7 @@
 *.sublime-project
 *.sublime-workspace
 *.idea
-*.gtkw
+# *.gtkw
 *DVEfiles
 src/inst/decoder.sv
 src/inst/decoder.svh

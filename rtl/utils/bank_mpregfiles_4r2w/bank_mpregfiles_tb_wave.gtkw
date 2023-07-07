@@ -1,0 +1,112 @@
+[*]
+[*] GTKWave Analyzer v3.3.103 (w)1999-2019 BSI
+[*] Fri Jul  7 16:59:22 2023
+[*]
+[dumpfile] "/home/excalibur/Desktop/Loongarch/simple_loong_cpu/rtl/utils/bank_mpregfiles_4r2w/logs/vlt_dump.vcd"
+[dumpfile_mtime] "Fri Jul  7 16:43:24 2023"
+[dumpfile_size] 171884
+[savefile] "/home/excalibur/Desktop/Loongarch/simple_loong_cpu/rtl/utils/bank_mpregfiles_4r2w/bank_mpregfiles_tb_wave.gtkw"
+[timestart] 42
+[size] 1856 862
+[pos] -51 -51
+*-2.681736 66 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.bank_mpregfiles_4r2w.
+[treeopen] TOP.bank_mpregfiles_4r2w.qram_b0_0.
+[sst_width] 233
+[signals_width] 218
+[sst_expanded] 1
+[sst_vpaned_height] 498
+@28
+TOP.clk
+TOP.bank_mpregfiles_4r2w.rst_n
+@22
+TOP.bank_mpregfiles_4r2w.rst_cnt_q[3:0]
+@28
+TOP.bank_mpregfiles_4r2w.conflict_o
+@200
+-read
+@22
+TOP.bank_mpregfiles_4r2w.ra0_i[4:0]
+TOP.bank_mpregfiles_4r2w.ra1_i[4:0]
+TOP.bank_mpregfiles_4r2w.ra2_i[4:0]
+TOP.bank_mpregfiles_4r2w.ra3_i[4:0]
+TOP.rd0_o[31:0]
+TOP.bank_mpregfiles_4r2w.rd1_o[31:0]
+TOP.rd2_o[31:0]
+TOP.rd3_o[31:0]
+@200
+-read(inner)
+@22
+TOP.bank_mpregfiles_4r2w.rd0_0[31:0]
+TOP.bank_mpregfiles_4r2w.rd1_0[31:0]
+TOP.bank_mpregfiles_4r2w.rd2_0[31:0]
+TOP.bank_mpregfiles_4r2w.rd3_0[31:0]
+@23
+TOP.bank_mpregfiles_4r2w.rd0_1[31:0]
+@22
+TOP.bank_mpregfiles_4r2w.rd1_1[31:0]
+TOP.bank_mpregfiles_4r2w.rd2_1[31:0]
+TOP.bank_mpregfiles_4r2w.rd3_1[31:0]
+@200
+-bank0
+@22
+TOP.bank_mpregfiles_4r2w.qram_b0_0.addr0[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_0.addr1[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_0.addr2[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_1.addr0[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_0.dout0[31:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_0.dout1[31:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_0.dout2[31:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_1.dout0[31:0]
+@200
+-bank1
+@22
+TOP.bank_mpregfiles_4r2w.qram_b1_0.addr0[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_0.addr1[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_0.addr2[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_1.addr0[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_0.dout0[31:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_0.dout1[31:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_0.dout2[31:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_1.dout0[31:0]
+@200
+-
+@28
+TOP.clk
+@200
+-write
+@22
+TOP.bank_mpregfiles_4r2w.wa0_i[4:0]
+TOP.wd0_i[31:0]
+@28
+TOP.we0_i
+@22
+TOP.bank_mpregfiles_4r2w.wa1_i[4:0]
+TOP.wd1_i[31:0]
+@28
+TOP.we1_i
+@200
+-write(inner)
+@22
+TOP.bank_mpregfiles_4r2w.wa_0[4:0]
+TOP.bank_mpregfiles_4r2w.wd_0[31:0]
+@28
+TOP.bank_mpregfiles_4r2w.we_0
+@22
+TOP.bank_mpregfiles_4r2w.wa_1[4:0]
+TOP.bank_mpregfiles_4r2w.wd_1[31:0]
+@28
+TOP.bank_mpregfiles_4r2w.we_1
+@200
+-bank0
+@22
+TOP.bank_mpregfiles_4r2w.qram_b0_0.addrw[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b0_0.din[31:0]
+@200
+-bank1
+@22
+TOP.bank_mpregfiles_4r2w.qram_b1_0.addrw[4:0]
+TOP.bank_mpregfiles_4r2w.qram_b1_0.din[31:0]
+[pattern_trace] 1
+[pattern_trace] 0
