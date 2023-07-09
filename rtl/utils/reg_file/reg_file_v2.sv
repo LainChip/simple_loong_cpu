@@ -1,7 +1,16 @@
-`ifndef _FPGA
-    `include "../bank_mpregfiles_4r2w/bank_mpregfiles_4r2w.sv"
+`ifdef _FPGA
+    `define FULL_TEST
 `endif
 
+`ifdef _DIFFTEST_ENABLE
+    `define FULL_TEST
+`endif
+
+`ifndef FULL_TEST
+    `include "../bank_mpregfiles_4r2w/bank_mpregfiles_4r2w.sv"  // can be included in Makefile instead
+`endif
+
+/*--JSON--{"module_name":"reg_file","module_ver":"2","module_type":"module"}--JSON--*/
 module reg_file #(
     parameter int DATA_WIDTH = 32,
     // fixed READ_PORT = 4, WRITE_PORT = 2 (odd/even)

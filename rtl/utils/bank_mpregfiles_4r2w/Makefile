@@ -51,7 +51,7 @@ VERILATOR_FLAGS += --coverage
 # Add this trace to get a backtrace in gdb
 #VERILATOR_FLAGS += --gdbbt
 # Include path
-VERILATOR_FLAGS += -I.. -I../decoder
+VERILATOR_FLAGS += -I.. -I../../ram_wrapper
 
 # Disable warning of UNUSEDSIGNAL
 # VERILATOR_FLAGS += -Wno-UNUSEDSIGNAL

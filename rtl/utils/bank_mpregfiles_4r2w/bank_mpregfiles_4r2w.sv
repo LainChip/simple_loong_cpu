@@ -1,8 +1,3 @@
-`ifndef _FPGA
-    `include "../../ram_wrapper/ram_3r1w_32d.sv"
-    `include "../../ram_wrapper/qpram_32x2.v"
-`endif
-
 module bank_mpregfiles_4r2w #(
     parameter int WIDTH = 32,
     parameter bit RESET_NEED = 1'b1

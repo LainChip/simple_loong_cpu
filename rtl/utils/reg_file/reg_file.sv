@@ -1,5 +1,6 @@
 `include "common.svh"
 
+/*--JSON--{"module_name":"reg_file","module_ver":"1","module_type":"module"}--JSON--*/
 module reg_file #(
     parameter int DATA_WIDTH = 32,
     parameter int REG_FILE_SIZE = 32,

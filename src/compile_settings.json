@@ -4,5 +4,8 @@
     },
     "lsu" :{
         "module_ver" : "3"
+    },
+    "reg_file" :{
+        "module_ver" : "1"
     }
 }
