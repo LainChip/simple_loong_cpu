@@ -1,14 +1,14 @@
 {
     "const" :{
-        "_REG_TYPE_I": "4'd0",
-        "_REG_TYPE_RW": "4'd1",
-        "_REG_TYPE_RRW": "4'd2",
-        "_REG_TYPE_W": "4'd3",
-        "_REG_TYPE_RR": "4'd4",
-        "_REG_TYPE_BL": "4'd5",
-        "_REG_TYPE_CSRXCHG": "4'd6",
-        "_REG_TYPE_RDCNTID": "4'd7",
-        "_REG_TYPE_INVTLB": "4'd8",
+        "_REG_TYPE_I"      : "5'b00_0_00",
+        "_REG_TYPE_RW"     : "5'b00_1_01",
+        "_REG_TYPE_RRW"    : "5'b01_1_01",
+        "_REG_TYPE_W"      : "5'b01_1_01",
+        "_REG_TYPE_RR"     : "5'b10_1_00",
+        "_REG_TYPE_BL"     : "5'b00_0_11",
+        "_REG_TYPE_CSRXCHG": "5'b10_1_01",
+        "_REG_TYPE_RDCNTID": "5'b00_0_10",
+        "_REG_TYPE_INVTLB" : "5'b01_1_00",
 
         "_REG_WB_ALU": "3'd0",
         "_REG_WB_BPF": "3'd1",
@@ -66,10 +66,10 @@
             "invalid_value": "{`_USE_EX,`_USE_EX}"
         },
         "reg_type": {
-            "length": 4,
+            "length": 5,
             "stage": "is",
             "default_value": "`_REG_TYPE_I",
-            "invalid_value": "4'b1111"
+            "invalid_value": "5'b11111"
         }
     }
 }

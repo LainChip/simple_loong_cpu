@@ -37,58 +37,20 @@ module frontend(
         input decode_info_t decode_info
     );
         register_info_t ret;
-        case(decode_info.is.reg_type)
-            `_REG_TYPE_I:begin
-                ret.r_reg[0] = '0;
-                ret.r_reg[1] = '0;
-                ret.w_reg = '0;
-            end
-            `_REG_TYPE_RW:begin
-                ret.r_reg[0] = '0;
-                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-                ret.w_reg = decode_info.general.inst25_0[4:0];
-            end
-            `_REG_TYPE_RRW:begin
-                ret.r_reg[0] = decode_info.general.inst25_0[14:10];
-                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-                ret.w_reg = decode_info.general.inst25_0[4:0];
-            end
-            `_REG_TYPE_W:begin
-                ret.r_reg[0] = decode_info.general.inst25_0[14:10];
-                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-                ret.w_reg = decode_info.general.inst25_0[4:0];
-            end
-            `_REG_TYPE_RR:begin
-                ret.r_reg[0] = decode_info.general.inst25_0[4:0];
-                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-                ret.w_reg = '0;
-            end
-            `_REG_TYPE_BL:begin
-                ret.r_reg[0] = '0;
-                ret.r_reg[1] = '0;
-                ret.w_reg = 5'd1;
-            end
-            `_REG_TYPE_CSRXCHG:begin
-                ret.r_reg[0] = decode_info.general.inst25_0[4:0];
-                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-                ret.w_reg = decode_info.general.inst25_0[4:0];
-            end
-            `_REG_TYPE_RDCNTID:begin
-                ret.r_reg[0] = '0;
-                ret.r_reg[1] = '0;
-                ret.w_reg = decode_info.general.inst25_0[4:0] | decode_info.general.inst25_0[9:5];
-            end
-            `_REG_TYPE_INVTLB:begin
-                ret.r_reg[0] = decode_info.general.inst25_0[14:10];
-                ret.r_reg[1] = decode_info.general.inst25_0[9:5];
-                ret.w_reg = '0;
-            end
-            default:begin
-                ret.r_reg[0] = '0;
-                ret.r_reg[1] = '0;
-                ret.w_reg = '0;
-            end
-        endcase
+
+        logic [1:0] r0_sel, w_sel;
+        logic r1_sel;
+        r0_sel = decode_info.is.reg_type[4:3];
+        r1_sel = decode_info.is.reg_type[2];
+        w_sel  = decode_info.is.reg_type[1:0];
+        
+        /* | r0:2 | r1:1 | w:2 | - totally 5bit */
+        ret.r_reg[0] = (r0_sel == 2'b01) ? decode_info.general.inst25_0[14:10] :
+                       (r0_sel == 2'b10) ? decode_info.general.inst25_0[4:0] : 0;
+        ret.r_reg[1] = (r1_sel == 1'b1) ? decode_info.general.inst25_0[9:5] : 0;
+        ret.w_reg    = (w_sel == 2'b01) ? decode_info.general.inst25_0[4:0] :
+                       (w_sel == 2'b10) ? decode_info.general.inst25_0[4:0] | decode_info.general.inst25_0[9:5] :
+                       (w_sel == 2'b11) ? 5'd1 : 0;
         return ret;
     endfunction
 
@@ -258,8 +220,7 @@ module frontend(
 		.inst_string_o(/*NC*/)
 	);
 
-    bpf_front inst_bpf_front
-    (
+    bpf_front inst_bpf_front(
         .clk       (clk),
         .rst_n     (rst_n),
         .fifo_ready_i (fifo_ready),
