@@ -1,6 +1,26 @@
 `ifndef _DECODE_HEADER
 `define _DECODE_HEADER
 
+`define _ALU_TYPE_NIL (4'd0)
+`define _ALU_TYPE_ADD (4'd1)
+`define _ALU_TYPE_SUB (4'd2)
+`define _ALU_TYPE_SLT (4'd3)
+`define _ALU_TYPE_AND (4'd4)
+`define _ALU_TYPE_OR (4'd5)
+`define _ALU_TYPE_XOR (4'd6)
+`define _ALU_TYPE_NOR (4'd7)
+`define _ALU_TYPE_SL (4'd8)
+`define _ALU_TYPE_SR (4'd9)
+`define _ALU_TYPE_MUL (4'd10)
+`define _ALU_TYPE_MULH (4'd11)
+`define _ALU_TYPE_DIV (4'd12)
+`define _ALU_TYPE_MOD (4'd13)
+`define _ALU_TYPE_LUI (4'd14)
+`define _OPD_REG (3'b000)
+`define _OPD_IMM_U5 (3'b001)
+`define _OPD_IMM_S12 (3'b010)
+`define _OPD_IMM_U12 (3'b011)
+`define _OPD_IMM_S20 (3'b100)
 `define _CSR_CRMD (14'h0)
 `define _CSR_PRMD (14'h1)
 `define _CSR_ECTL (14'h4)
@@ -36,6 +56,31 @@
 `define _EXCEPTION_HINT_NONE (2'd0)
 `define _EXCEPTION_HINT_SYSCALL (2'd1)
 `define _EXCEPTION_HINT_INVALID (2'd2)
+`define _MEM_TYPE_NONE (3'd0)
+`define _MEM_TYPE_WORD (3'd1)
+`define _MEM_TYPE_HALF (3'd2)
+`define _MEM_TYPE_BYTE (3'd3)
+`define _MEM_TYPE_UWORD (3'd5)
+`define _MEM_TYPE_UHALF (3'd6)
+`define _MEM_TYPE_UBYTE (3'd7)
+`define _REG_TYPE_I (5'b00_0_00)
+`define _REG_TYPE_RW (5'b00_1_01)
+`define _REG_TYPE_RRW (5'b01_1_01)
+`define _REG_TYPE_W (5'b01_1_01)
+`define _REG_TYPE_RR (5'b10_1_00)
+`define _REG_TYPE_BL (5'b00_0_11)
+`define _REG_TYPE_CSRXCHG (5'b10_1_01)
+`define _REG_TYPE_RDCNTID (5'b00_0_10)
+`define _REG_TYPE_INVTLB (5'b01_1_00)
+`define _REG_WB_ALU (3'd0)
+`define _REG_WB_BPF (3'd1)
+`define _REG_WB_LSU (3'd2)
+`define _REG_WB_CSR (3'd3)
+`define _REG_WB_MDU (3'd4)
+`define _READY_EX (1'b0)
+`define _READY_M2 (1'b1)
+`define _USE_EX (1'b0)
+`define _USE_M2 (1'b1)
 `define _BRANCH_INVALID (2'b00)
 `define _BRANCH_IMMEDIATE (2'b01)
 `define _BRANCH_INDIRECT (2'b10)
@@ -48,53 +93,11 @@
 `define _CMP_GEQ (3'd5)
 `define _CMP_LTU (3'd6)
 `define _CMP_GEU (3'd7)
-`define _MEM_TYPE_NONE (3'd0)
-`define _MEM_TYPE_WORD (3'd1)
-`define _MEM_TYPE_HALF (3'd2)
-`define _MEM_TYPE_BYTE (3'd3)
-`define _MEM_TYPE_UWORD (3'd5)
-`define _MEM_TYPE_UHALF (3'd6)
-`define _MEM_TYPE_UBYTE (3'd7)
-`define _ALU_TYPE_NIL (4'd0)
-`define _ALU_TYPE_ADD (4'd1)
-`define _ALU_TYPE_SUB (4'd2)
-`define _ALU_TYPE_SLT (4'd3)
-`define _ALU_TYPE_AND (4'd4)
-`define _ALU_TYPE_OR (4'd5)
-`define _ALU_TYPE_XOR (4'd6)
-`define _ALU_TYPE_NOR (4'd7)
-`define _ALU_TYPE_SL (4'd8)
-`define _ALU_TYPE_SR (4'd9)
-`define _ALU_TYPE_MUL (4'd10)
-`define _ALU_TYPE_MULH (4'd11)
-`define _ALU_TYPE_DIV (4'd12)
-`define _ALU_TYPE_MOD (4'd13)
-`define _ALU_TYPE_LUI (4'd14)
-`define _OPD_REG (3'b000)
-`define _OPD_IMM_U5 (3'b001)
-`define _OPD_IMM_S12 (3'b010)
-`define _OPD_IMM_U12 (3'b011)
-`define _OPD_IMM_S20 (3'b100)
-`define _REG_TYPE_I (4'd0)
-`define _REG_TYPE_RW (4'd1)
-`define _REG_TYPE_RRW (4'd2)
-`define _REG_TYPE_W (4'd3)
-`define _REG_TYPE_RR (4'd4)
-`define _REG_TYPE_BL (4'd5)
-`define _REG_TYPE_CSRXCHG (4'd6)
-`define _REG_TYPE_RDCNTID (4'd7)
-`define _REG_TYPE_INVTLB (4'd8)
-`define _REG_WB_ALU (3'd0)
-`define _REG_WB_BPF (3'd1)
-`define _REG_WB_LSU (3'd2)
-`define _REG_WB_CSR (3'd3)
-`define _REG_WB_MDU (3'd4)
-`define _READY_EX (1'b0)
-`define _READY_M2 (1'b1)
-`define _USE_EX (1'b0)
-`define _USE_M2 (1'b1)
 
 typedef logic[25 : 0] inst25_0_t;
+typedef logic[3 : 0] alu_type_t;
+typedef logic[2 : 0] opd_type_t;
+typedef logic[0 : 0] opd_unsigned_t;
 typedef logic[1 : 0] exception_hint_t;
 typedef logic[0 : 0] do_rdcntid_t;
 typedef logic[13 : 0] csr_num_t;
@@ -105,15 +108,14 @@ typedef logic[0 : 0] tlbwr_en_t;
 typedef logic[0 : 0] tlbfill_en_t;
 typedef logic[0 : 0] invtlb_en_t;
 typedef logic[0 : 0] do_ertn_t;
-typedef logic[1 : 0] branch_type_t;
-typedef logic[2 : 0] cmp_type_t;
-typedef logic[0 : 0] branch_link_t;
+typedef logic[0 : 0] priv_inst_t;
+typedef logic[0 : 0] refetch_t;
+typedef logic[0 : 0] wait_hint_t;
 typedef logic[2 : 0] mem_type_t;
 typedef logic[0 : 0] mem_write_t;
 typedef logic[0 : 0] mem_valid_t;
-typedef logic[3 : 0] alu_type_t;
-typedef logic[2 : 0] opd_type_t;
-typedef logic[0 : 0] opd_unsigned_t;
+typedef logic[0 : 0] llsc_t;
+typedef logic[0 : 0] cacop_t;
 typedef logic[31 : 0] debug_inst_t;
 typedef logic[0 : 0] valid_t;
 typedef logic[2 : 0] wb_sel_t;
@@ -121,31 +123,16 @@ typedef logic[0 : 0] pipe_one_inst_t;
 typedef logic[0 : 0] pipe_two_inst_t;
 typedef logic[0 : 0] ready_time_t;
 typedef logic[1 : 0] use_time_t;
-typedef logic[3 : 0] reg_type_t;
-
-typedef struct packed {
-    mem_type_t mem_type;
-    mem_write_t mem_write;
-    mem_valid_t mem_valid;
-}m1_t;
+typedef logic[4 : 0] reg_type_t;
+typedef logic[1 : 0] branch_type_t;
+typedef logic[2 : 0] cmp_type_t;
+typedef logic[0 : 0] branch_link_t;
 
 typedef struct packed {
     debug_inst_t debug_inst;
     valid_t valid;
     wb_sel_t wb_sel;
 }wb_t;
-
-typedef struct packed {
-    inst25_0_t inst25_0;
-}general_t;
-
-typedef struct packed {
-    pipe_one_inst_t pipe_one_inst;
-    pipe_two_inst_t pipe_two_inst;
-    ready_time_t ready_time;
-    use_time_t use_time;
-    reg_type_t reg_type;
-}is_t;
 
 typedef struct packed {
     exception_hint_t exception_hint;
@@ -158,23 +145,46 @@ typedef struct packed {
     tlbfill_en_t tlbfill_en;
     invtlb_en_t invtlb_en;
     do_ertn_t do_ertn;
+    priv_inst_t priv_inst;
+    refetch_t refetch;
+    wait_hint_t wait_hint;
+    llsc_t llsc;
+    cacop_t cacop;
 }m2_t;
 
 typedef struct packed {
-    branch_type_t branch_type;
-    cmp_type_t cmp_type;
-    branch_link_t branch_link;
+    mem_type_t mem_type;
+    mem_write_t mem_write;
+    mem_valid_t mem_valid;
+}m1_t;
+
+typedef struct packed {
+    pipe_one_inst_t pipe_one_inst;
+    pipe_two_inst_t pipe_two_inst;
+    ready_time_t ready_time;
+    use_time_t use_time;
+    reg_type_t reg_type;
+}is_t;
+
+typedef struct packed {
+    inst25_0_t inst25_0;
+}general_t;
+
+typedef struct packed {
     alu_type_t alu_type;
     opd_type_t opd_type;
     opd_unsigned_t opd_unsigned;
+    branch_type_t branch_type;
+    cmp_type_t cmp_type;
+    branch_link_t branch_link;
 }ex_t;
 
 typedef struct packed {
-    m1_t m1;
     wb_t wb;
-    general_t general;
-    is_t is;
     m2_t m2;
+    m1_t m1;
+    is_t is;
+    general_t general;
     ex_t ex;
 }decode_info_t;
 
