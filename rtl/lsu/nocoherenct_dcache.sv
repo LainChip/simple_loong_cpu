@@ -26,8 +26,8 @@ module lsu #(
 	input  logic[31:0] m1_paddr_i,   // M1 STAGE
     output logic[31:0] m1_rdata_o, 
     output logic       m1_rvalid_o,
+	input  logic[31:0] m1_wdata_i,   // M1 STAGE
 
-	input logic[31:0]  m2_wdata_i,  // M2 STAGE
     input logic        m2_uncached_i,
     output logic[31:0] m2_rdata_o, 
     output logic       m2_rvalid_o,
@@ -167,7 +167,7 @@ module lsu #(
     localparam logic[4:0] C_INVALID    = 5'b01000;
     localparam logic[4:0] C_INVALID_WB = 5'b10000;
 
-    logic[2:0] ex_fmt,m1_fmt_q,fmt_q;    // 管理对齐行为，解释间下方 RTL
+    logic[2:0] ex_fmt,m1_fmt_q,fmt_q;    // 管理对齐行为，解释见下方 RTL
     logic uncached_q;
     logic bus_busy_q;
     // 输出处理逻辑
@@ -222,6 +222,9 @@ module lsu #(
     logic[ASSOCIATIVITY - 1 : 0] hit_m1, hit_m2, hit_q;
     logic miss_m1, miss_m2, miss_q;
 
+    logic[31:0] m1_wdata,wdata_q;
+    logic delay_m1_taken,delay_m2_taken;
+
     // FSM 的信号，标准版本。
     logic[3:0] fsm_state_q,fsm_state;
     localparam logic[3:0] S_NORMAL    = 4'd0;
@@ -257,6 +260,12 @@ module lsu #(
         end
     end
 
+    // delay 的阻塞控制信号
+    always_ff @(posedge clk) begin
+        delay_m1_taken <= m1_taken_i;
+        delay_m2_taken <= m2_taken_i;
+    end
+
     // M1 级的组合逻辑
 
     // m1_paddr 处理
@@ -264,8 +273,8 @@ module lsu #(
 
     // sram_m1, tag_m1 处理
     always_comb begin
-        sram_m1 = delay_fsm_busy ? sram_m1_q : sram_r_data;
-        tag_m1 = delay_fsm_busy ? tag_m1_q : tag_r_data;
+        sram_m1 = delay_m1_taken ? sram_r_data : sram_m1_q;
+        tag_m1 = delay_m1_taken ? tag_r_data : tag_m1_q;
         for(integer i = 0 ; i < ASSOCIATIVITY ; i++) begin
             // 时刻监控对 TAG / DATA 的写入，以及时更新寄存器中的对应值
             for(integer j = 0 ; j < 4 ; j++) begin
@@ -277,6 +286,37 @@ module lsu #(
                 tag_m1[i] = tag_w_data[i];
             end
         end
+    end
+
+    // wdata 对齐处理
+    always_comb begin
+        // TODO OPTIMIZE: USE MUX3 OR MUX2 TO DISCRIBE LOGIC HERE.
+        case(m1_vaddr_q[1:0])
+            default: begin
+                m1_wdata[31:24] = m1_wdata_i[31:24]; // mux3
+                m1_wdata[23:16] = m1_wdata_i[23:16]; // mux2
+                m1_wdata[15: 8] = m1_wdata_i[15: 8]; // mux2
+                m1_wdata[ 7: 0] = m1_wdata_i[ 7: 0]; // no mux
+            end
+            3'b01: begin
+                m1_wdata[31:24] = m1_wdata_i[31:24];
+                m1_wdata[23:16] = m1_wdata_i[23:16];
+                m1_wdata[15: 8] = m1_wdata_i[ 7: 0];
+                m1_wdata[ 7: 0] = m1_wdata_i[ 7: 0];
+            end
+            3'b10: begin
+                m1_wdata[31:24] = m1_wdata_i[15: 8];
+                m1_wdata[23:16] = m1_wdata_i[ 7: 0];
+                m1_wdata[15: 8] = m1_wdata_i[ 7: 0];
+                m1_wdata[ 7: 0] = m1_wdata_i[ 7: 0];
+            end
+            3'b11: begin
+                m1_wdata[31:24] = m1_wdata_i[ 7: 0];
+                m1_wdata[23:16] = m1_wdata_i[ 7: 0];
+                m1_wdata[15: 8] = m1_wdata_i[ 7: 0];
+                m1_wdata[ 7: 0] = m1_wdata_i[ 7: 0];
+            end
+        endcase
     end
 
     // hit_m1, miss_m1 处理
@@ -302,27 +342,33 @@ module lsu #(
 
     // sram_m2, tag_m2 handler
     always_comb begin
-        sram_m2 = fsm_busy ? sram_q : sram_m1;
-        tag_m2 = fsm_busy ? tag_q : tag_m1;
+        sram_m2 = m2_taken_i ? sram_m1 : sram_q;
+        tag_m2 = m2_taken_i ? tag_m1 : tag_q;
         // TODO: 添加处理过程中，对 sram_m2 向量的更新
         // 注：此时 sram_m2 唯一的来源即为重填，不存在可能的部分字使能写入
         // TAG 在 m2 级并不需要再进行任何的更新了。
     end
     // hit_m2, miss_m2 处理
     always_comb begin
-        hit_m2 = fsm_busy ? hit_q : hit_m1;
-        miss_m2 = fsm_busy ? miss_q : miss_m1;
+        hit_m2 = m2_taken_i ? hit_m1 : hit_q;
+        miss_m2 = m2_taken_i ? miss_m1 : miss_q;
         // TODO: 添加处理过程中，对 HIT MISS 向量的更新
         // 注：只需要对hit向量和 miss 值进行修改即可。 
         // 无论 cached 或者 uncached，结果可以一并放在 way0 ，避免复杂化。
     end
+    // wdata_m2 的处理
+    always_comb begin
+        wdata_m2 = m2_taken_i ? m1_wdata : wdata_q;
+        // 不需要进行任何的维护
+    end
 
-    // hit_q,miss_q,sram_q,tag_q 的处理
+    // hit_q,miss_q,sram_q,tag_q,wdata_q 的处理
     always_ff @(posedge clk) begin
         sram_q <= sram_m2;
         tag_q <= tag_m2;
         hit_q <= hit_m2;
         miss_q <= miss_m2;
+        wdata_q <= wdata_m2;
     end
 
     always_ff @(posedge clk) begin
@@ -364,7 +410,7 @@ module lsu #(
                 end
                 // TODO: 支持组相连
                 if((((ctrl & C_INVALID_WB) && tag_m2[0][TAG_ADDR_WIDTH] && dirty_r_data[0]) ||
-                    ((ctrl & C_HIT_WB) && hit_q && dirty_r_data[0])) && miss_q) begin
+                    ((ctrl & C_HIT_WB) && hit_q[0] && dirty_r_data[0])) && miss_q) begin
                         // 一个小技巧：复用 miss_q 标识操作未完成
                     // CACOP WB 请求的CACHE行为脏, 需要写回
                     if(bus_busy) begin
@@ -431,8 +477,17 @@ module lsu #(
         endcase
     end
 
-    // 写回 FIFO 状态机
+    // sram 写控制
+    // 控制信号 sram_w_addr,
+    // sram_w_data, sram_we
+    always_comb begin
+        // TODO: 支持组相连
+        sram_w_data[0] = (fsm_state == S_NORMAL) ? wdata_q : bresp_i.r_data;
+        sram_w_addr[0] = (fsm_state == S_NORMAL) ? paddr_q[CACHE_SHIFT - 1 : CACHE_WORD_SHIFT_WIDTH];
+        sram_we[0] = (hit_q[0] && (ctrl_q & C_WRITE) && !uncached_q) ? data_strobe : 4'b0000;
+    end
 
+    // 写回 FIFO 状态机
     // 控制信息, FIFO写回状态机
     localparam logic[1:0] S_FEMPTY = 2'd0;
     localparam logic[1:0] S_FADR   = 2'd1;
@@ -485,7 +540,7 @@ module lsu #(
     /*FIXME END*/ // USE IP CORE / XPM MODULE / BLACK BOX
     always_comb begin
         pw_req.addr   = paddr_q;
-        pw_req.data   = m2_wdata_i << {paddr_q[1:0],3'b000};
+        pw_req.data   = wdata_q;
         pw_req.strobe = data_strobe;
         pw_req.size   = size;
     end
@@ -519,7 +574,7 @@ module lsu #(
     // W-R使能
     // pw_r_e pw_w_e
     assign pw_r_e = (fifo_fsm_state_q == S_FDAT && fifo_fsm_state == S_FADR) || (fifo_fsm_state_q == S_FEMPTY && fifo_fsm_state == S_FADR);
-    assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_m2_i && !fifo_full_q;
+    assign pw_w_e = !stall && uncached_q && (ctrl == C_WRITE) && !request_clr_m2_i && !fifo_full_q;
 
 
 endmodule
