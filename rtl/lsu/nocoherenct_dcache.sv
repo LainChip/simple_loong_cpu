@@ -14,7 +14,7 @@ module lsu #(
 
     input logic m1_valid,   // 表示指令在 m1 级是有效的
     input logic m1_taken,   // 表示指令在 m1 级接受了后续指令
-    output logic m1_busy_o, // 表示 cache 在 m1 级的处理被阻塞
+    output logic m1_busy_o, // 表示 cache 在 m1 级的处理被阻塞，正常情况，只有 M2 级别的状态机请求暂停时会发生阻塞
 
     input logic m2_valid,   // 表示指令在 m1 级是有效的
     input logic m2_taken,   // 表示指令在 m2 级的处理已完成，可以接受后续指令
@@ -22,6 +22,7 @@ module lsu #(
 
 	// 流水线数据输入输出
 	input  logic[31:0] ex_vaddr_i,   // EX STAGE
+
 	input  logic[31:0] m1_paddr_i,   // M1 STAGE
     output logic[31:0] m1_rdata_o, 
     output logic       m1_rvalid_o,
@@ -40,11 +41,7 @@ module lsu #(
 
 	// 连接内存总线
 	output cache_bus_req_t breq_o,
-	input cache_bus_resp_t bresp_i,
-
-	// 握手信号
-	output logic busy_o,
-	input stall_i
+	input cache_bus_resp_t bresp_i
 );
 
     localparam TAG_ADDR_WIDTH = 28 - CACHE_SHIFT;
@@ -68,7 +65,7 @@ module lsu #(
     logic[ASSOCIATIVITY - 1 : 0][TAG_ADDR_WIDTH : 0] tag_r_data;
     logic[ASSOCIATIVITY - 1 : 0][TAG_ADDR_WIDTH : 0] tag_w_data;
     /*FIXME BEGIN*/ // USE IP CORE / XPM MODULE / BLACK BOX
-    logic[ASSOCIATIVITY - 1 : 0][255:0][CACHE_LINE_ID_WIDTH - 1 : 0] __tag_ram;
+    logic[ASSOCIATIVITY - 1 : 0][255:0][TAG_ADDR_WIDTH : 0] __tag_ram;
     for(genvar i = 0 ; i < ASSOCIATIVITY; i++) begin
         always_ff @(posedge clk) begin
             if(tag_we[i]) __tag_ram[i][tag_w_addr[i]] <= tag_w_data[i];
@@ -106,16 +103,18 @@ module lsu #(
                        // 如若将 DATA RAM 配置为 2R1W，则不需要此信号
     logic[ASSOCIATIVITY - 1 : 0][CACHE_LINE_ID_WIDTH + CACHE_LINE_SHIFT_WIDTH - 1 : 0] sram_r_addr;
     logic[ASSOCIATIVITY - 1 : 0][CACHE_LINE_ID_WIDTH + CACHE_LINE_SHIFT_WIDTH - 1 : 0] sram_w_addr;
-    logic[ASSOCIATIVITY - 1 : 0] sram_we;
+    logic[ASSOCIATIVITY - 1 : 0][3:0] sram_we;
     logic[ASSOCIATIVITY - 1 : 0][31:0] sram_r_data;
     logic[ASSOCIATIVITY - 1 : 0][31:0] sram_w_data;
     /*FIXME BEGIN*/ // USE IP CORE / XPM MODULE / BLACK BOX
-    logic[ASSOCIATIVITY - 1 : 0][(1 << (CACHE_LINE_SHIFT_WIDTH + CACHE_LINE_ID_WIDTH)) - 1 : 0][31:0] __sram;
+    logic[ASSOCIATIVITY - 1 : 0][(1 << (CACHE_LINE_SHIFT_WIDTH + CACHE_LINE_ID_WIDTH)) - 1 : 0][3:0][7:0] __sram;
     for(genvar i = 0 ; i < ASSOCIATIVITY ; i++) begin
         logic[CACHE_LINE_ID_WIDTH + CACHE_LINE_SHIFT_WIDTH - 1 : 0] __sram_raddr;
         always_ff @(posedge clk) begin
             __sram_raddr <= sram_r_addr[i];
-            if(sram_we[i]) __sram[i][sram_w_addr[i]] <= sram_w_data[i];
+            for(integer j = 0 ; j < 4 ; j++) begin
+                if(sram_we[i][j]) __sram[i][sram_w_addr[i]][j] <= sram_w_data[i][8 * j - 1 -: 8];
+            end
         end
         assign sram_r_data[i] = __sram[i][__sram_raddr];
     end
@@ -125,7 +124,7 @@ module lsu #(
     // 只在组相连 Cache 中有用，用于提前推测一个 tag 行。
     // 相当于在 组相连 Cache 中加入了一个 直接相连 Cache，以提前取出有效数据。
     // 最高位是额外的 组标记， 标识应该选择哪一路
-    logic[TAG_ADDR_WIDTH + $clog2(ASSOCIATIVITY): 0] etag_r_data;
+    logic[TAG_ADDR_WIDTH + $clog2(ASSOCIATIVITY): 0] etag_r_data; // 仅在 M1 级使用， 不需要传递到 M2 级。
     if(ASSOCIATIVITY == 1) begin
         // 直接相连时，早出 tag 即为唯一的一路 tag
         assign etag_r_data = tag_r_data[0];
@@ -210,13 +209,53 @@ module lsu #(
         assign tag_r_addr = ex_vaddr_i[CACHE_SHIFT - 1 : CACHE_WORD_SHIFT_WIDTH];
     end
 
+    // EX-M1-M2 级的接线
+    logic[ASSOCIATIVITY - 1 : 0][31:0] sram_m1,sram_m1_q,sram_m2,sram_q;
+    logic[ASSOCIATIVITY - 1 : 0][TAG_ADDR_WIDTH:0] tag_m1,tag_m1_q,tag_m2,tag_q;
+    logic[31:0] m1_vaddr_q,m1_paddr,m2_vaddr_q,m2_paddr_q;
+    logic[31:0] m1_esram,m2_esram_q;
+    logic m2_esram_valid_q;
+    logic fsm_busy;
+
     // EX-M1 流水线寄存器
     always_ff @(posedge clk) begin
-
+        if(m1_taken) begin
+            m1_fmt_q <= ex_fmt;
+            m1_ctrl_q <= ex_ctrl;
+            m1_vaddr_q <= ex_vaddr_i;
+        end
     end
 
-    // M1 级的接线
+    // M1 级的组合逻辑
 
-    // M2 级的接线，这一级的信号不需要前缀，因为是状态机所在的流水级。
+    // sram_m1, tag_m1 handler
+    always_comb begin
+        sram_m1 = fsm_busy ? sram_m1_q : sram_r_data;
+        tag_m1 = fsm_busy ? tag_m1_q : tag_r_data;
+        for(integer i = 0 ; i < ASSOCIATIVITY ; i++) begin
+            // 时刻监控对 TAG / DATA 的写入，以及时更新寄存器中的对应值
+            for(integer j = 0 ; j < 4 ; j++) begin
+                if(sram_we[i][j] && (sram_w_addr[i] == m1_vaddr_q[CACHE_SHIFT - 1 : CACHE_WORD_SHIFT_WIDTH])) begin
+                    sram_m1[i][8 * j - 1 -: 8] = sram_w_data[i][8 * j - 1 -: 8];
+                end
+            end
+            if(tag_we[i] && (tag_w_addr[i] == m1_vaddr_q[CACHE_SHIFT - 1 -: CACHE_LINE_ID_WIDTH])) begin
+                tag_m1[i] = tag_w_data[i];
+            end
+        end
+    end
+
+    // sram_m1_q, tag_m1_q handler
+    always_ff @(posedge clk) begin
+        sram_m1_q <= sram_m1;
+        tag_m1_q <= tag_m1;
+    end
+
+    // M2 级的组合逻辑
+
+    // sram_m2, tag_m2 handler
+    always_ff @(posedge clk) begin
+        
+    end
 
 endmodule
