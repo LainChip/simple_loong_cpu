@@ -10,14 +10,14 @@ module lsu #(
 	// 控制信号
 	input decode_info_t  ex_decode_info_i, // EX STAGE TODO: REFRACTOR
 
-    input logic ex_valid,   // 表示指令在 ex 级是有效的
+    input logic ex_valid_i,   // 表示指令在 ex 级是有效的
 
-    input logic m1_valid,   // 表示指令在 m1 级是有效的
-    input logic m1_taken,   // 表示指令在 m1 级接受了后续指令
+    input logic m1_valid_i,   // 表示指令在 m1 级是有效的
+    input logic m1_taken_i,   // 表示指令在 m1 级接受了后续指令
     output logic m1_busy_o, // 表示 cache 在 m1 级的处理被阻塞，正常情况，只有 M2 级别的状态机请求暂停时会发生阻塞
 
-    input logic m2_valid,   // 表示指令在 m1 级是有效的
-    input logic m2_taken,   // 表示指令在 m2 级的处理已完成，可以接受后续指令
+    input logic m2_valid_i,   // 表示指令在 m1 级是有效的
+    input logic m2_taken_i,   // 表示指令在 m2 级的处理已完成，可以接受后续指令
     output logic m2_busy_o, // 表示 cache 在 m2 级的处理被阻塞
 
 	// 流水线数据输入输出
@@ -159,15 +159,17 @@ module lsu #(
     /*                                        控制部分开始                                        */
 
     // 控制信号定义
-    logic[2:0] ex_ctrl,m1_ctrl_q,ctrl_q; // 管理 cache 行为
-    localparam logic[2:0] C_NONE       = 3'd0;
-    localparam logic[2:0] C_READ       = 3'd1;
-    localparam logic[2:0] C_WRITE      = 3'd2;
-    localparam logic[2:0] C_HIT_WB     = 3'd3;
-    localparam logic[2:0] C_INVALID    = 3'd4;
-    localparam logic[2:0] C_INVALID_WB = 3'd5;
+    logic[4:0] ex_ctrl,m1_ctrl_q,ctrl_q; // 管理 cache 行为
+    localparam logic[4:0] C_NONE       = 5'b00000;
+    localparam logic[4:0] C_READ       = 5'b00001;
+    localparam logic[4:0] C_WRITE      = 5'b00010;
+    localparam logic[4:0] C_HIT_WB     = 5'b00100;
+    localparam logic[4:0] C_INVALID    = 5'b01000;
+    localparam logic[4:0] C_INVALID_WB = 5'b10000;
 
     logic[2:0] ex_fmt,m1_fmt_q,fmt_q;    // 管理对齐行为，解释间下方 RTL
+    logic uncached_q;
+    logic bus_busy_q;
     // 输出处理逻辑
 	// always_comb begin
 	// 	case(req_type[1:0])
@@ -212,10 +214,29 @@ module lsu #(
     // EX-M1-M2 级的接线
     logic[ASSOCIATIVITY - 1 : 0][31:0] sram_m1,sram_m1_q,sram_m2,sram_q;
     logic[ASSOCIATIVITY - 1 : 0][TAG_ADDR_WIDTH:0] tag_m1,tag_m1_q,tag_m2,tag_q;
-    logic[31:0] m1_vaddr_q,m1_paddr,m2_vaddr_q,m2_paddr_q;
-    logic[31:0] m1_esram,m2_esram_q;
-    logic m2_esram_valid_q;
-    logic fsm_busy;
+    logic[31:0] m1_vaddr_q,m1_paddr,vaddr_q,paddr_q;
+    logic[31:0] m1_esram,esram_q;
+    logic m2_evalid_q;
+    logic fsm_busy, delay_fsm_busy;
+    logic fifo_full_q, pw_empty_q
+    logic[ASSOCIATIVITY - 1 : 0] hit_m1, hit_m2, hit_q;
+    logic miss_m1, miss_m2, miss_q;
+
+    // FSM 的信号，标准版本。
+    logic[3:0] fsm_state_q,fsm_state;
+    localparam logic[3:0] S_NORMAL    = 4'd0;
+    localparam logic[3:0] S_WAIT_BUS  = 4'd1;
+    localparam logic[3:0] S_RADR      = 4'd2;
+    localparam logic[3:0] S_RDAT      = 4'd3;
+    localparam logic[3:0] S_WADR      = 4'd4;
+    localparam logic[3:0] S_WDAT      = 4'd5;
+    localparam logic[3:0] S_PRADR     = 4'd6;
+    localparam logic[3:0] S_PRDAT     = 4'd7;
+    localparam logic[3:0] S_WAIT_FULL = 4'd8;
+
+    // 数据控制信号
+    logic[3:0] data_strobe;
+    logic[1:0] size;
 
     // EX-M1 流水线寄存器
     always_ff @(posedge clk) begin
@@ -226,12 +247,25 @@ module lsu #(
         end
     end
 
+    // M1-M2 流水线寄存器
+    always_ff @(posedge clk) begin
+        if(m2_taken) begin
+            fmt_q <= m1_fmt_q;
+            ctrl_q <= m1_ctrl_q;
+            vaddr_q <= m1_vaddr_q;
+            paddr_q <= m1_paddr;
+        end
+    end
+
     // M1 级的组合逻辑
 
-    // sram_m1, tag_m1 handler
+    // m1_paddr 处理
+    assign m1_paddr = m1_paddr_i;
+
+    // sram_m1, tag_m1 处理
     always_comb begin
-        sram_m1 = fsm_busy ? sram_m1_q : sram_r_data;
-        tag_m1 = fsm_busy ? tag_m1_q : tag_r_data;
+        sram_m1 = delay_fsm_busy ? sram_m1_q : sram_r_data;
+        tag_m1 = delay_fsm_busy ? tag_m1_q : tag_r_data;
         for(integer i = 0 ; i < ASSOCIATIVITY ; i++) begin
             // 时刻监控对 TAG / DATA 的写入，以及时更新寄存器中的对应值
             for(integer j = 0 ; j < 4 ; j++) begin
@@ -245,6 +279,16 @@ module lsu #(
         end
     end
 
+    // hit_m1, miss_m1 处理
+    if(ASSOCIATIVITY == 1) begin
+        always_comb begin
+            hit_m1 = (m1_paddr[TAG_ADDR_WIDTH + 12 - 1 : 12] == tag_m1[0][TAG_ADDR_WIDTH - 1 : 0]) && tag_m1[TAG_ADDR_WIDTH];
+            miss_m1 = ~hit_m1;
+        end
+    end else begin
+        // TODO: ASSOCIATIVITY != 0
+    end
+
     // sram_m1_q, tag_m1_q handler
     always_ff @(posedge clk) begin
         sram_m1_q <= sram_m1;
@@ -253,9 +297,229 @@ module lsu #(
 
     // M2 级的组合逻辑
 
+    // uncached_q 处理，此信号在外部由寄存器驱动
+    assign uncached_q = m2_uncached_i;
+
     // sram_m2, tag_m2 handler
-    always_ff @(posedge clk) begin
-        
+    always_comb begin
+        sram_m2 = fsm_busy ? sram_q : sram_m1;
+        tag_m2 = fsm_busy ? tag_q : tag_m1;
+        // TODO: 添加处理过程中，对 sram_m2 向量的更新
+        // 注：此时 sram_m2 唯一的来源即为重填，不存在可能的部分字使能写入
+        // TAG 在 m2 级并不需要再进行任何的更新了。
     end
+    // hit_m2, miss_m2 处理
+    always_comb begin
+        hit_m2 = fsm_busy ? hit_q : hit_m1;
+        miss_m2 = fsm_busy ? miss_q : miss_m1;
+        // TODO: 添加处理过程中，对 HIT MISS 向量的更新
+        // 注：只需要对hit向量和 miss 值进行修改即可。 
+        // 无论 cached 或者 uncached，结果可以一并放在 way0 ，避免复杂化。
+    end
+
+    // hit_q,miss_q,sram_q,tag_q 的处理
+    always_ff @(posedge clk) begin
+        sram_q <= sram_m2;
+        tag_q <= tag_m2;
+        hit_q <= hit_m2;
+        miss_q <= miss_m2;
+    end
+
+    always_ff @(posedge clk) begin
+        // TODO: Correct this.
+        bus_busy_q <= 1'b0;
+    end
+
+    // CACHE 核心状态机
+    always_comb begin
+        fsm_state = fsm_state_q;
+        case(fsm_state_q)
+            S_NORMAL: begin
+                // NORMAL下, 遇到需要处理MISS或者缓存操作需要切换状态
+                if((ctrl_q & (C_WRITE | C_READ)) && !uncached_q && miss_q) begin
+                    // CACHED READ | WRITE MISS
+                    if(bus_busy_q) begin
+                        fsm_state = S_WAIT_BUS;
+                    end else begin
+                        // 若被选择的缓存行为脏,需要写回,否之直接读取新数据。
+                        // TODO: 支持组相连
+                        if(dirty_r_data[0]) begin
+                            fsm_state = S_WADR;
+                        end else begin
+                            fsm_state = S_RADR;
+                        end
+                    end
+                end
+                if((ctrl & C_READ) && uncached_q && miss_q) begin
+                    // UNCACHED READ
+                    if(bus_busy_q) begin
+                        fsm_state = S_WAIT_BUS;
+                    end else begin
+                        fsm_state = S_PRADR;
+                    end
+                end
+                if((ctrl & C_WRITE) && uncached_q && fifo_full_q) begin
+                    // UNCACHED WRITE && FIFO FULL
+                    fsm_state = S_WAIT_FULL;
+                end
+                // TODO: 支持组相连
+                if((((ctrl & C_INVALID_WB) && tag_m2[0][TAG_ADDR_WIDTH] && dirty_r_data[0]) ||
+                    ((ctrl & C_HIT_WB) && hit_q && dirty_r_data[0])) && miss_q) begin
+                        // 一个小技巧：复用 miss_q 标识操作未完成
+                    // CACOP WB 请求的CACHE行为脏, 需要写回
+                    if(bus_busy) begin
+                        fsm_state = S_WAIT_BUS;
+                    end else begin
+                        fsm_state = S_WADR;
+                    end
+                end
+                // 最高优先级, 当前请求被无效化时, 不可暂停
+                if(!m2_valid_i) begin
+                    fsm_state = fsm_state_q;
+                end
+            end
+            S_WAIT_BUS: begin
+                // WAIT_BUS 需要等待让出总线后继续后面的操作
+                if(~bus_busy_q) begin
+                    fsm_state = S_NORMAL;
+                end
+            end
+            S_RADR: begin
+                // 读地址得到响应后继续后面的操作
+                if(bresp_i.ready) begin
+                    fsm_state = S_RDAT;
+                end
+            end
+            S_RDAT: begin
+                // 读数据拿到最后一个数据后开始后续操作
+                if(bresp_i.data_ok && bresp_i.data_last) begin
+                    fsm_state = S_NORMAL;
+                end
+            end
+            S_WADR: begin
+                // 写地址得到总线响应后继续后面的操作
+                if(bresp_i.ready) begin
+                    fsm_state = S_WDAT;
+                end
+            end
+            S_WDAT: begin
+                // 最后一个写数据得到总线响应后开始后续操作
+                if(bresp_i.data_ok && breq_o.data_last) begin
+                    // 区别INVALIDATE情况和MISS REFETCH情况
+                    if(ctrl & C_READ || ctrl & C_WRITE) fsm_state = S_RADR;
+                    else fsm_state = S_NORMAL;
+                end
+            end
+            S_PRADR: begin
+                // 读地址得到响应后继续后面的操作
+                if(bresp_i.ready) begin
+                    fsm_state = S_PRDAT;
+                end
+            end
+            S_PRDAT: begin
+                // 读数据得到响应后继续后面的操作
+                if(bresp_i.data_ok && bresp_i.data_last) begin
+                    fsm_state = S_NORMAL;
+                end
+            end
+            S_WAIT_FULL: begin
+                // FIFO不为空时候跳出此状态
+                if(!fifo_full_q) begin
+                    fsm_state = S_NORMAL;
+                end
+            end
+        endcase
+    end
+
+    // 写回 FIFO 状态机
+
+    // 控制信息, FIFO写回状态机
+    localparam logic[1:0] S_FEMPTY = 2'd0;
+    localparam logic[1:0] S_FADR   = 2'd1;
+    localparam logic[1:0] S_FDAT   = 2'd2;
+    logic[1:0] fifo_fsm_state_q,fifo_fsm_state;
+
+    typedef struct packed {
+        logic [31:0] addr;
+        logic [31:0] data;
+        logic [ 3:0] strobe;
+        logic [ 1:0] size;
+    } pw_fifo_t;
+    pw_fifo_t pw_req,pw_handling;
+    /*FIXME BEGIN*/ // USE IP CORE / XPM MODULE / BLACK BOX
+    pw_fifo_t [WB_FIFO_DEPTH - 1 : 0] pw_fifo;
+    logic pw_w_e,pw_r_e,pw_empty_q;
+    logic[$clog2(WB_FIFO_DEPTH) : 0] pw_w_ptr,pw_r_ptr,pw_cnt;
+    assign pw_cnt = pw_w_ptr - pw_r_ptr;
+    // assign pw_empty_q = pw_cnt == '0;
+    // assign fifo_full = pw_cnt[$clog2(WB_FIFO_DEPTH)];
+    always_ff @(posedge clk) begin
+        fifo_full_q <= pw_cnt[$clog2(WB_FIFO_DEPTH)] || ((&pw_cnt[$clog2(WB_FIFO_DEPTH) - 1 : 0]) && pw_w_e && !pw_r_e);
+        pw_empty_q <= (pw_cnt == '0) || ((pw_cnt == 1) && pw_r_e && !pw_w_e);
+    end
+    always_ff @(posedge clk) begin
+        if(~rst_n) begin
+            pw_w_ptr <= '0;
+        end else if(pw_w_e && !(pw_empty_q && pw_r_e)) begin
+            pw_w_ptr <= pw_w_ptr + 1'd1;
+        end
+    end
+    always_ff @(posedge clk) begin
+        if(~rst_n) begin
+            pw_r_ptr <= '0;
+        end else if(pw_r_e && !pw_empty_q) begin
+            pw_r_ptr <= pw_r_ptr + 1'd1;
+        end
+    end
+    always_ff @(posedge clk) begin
+        if(pw_r_e) begin
+            if(!pw_empty_q) pw_handling <= pw_fifo[pw_r_ptr[$clog2(WB_FIFO_DEPTH) - 1: 0]];
+            else          pw_handling <= pw_req;
+        end
+    end
+    always_ff @(posedge clk) begin
+        if(pw_w_e) begin
+            pw_fifo[pw_w_ptr[$clog2(WB_FIFO_DEPTH) - 1: 0]] <= pw_req;
+        end
+    end
+    /*FIXME END*/ // USE IP CORE / XPM MODULE / BLACK BOX
+    always_comb begin
+        pw_req.addr   = paddr_q;
+        pw_req.data   = m2_wdata_i << {paddr_q[1:0],3'b000};
+        pw_req.strobe = data_strobe;
+        pw_req.size   = size;
+    end
+    always_comb begin
+        fifo_fsm_state = fifo_fsm_state_q;
+        case(fifo_fsm_state_q)
+            S_FEMPTY: begin
+                if(pw_w_e) begin
+                    fifo_fsm_state = S_FADR;
+                end
+            end
+            S_FADR: begin
+                if(bresp_i.ready) begin
+                    fifo_fsm_state = S_FDAT;
+                end
+            end
+            S_FDAT: begin
+                if(bresp_i.data_ok) begin
+                    if(pw_empty_q && !pw_w_e) begin
+                        // 没有后续请求
+                        fifo_fsm_state = S_FEMPTY;
+                    end else begin
+                        // 有后续请求
+                        fifo_fsm_state = S_FADR;
+                    end
+                end
+            end
+        endcase
+    end
+
+    // W-R使能
+    // pw_r_e pw_w_e
+    assign pw_r_e = (fifo_fsm_state_q == S_FDAT && fifo_fsm_state == S_FADR) || (fifo_fsm_state_q == S_FEMPTY && fifo_fsm_state == S_FADR);
+    assign pw_w_e = !stall && uncached && (ctrl == C_WRITE) && !request_clr_m2_i && !fifo_full_q;
+
 
 endmodule
