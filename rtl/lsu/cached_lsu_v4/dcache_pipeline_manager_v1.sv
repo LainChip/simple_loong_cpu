@@ -6,12 +6,16 @@
 `define _DWAY_CNT 1
 `define _DIDX_LEN 12
 `define _DTAG_LEN 20
+`define _DCAHE_OP_READ 1
+`define _DCAHE_OP_WRITE 2
 
 typedef struct packed {
           logic rvalid;
           logic[31:0] raddr;
 
           logic we_valid;
+          logic wuncached;
+          logic[`_DWAY_CNT - 1 : 0] we_sel;
           logic[31:0] waddr;
           logic[31:0] wdata;
 
@@ -244,5 +248,51 @@ module lsu #(
   // M2 状态机
   // 这个状态机需要做得事情很有限，所有 CACHE 操作请求都通过 request 的形式提交给 RAM 管理者进行，
   // 本地只需要轮询本地寄存器等待结果被从 snoop 中捕捉到就可以了。
-
+  logic[6:0] m2_fsm_q,m2_fsm;
+  localparam logic[6:0] M2_FSM_NORMAL      = 7'b0000001;
+  localparam logic[6:0] M2_FSM_CREAD_MISS  = 7'b0000010;
+  localparam logic[6:0] M2_FSM_UREAD_WAIT  = 7'b0000100;
+  localparam logic[6:0] M2_FSM_CWRITE_MISS = 7'b0001000;
+  localparam logic[6:0] M2_FSM_UWRITE_WAIT = 7'b0010000;
+  localparam logic[6:0] M2_FSM_CACHE_OP    = 7'b0100000;
+  localparam logic[6:0] M2_FSM_WAIT_STALL  = 7'b1000000;
+  always_ff@(posedge clk) begin
+    if(!rst_n) begin
+      m2_fsm_q <= M2_FSM_NORMAL;
+    end
+    else begin
+      m2_fsm_q <= m2_fsm;
+    end
+  end
+  always_comb begin
+    m2_fsm = m2_fsm_q;
+    case (m2_fsm_q)
+      M2_FSM_NORMAL: begin
+        if(m2_valid_i && !m2_uncached_i && m2_miss_q) begin
+          if(m2_op_i == `_DCAHE_OP_READ) begin
+            m2_fsm = M2_FSM_CREAD_MISS;
+          end else if(m2_op_i == `_DCAHE_OP_WRITE) begin
+            m2_fsm = M2_FSM_CWRITE_MISS;
+          end
+        end
+        else if(m2_valid_i && m2_uncached_i) begin
+          if(m2_op_i == `_DCAHE_OP_READ) begin
+            m2_fsm = M2_FSM_UREAD_WAIT;
+          end else if(m2_op_i == `_DCAHE_OP_WRITE && !dm_resp_i.we_ready) begin
+            m2_fsm = M2_FSM_UWRITE_WAIT;
+          end
+        end
+        else if(m2_valid_i && m2_op_i != '0) begin
+          m2_fsm = M2_FSM_CACHE_OP;
+        end
+      end
+      M2_FSM_CREAD_MISS: begin
+        
+      end
+      M2_FSM_CWRITE_MISS: begin
+        
+      end
+      default:
+      endcase
+  end
 endmodule
