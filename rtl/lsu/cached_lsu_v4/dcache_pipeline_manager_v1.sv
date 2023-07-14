@@ -267,7 +267,17 @@ module lsu #(
           m2_fsm = M2_FSM_NORMAL;
         end
       end
-      M2_FSM_UREAD_WAIT, M2_FSM_CACHE_OP: begin
+      M2_FSM_CACHE_OP: begin
+        if(dm_resp_i.op_ready) begin
+          if(m2_stall_i) begin
+            m2_fsm = M2_FSM_WAIT_STALL;
+          end
+          else begin
+            m2_fsm = M2_FSM_NORMAL;
+          end
+        end
+      end
+      M2_FSM_UREAD_WAIT: begin
         if(dm_resp_i.op_ready) begin
           if(m2_stall_i) begin
             m2_fsm = M2_FSM_WAIT_STALL;
