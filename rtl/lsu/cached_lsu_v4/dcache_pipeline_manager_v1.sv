@@ -4,6 +4,7 @@
 // CACHE 的管理部分不支持 byte-wide operation， CACHE 需要手动控制写操作进行融合。
 
 `define _DWAY_CNT 1
+`define _DBANK_CNT 2
 `define _DIDX_LEN 12
 `define _DTAG_LEN 20
 `define _DCAHE_OP_READ 1
@@ -41,6 +42,7 @@ typedef struct packed {
           logic rdata_valid_d1;
 
           logic we_ready;
+          logic[31:0] r_uncached;
 
           logic op_ready;
         } dram_manager_resp_t;
@@ -51,9 +53,9 @@ typedef struct packed {
           logic [7:0] tag_waddr;
           dcache_tag_t tag_wdata;
 
-          logic [`_DWAY_CNT - 1 : 2] data_we;
-          logic [`_DIDX_LEN - 1 : 2] data_waddr;
-          logic [31:0] data_wdata;
+          logic [`_DBANK_CNT - 1 : 0][`_DWAY_CNT - 1 : 0] data_we;
+          logic [`_DBANK_CNT - 1 : 0][`_DIDX_LEN - 1 : 2 + $clog2(`_DBANK_CNT)] data_waddr;
+          logic [`_DBANK_CNT - 1 : 0][31:0] data_wdata;
         } dram_manager_snoop_t;
 
 function logic[`_DTAG_LEN - 1 : 0] tagaddr(logic[31:0] va);
@@ -180,9 +182,11 @@ module lsu #(
   end
   always_comb begin
     m1_data = ((m1_fsm_q & (M1_FSM_NORMAL | M1_FSM_WAIT)) != 0) ? dm_resp_i.rdata_d1 : m1_data_q;
-    for(integer i = 0 ; i < WAY_CNT ; i++) begin
-      if(dm_snoop_i.data_we[i] && dm_snoop_i.data_waddr == dramaddr(m1_vaddr_i)) begin
-        m1_data[i] = dm_snoop_i.data_wdata;
+    for(integer b = 0 ; b < `_DBANK_CNT ; b++) begin
+      for(integer i = 0 ; i < WAY_CNT ; i++) begin
+        if(dm_snoop_i.data_we[b][i] && {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m1_vaddr_i)) begin
+          m1_data[i] = dm_snoop_i.data_wdata[b];
+        end
       end
     end
   end
@@ -223,26 +227,32 @@ module lsu #(
 
   // M1 HIT MISS 电路
   for(genvar i = 0 ; i < WAY_CNT ; i++) begin
-    assign m1_hit[i] = cache_hit(m1_tag, m1_paddr_i);
+    assign m1_hit[i] = cache_hit(m1_tag[i], m1_paddr_i);
   end
   assign m1_miss = ~|m1_hit;
 
   // M2 控制流水线寄存器
   always_ff @(posedge clk) begin
     m2_hit_q  <= m2_hit;
-    m2_miss_q <= m1_miss;
+    m2_miss_q <= m2_miss;
   end
 
   // M2 MISS / HIT 维护
   always_comb begin
-    // 时刻监控对 tag 的读写，以维护新的 hit / miss
-    m2_hit = m2_hit_q;
-    for(integer i = 0 ; i < WAY_CNT ; i++) begin
-      if(dm_snoop_i.tag_we[i] && dm_snoop_i.tag_waddr == tramaddr(m2_vaddr_i)) begin
-        m2_hit = cache_hit(dm_snoop_i.tag_wdata, m2_paddr_i);
-      end
+    if(!m2_stall_i) begin
+      m2_hit = m1_hit;
+      m2_miss = m1_miss;
     end
-    m2_miss = ~|m2_hit;
+    else begin
+      // 时刻监控对 tag 的读写，以维护新的 hit / miss
+      m2_hit = m2_hit_q;
+      for(integer i = 0 ; i < WAY_CNT ; i++) begin
+        if(dm_snoop_i.tag_we[i] && dm_snoop_i.tag_waddr == tramaddr(m2_vaddr_i)) begin
+          m2_hit = cache_hit(dm_snoop_i.tag_wdata, m2_paddr_i);
+        end
+      end
+      m2_miss = ~|m2_hit;
+    end
   end
 
   // M2 状态机
@@ -253,7 +263,8 @@ module lsu #(
   localparam logic[6:0] M2_FSM_CREAD_MISS  = 7'b0000010;
   localparam logic[6:0] M2_FSM_UREAD_WAIT  = 7'b0000100;
   localparam logic[6:0] M2_FSM_CWRITE_MISS = 7'b0001000;
-  localparam logic[6:0] M2_FSM_UWRITE_WAIT = 7'b0010000;
+  localparam logic[6:0] M2_FSM_WRITE_WAIT  = 7'b0010000; // 对于写请求，无论是否可缓存，均用此状态等待。
+  // 当等待写完成时，若 cached 请求突然 miss，也需要转移状态到 CWRITE_MISS 等待重填。
   localparam logic[6:0] M2_FSM_CACHE_OP    = 7'b0100000;
   localparam logic[6:0] M2_FSM_WAIT_STALL  = 7'b1000000;
   always_ff@(posedge clk) begin
@@ -271,15 +282,17 @@ module lsu #(
         if(m2_valid_i && !m2_uncached_i && m2_miss_q) begin
           if(m2_op_i == `_DCAHE_OP_READ) begin
             m2_fsm = M2_FSM_CREAD_MISS;
-          end else if(m2_op_i == `_DCAHE_OP_WRITE) begin
+          end
+          else if(m2_op_i == `_DCAHE_OP_WRITE) begin
             m2_fsm = M2_FSM_CWRITE_MISS;
           end
         end
         else if(m2_valid_i && m2_uncached_i) begin
           if(m2_op_i == `_DCAHE_OP_READ) begin
             m2_fsm = M2_FSM_UREAD_WAIT;
-          end else if(m2_op_i == `_DCAHE_OP_WRITE && !dm_resp_i.we_ready) begin
-            m2_fsm = M2_FSM_UWRITE_WAIT;
+          end
+          else if(m2_op_i == `_DCAHE_OP_WRITE && !dm_resp_i.we_ready) begin
+            m2_fsm = M2_FSM_WRITE_WAIT;
           end
         end
         else if(m2_valid_i && m2_op_i != '0) begin
@@ -287,12 +300,68 @@ module lsu #(
         end
       end
       M2_FSM_CREAD_MISS: begin
-        
+        if(!m2_miss_q) begin
+          if(m2_stall_i) begin
+            m2_fsm = M2_FSM_WAIT_STALL;
+          end
+          else begin
+            m2_fsm = M2_FSM_NORMAL;
+          end
+        end
       end
       M2_FSM_CWRITE_MISS: begin
-        
+        if(!m2_miss_q) begin
+          if(dm_resp_i.we_ready) begin
+            if(m2_stall_i) begin
+              m2_fsm = M2_FSM_WAIT_STALL;
+            end
+            else begin
+              m2_fsm = M2_FSM_NORMAL;
+            end
+          end
+          else begin
+            m2_fsm = M2_FSM_WRITE_WAIT;
+          end
+        end
       end
-      default:
-      endcase
+      M2_FSM_WRITE_WAIT: begin
+        if(m2_miss_q && !m2_uncached_i) begin
+          m2_fsm = M2_FSM_CWRITE_MISS;
+        end
+        else begin
+          if(dm_resp_i.we_ready) begin
+            if(m2_stall_i) begin
+              m2_fsm = M2_FSM_WAIT_STALL;
+            end
+            else begin
+              m2_fsm = M2_FSM_NORMAL;
+            end
+          end
+        end
+      end
+      M2_FSM_WAIT_STALL: begin
+        if(!m2_stall_i) begin
+          m2_fsm = M2_FSM_NORMAL;
+        end
+      end
+      M2_FSM_UREAD_WAIT, M2_FSM_CACHE_OP: begin
+        if(dm_resp_i.op_ready) begin
+          if(m2_stall_i) begin
+            m2_fsm = M2_FSM_WAIT_STALL;
+          end
+          else begin
+            m2_fsm = M2_FSM_NORMAL;
+          end
+        end
+      end
+      default: begin
+        m2_fsm = M2_FSM_NORMAL;
+      end
+    endcase
+  end
+
+  // 产生向 DM 的请求
+  always_comb begin
+    dm_req_o.op
   end
 endmodule

@@ -1,6 +1,6 @@
 module bank_mpregfiles_4r2w #(
     parameter int WIDTH = 32,
-    parameter bit RESET_NEED = 1'b1
+    parameter bit RESET_NEED = 1'b0
 )(
     input clk,
     input rst_n,
