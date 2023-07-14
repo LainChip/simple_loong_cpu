@@ -1,78 +1,4 @@
-// 全新设计思路，分离流水线部分以及管理部分
-// 流水线部分只负责和管线部分交互，完全不在乎 RAM 管理部分如何对 RAM 进行维护和管理。
-// 流水线部分高度可配置，支持组相连 / 直接映射。
-// CACHE 的管理部分不支持 byte-wide operation， CACHE 需要手动控制写操作进行融合。
-
-`define _DWAY_CNT 1
-`define _DBANK_CNT 2
-`define _DIDX_LEN 12
-`define _DTAG_LEN 20
-`define _DCAHE_OP_READ 1
-`define _DCAHE_OP_WRITE 2
-
-typedef struct packed {
-          logic rvalid;
-          logic[31:0] raddr;
-
-          logic we_valid;
-          logic wuncached;
-          logic[`_DWAY_CNT - 1 : 0] we_sel;
-          logic[31:0] waddr;
-          logic[31:0] wdata;
-
-          logic op_valid;
-          logic[3:0]  op_type;
-          logic[31:0] op_addr;
-        } dram_manager_req_t;
-
-typedef struct packed {
-          logic valid;
-          logic[`_DTAG_LEN - 1 : 0] addr;
-        } dcache_tag_t;
-
-typedef struct packed {
-          logic pending_write; // means that rdata_d1 is not the most newest value now.
-
-          dcache_tag_t[`_DWAY_CNT - 1 : 0] tag_d0;
-          dcache_tag_t[`_DWAY_CNT - 1 : 0] tag_d1;
-          // dcache_tag_t etag_d0; // TODO
-          // dcache_tag_t etag_d1;
-
-          logic[`_DWAY_CNT - 1 : 0][31:0] rdata_d1;
-          logic rdata_valid_d1;
-
-          logic we_ready;
-          logic[31:0] r_uncached;
-
-          logic op_ready;
-        } dram_manager_resp_t;
-
-// 有 256 个 CACHE 行
-typedef struct packed {
-          logic [`_DWAY_CNT - 1 : 0] tag_we;
-          logic [7:0] tag_waddr;
-          dcache_tag_t tag_wdata;
-
-          logic [`_DBANK_CNT - 1 : 0][`_DWAY_CNT - 1 : 0] data_we;
-          logic [`_DBANK_CNT - 1 : 0][`_DIDX_LEN - 1 : 2 + $clog2(`_DBANK_CNT)] data_waddr;
-          logic [`_DBANK_CNT - 1 : 0][31:0] data_wdata;
-        } dram_manager_snoop_t;
-
-function logic[`_DTAG_LEN - 1 : 0] tagaddr(logic[31:0] va);
-  return va[`_DTAG_LEN + `_DIDX_LEN - 1: `_DIDX_LEN];
-endfunction
-function logic[7 : 0] tramaddr(logic[31:0] va);
-  return va[`_DIDX_LEN - 1 -: 8];
-endfunction
-function logic[`_DIDX_LEN - 1 : 2] dramaddr(logic[31:0] va);
-  return va[`_DIDX_LEN - 1 : 2];
-endfunction
-function logic cache_hit(dcache_tag_t tag,logic[31:0] pa);
-  return tag.valid && (tagaddr(pa) == tag.addr);
-endfunction
-function logic[31:0] mkstrobe(logic[31:0] data, logic[3:0] mask);
-  return data & {{8{mask[3]}},{8{mask[2]}},{8{mask[1]}},{8{mask[0]}}};
-endfunction
+`include "cached_lsu_v4.svh"
 
 module lsu #(
     parameter int WAY_CNT = 1
@@ -174,7 +100,7 @@ module lsu #(
   end
 
   // M1 嗅探电路
-  logic[WAY_CNT - 1 : 0][31:0] m1_data_q,m1_data;
+  logic[WAY_CNT - 1 : 0][31:0] m1_data_q,m1_data,m2_data_q,m2_data;
   dcache_tag_t[WAY_CNT - 1 : 0] m1_tag_q,m1_tag;
   always_ff @(posedge clk) begin
     m1_data_q <= m1_data;
@@ -224,6 +150,13 @@ module lsu #(
   // 注意：这部分需要在 M1 - M2 级之间进行流水。
   logic [WAY_CNT - 1 : 0] m1_hit,m2_hit_q,m2_hit;
   logic m1_miss,m2_miss_q,m2_miss;
+  logic[31:0] m1_wdata,m2_wdata,m2_wdata_q;
+
+  // M1 WDATA 电路
+  always_comb begin
+    // 需要在这里对 strobe 进行处理
+    m1_wdata = mkstrobe(m1_data,~m1_strobe_i) | mkstrobe(mksft(m1_wdata_i,m1_vaddr_i),m1_strobe_i);
+  end
 
   // M1 HIT MISS 电路
   for(genvar i = 0 ; i < WAY_CNT ; i++) begin
@@ -235,24 +168,8 @@ module lsu #(
   always_ff @(posedge clk) begin
     m2_hit_q  <= m2_hit;
     m2_miss_q <= m2_miss;
-  end
-
-  // M2 MISS / HIT 维护
-  always_comb begin
-    if(!m2_stall_i) begin
-      m2_hit = m1_hit;
-      m2_miss = m1_miss;
-    end
-    else begin
-      // 时刻监控对 tag 的读写，以维护新的 hit / miss
-      m2_hit = m2_hit_q;
-      for(integer i = 0 ; i < WAY_CNT ; i++) begin
-        if(dm_snoop_i.tag_we[i] && dm_snoop_i.tag_waddr == tramaddr(m2_vaddr_i)) begin
-          m2_hit = cache_hit(dm_snoop_i.tag_wdata, m2_paddr_i);
-        end
-      end
-      m2_miss = ~|m2_hit;
-    end
+    m2_wdata_q <= m2_wdata;
+    m2_data_q <= m2_data;
   end
 
   // M2 状态机
@@ -276,27 +193,33 @@ module lsu #(
     end
   end
   always_comb begin
+    m2_busy_o = m2_fsm_q != M2_FSM_NORMAL;
     m2_fsm = m2_fsm_q;
     case (m2_fsm_q)
       M2_FSM_NORMAL: begin
         if(m2_valid_i && !m2_uncached_i && m2_miss_q) begin
           if(m2_op_i == `_DCAHE_OP_READ) begin
             m2_fsm = M2_FSM_CREAD_MISS;
+            m2_busy_o = 1'b1;
           end
           else if(m2_op_i == `_DCAHE_OP_WRITE) begin
             m2_fsm = M2_FSM_CWRITE_MISS;
+            m2_busy_o = 1'b1;
           end
         end
         else if(m2_valid_i && m2_uncached_i) begin
           if(m2_op_i == `_DCAHE_OP_READ) begin
             m2_fsm = M2_FSM_UREAD_WAIT;
+            m2_busy_o = 1'b1;
           end
           else if(m2_op_i == `_DCAHE_OP_WRITE && !dm_resp_i.we_ready) begin
             m2_fsm = M2_FSM_WRITE_WAIT;
+            m2_busy_o = 1'b1;
           end
         end
         else if(m2_valid_i && m2_op_i != '0) begin
           m2_fsm = M2_FSM_CACHE_OP;
+          m2_busy_o = 1'b1;
         end
       end
       M2_FSM_CREAD_MISS: begin
@@ -360,8 +283,96 @@ module lsu #(
     endcase
   end
 
+  // M2 MISS / HIT 维护
+  always_comb begin
+    if(!m2_stall_i) begin
+      m2_hit = m1_hit;
+      m2_miss = m1_miss;
+    end
+    else begin
+      // 时刻监控对 tag 的读写，以维护新的 hit / miss
+      m2_hit = m2_hit_q;
+      for(integer i = 0 ; i < WAY_CNT ; i++) begin
+        if(dm_snoop_i.tag_we[i] && dm_snoop_i.tag_waddr == tramaddr(m2_vaddr_i)) begin
+          m2_hit = cache_hit(dm_snoop_i.tag_wdata, m2_paddr_i);
+        end
+      end
+      m2_miss = ~|m2_hit;
+    end
+  end
+
+  // M2 数据维护
+  always_comb begin
+    if(!m2_stall_i) begin
+      m2_data = m1_data;
+    end
+    else begin
+      m2_data = m2_data_q;
+      for(integer b = 0 ; b < `_DBANK_CNT ; b++) begin
+        for(integer i = 0 ; i < WAY_CNT ; i++) begin
+          if(m2_miss_q && dm_snoop_i.data_we[b][i] &&
+              {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m2_vaddr_i)) begin
+            m2_data[i] = dm_snoop_i.data_wdata[b[$clog2(`_DBANK_CNT) - 1: 0]];
+          end
+        end
+      end
+      if(m2_fsm_q == M2_FSM_UREAD_WAIT) begin
+        m2_data[0] = dm_resp_i.r_uncached;
+      end
+    end
+  end
+
+  // M2 写数据维护
+  always_comb begin
+    if(!m2_stall_i) begin
+      m2_wdata = m1_wdata;
+    end
+    else begin
+      m2_wdata = m2_wdata_q;
+      for(integer b = 0 ; b < `_DBANK_CNT ; b++) begin
+        for(integer i = 0 ; i < WAY_CNT ; i++) begin
+          if(m2_miss_q && dm_snoop_i.data_we[b][i] &&
+              {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m2_vaddr_i)) begin
+            m2_wdata = mkstrobe(dm_snoop_i.data_wdata[b[$clog2(`_DBANK_CNT) - 1: 0]],~m2_strobe_i) | mkstrobe(m2_wdata_q,m2_strobe_i);
+          end
+        end
+      end
+    end
+  end
+
   // 产生向 DM 的请求
   always_comb begin
-    dm_req_o.op
+    dm_req_o.op_type = m2_op_i;
+    dm_req_o.op_valid = 1'b0;
+    dm_req_o.op_addr = m2_paddr_i;
+    dm_req_o.we_valid = (m2_op_i == `_DCAHE_OP_WRITE) && (m2_uncached_i || !m2_miss_q) &&
+                      (m2_fsm_q & (M2_FSM_WRITE_WAIT | M2_FSM_NORMAL)) != 0;
+    dm_req_o.uncached = m2_uncached_i;
+    dm_req_o.strobe = m2_strobe_i;
+    dm_req_o.size = m2_size_i;
+    dm_req_o.we_sel = m2_hit_q;
+    dm_req_o.wdata = m2_wdata_q;
   end
+
+  // 输出管理
+
+  // output logic [31:0] m2_rdata_o,
+  // output logic m2_rvalid_o,  // 需要 fmt 的结果级
+
+  // output logic [31:0] wb_rdata_o,
+  // output logic wb_rvalid_o,
+  always_comb begin
+    m2_rdata_o = mkstrobe(mksft(m2_data_q,m2_vaddr_i), m2_strobe_i);
+    m2_rvalid_o = !m2_busy_o && m2_valid_i && m2_op_i == `_DCAHE_OP_READ;
+  end
+
+  always_ff @(posedge clk) begin
+    if(!m2_stall_i) begin
+      wb_rdata_o <= m2_rdata_o;
+      wb_rvalid_o <= m2_rvalid_o;
+    end else begin
+      wb_rvalid_o <= '0;
+    end
+  end
+
 endmodule
