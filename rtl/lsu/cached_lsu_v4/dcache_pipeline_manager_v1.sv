@@ -1,7 +1,7 @@
 `include "cached_lsu_v4.svh"
 
 module lsu #(
-    parameter int WAY_CNT = 1
+    parameter int WAY_CNT = `_DWAY_CNT
   ) (
     input logic clk,
     input logic rst_n,
@@ -50,7 +50,7 @@ module lsu #(
   // M1 级接线，具有时序逻辑。
   // M1 级共三个状态：
   // NORMAL，即为正常状态，可以接受请求
-  // WAIT，即为等待 dram_manager 状态，等待 rdata_valid_d1 置高，且依然需要监视 snoop 端口
+  // WAIT，即为等待 dram_manager 状态，等待 r_valid_d1 置高，且依然需要监视 snoop 端口
   // SNOOP，读端口上的数据已经就绪，等待 cpu 管线撤回 stall 信号，持续监视 snoop 端口
 
   // M1 状态机电路
@@ -70,7 +70,7 @@ module lsu #(
     m1_fsm = m1_fsm_q;
     casez(m1_fsm_q)
       3'b??1: begin
-        if(m1_valid_i && !dm_resp_i.rdata_valid_d1) begin
+        if(m1_valid_i && !dm_resp_i.r_valid_d1) begin
           m1_fsm = M1_FSM_WAIT;
         end
         else if(m1_stall_i) begin
@@ -78,7 +78,7 @@ module lsu #(
         end
       end
       3'b?10: begin
-        if(dm_resp_i.rdata_valid_d1) begin
+        if(dm_resp_i.r_valid_d1) begin
           if(!m1_stall_i) begin
             m1_fsm = M1_FSM_NORMAL;
           end
@@ -130,7 +130,7 @@ module lsu #(
     always_comb begin
       // 早出条件较为苛刻，要求之前没有未完成的写请求，缓存命中，非不可缓存。
       m1_rdata_o = mkstrobe(dm_resp_i.rdata_d1[0], m1_strobe_i);
-      m1_rvalid_o = dm_resp_i.rdata_valid_d1 && cache_hit(dm_resp_i.tag_d1[0], m1_paddr_i)
+      m1_rvalid_o = dm_resp_i.r_valid_d1 && cache_hit(dm_resp_i.tag_d1[0], m1_paddr_i)
                   && !dm_resp_i.pending_write && !m1_uncached_i
                   && (m1_paddr_i[1:0] == '0);
     end
@@ -144,7 +144,7 @@ module lsu #(
 
   // M1 busy 电路
   always_comb begin
-    m1_busy_o = (m1_fsm_q != M1_FSM_NORMAL) || (m1_fsm_q == M1_FSM_NORMAL && m1_valid_i && !dm_resp_i.rdata_valid_d1);
+    m1_busy_o = (m1_fsm_q != M1_FSM_NORMAL) || (m1_fsm_q == M1_FSM_NORMAL && m1_valid_i && !dm_resp_i.r_valid_d1);
   end
 
   // 注意：这部分需要在 M1 - M2 级之间进行流水。

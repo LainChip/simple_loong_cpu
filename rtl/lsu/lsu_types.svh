@@ -1,23 +1,21 @@
 `ifndef _LSU_TYPES_HEADER
 `define _LSU_TYPES_HEADER
 
-`include "common.svh"
-
 typedef struct packed{
     // 请求信号
     logic valid;                             // 拉高时说明cache的请求有效，请求有效后，valid信号应该被拉低
     logic write;                             // 拉高时说明cache请求进行写入
-    logic [3:0]burst_size;                   // 0 for no burst, n for n + 1 times burst
+    logic [3:0] burst_size;                   // 0 for no burst, n for n + 1 times burst
     logic cached;                            // 0 for uncached, 1 for cached, when cached and coherence exchange imple,
                                              // cached is although responsible for shareable between masters.
-    logic [1:0]data_size;                    // n for (1 << n) bytes in a transfer
+    logic [1:0] data_size;                    // n for (1 << n) bytes in a transfer
     logic[31:0] addr;                        // cache请求的物理地址
 
     // 数据
     logic data_ok;                           // 写入时，此信号用于说明cache已准备好提供数据。 读取时，此信号说明cache已准备好接受数据。
     logic data_last;                         // 拉高时标记最后一个元素，只有读到此信号才认为传输事务结束
-    logic[`_CACHE_BUS_DATA_LEN / 8 - 1 : 0]data_strobe;
-    logic[`_CACHE_BUS_DATA_LEN - 1:0] w_data; // cache请求的写数据
+    logic[3 :0] data_strobe;
+    logic[31:0] w_data; // cache请求的写数据
 }cache_bus_req_t;
 
 typedef struct packed{
@@ -27,7 +25,7 @@ typedef struct packed{
     // 数据
     logic data_ok;                             // 拉高时说明总线数据有效
     logic data_last;                           // 最后一个有效数据
-    logic[`_CACHE_BUS_DATA_LEN - 1 : 0] r_data; // 总线返回的数据
+    logic[31:0] r_data; // 总线返回的数据
 }cache_bus_resp_t;
 
 `define _COHERENT_INV_OP (3'd0)
@@ -60,7 +58,7 @@ typedef struct packed{
     // 数据
     logic data_ok;
     logic data_last;
-    logic[`_CACHE_BUS_DATA_LEN - 1 : 0] wb_data;
+    logic[31:0] wb_data;
 }coherence_bus_resp_t; // coherent master 对请求的响应
 
 // 暂不使用 AXI 接口对外包装
