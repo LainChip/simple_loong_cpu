@@ -19,8 +19,8 @@ module lsu_dm#(
     input logic clk,
     input logic rst_n,
 
-    input dram_manager_req_t[PIPE_MANAGE_NUM - 1:0] dm_req_o,
-    output dram_manager_resp_t[PIPE_MANAGE_NUM - 1:0] dm_resp_i,
+    input dram_manager_req_t[PIPE_MANAGE_NUM - 1:0] dm_req_i,
+    output dram_manager_resp_t[PIPE_MANAGE_NUM - 1:0] dm_resp_o,
     output dram_manager_snoop_t dm_snoop_i,
 
     output axi_req_t bus_req_o,
@@ -29,7 +29,8 @@ module lsu_dm#(
 
   localparam integer BANK_ID_LEN = $clog2(BANK_NUM);
 
-  // 数据通路部分，实现分 bank 的 data ram 和 tag ram
+  // 数据通路部分，实现分 bank 的 data ram
+  // 对于 tag ram，直接复制一份
   logic[BANK_NUM - 1 : 0][WAY_CNT - 1 : 0] dram_we;
   logic[BANK_NUM - 1 : 0][31:0] dram_wdata;
   logic[BANK_NUM - 1 : 0][`_DIDX_LEN - 3 : BANK_ID_LEN] dram_waddr;
@@ -54,28 +55,42 @@ module lsu_dm#(
     end
   end
 
-  logic[BANK_NUM - 1 : 0][WAY_CNT - 1 : 0] tram_we;
-  dcache_tag_t [BANK_NUM - 1 : 0] tram_wdata;
-  logic[BANK_NUM - 1 : 0][7:BANK_ID_LEN] tram_waddr;
-  logic[BANK_NUM - 1 : 0][7:BANK_ID_LEN] tram_raddr;
+  logic[WAY_CNT - 1 : 0] tram_we,tram_re;
+  dcache_tag_t tram_wdata;
+  logic[7:0] tram_waddr;
+  logic[BANK_NUM - 1 : 0][7:0] tram_raddr;
   dcache_tag_t [BANK_NUM - 1 : 0][WAY_CNT - 1 : 0] tram_rdata_d1;
-  for(genvar b = 0 ; b < BANK_NUM ; b++) begin
-    for(genvar w = 0 ; w < WAY_CNT ; w++) begin
-      simpleDualPortRam #(
+  for(genvar w = 0 ; w < WAY_CNT ; w++) begin
+    simpleDualPortRamRE #(
                           .dataWidth($size(dcache_tag_t)),
-                          .ramSize(1 << (8 - BANK_ID_LEN)),
+                          .ramSize(1 << 8),
                           .readMuler(1),
                           .latency(1)
-                        ) tag_ram (
+                        ) tag_ram_p0 (
                           .clk,
                           .rst_n,
-                          .addressA(tram_waddr[b]),
-                          .we(tram_we[b][w]),
-                          .addressB(tram_raddr[b]),
-                          .inData(tram_wdata[b]),
-                          .outData(tram_rdata_d1[b][w])
+                          .addressA(tram_waddr),
+                          .we(tram_we[w]),
+                          .addressB(tram_raddr[0]),
+                          .re(tram_re[w]),
+                          .inData(tram_wdata),
+                          .outData(tram_rdata_d1[0][w])
                         );
-    end
+    simpleDualPortRamRE #(
+                          .dataWidth($size(dcache_tag_t)),
+                          .ramSize(1 << 8),
+                          .readMuler(1),
+                          .latency(1)
+                        ) tag_ram_p1 (
+                          .clk,
+                          .rst_n,
+                          .addressA(tram_waddr),
+                          .we(tram_we[w]),
+                          .addressB(tram_raddr[1]),
+                          .re(tram_re[w]),
+                          .inData(tram_wdata),
+                          .outData(tram_rdata_d1[1][w])
+                        );
   end
 
   // 数据请求处理状态机，响应 dm_req 中的数据管理部分
@@ -126,11 +141,11 @@ module lsu_dm#(
 
   // 输入地址控制
   logic conflict_sel_tick, conflict_sel_tick_n;
-  logic[1:0] dr_req_valid,dr_req_valid_q; // TODO: 为其赋值
+  logic[1:0] dr_req_valid,dr_req_valid_q;
   logic[1:0] dr_req_ready_q; // 返回值使用
   logic[1:0] dr_req_sel_q;
-  logic[1:0][`_DIDX_LEN - 3 : 0] dr_req_addr;// TODO: 为其赋值
-  logic[1:0][`_DIDX_LEN - 3 : BANK_ID_LEN] dram_rnormal_other_q,dram_rnormal_other,dram_rnormal,dram_rfsm; // TODO: 为dram_rfsm赋值
+  logic[1:0][`_DIDX_LEN - 3 : 0] dr_req_addr;
+  logic[1:0][`_DIDX_LEN - 3 : BANK_ID_LEN] dram_rnormal_other_q,dram_rnormal_other,dram_rnormal,dram_rfsm;
   always_ff @(posedge clk) begin
     if(~rst_n) begin
       conflict_sel_tick <= 1'b0;
@@ -158,16 +173,43 @@ module lsu_dm#(
 
   always_ff @(posedge clk) begin
     if(dreq_fsm_q == DREQ_FSM_NORMAL) begin
-        dr_req_sel_q[0] <= dr_req_addr[0][0];
-        dr_req_sel_q[1] <= dr_req_addr[1][0];
-        dr_req_ready_q[0] <= dr_req_valid[0] && ((!bank0_sel_normal && !dr_req_addr[0][0]) || (bank1_sel_normal && dr_req_addr[0][0]));
-        dr_req_ready_q[1] <= dr_req_valid[1] && ((bank0_sel_normal && !dr_req_addr[1][0]) || (!bank1_sel_normal && dr_req_addr[1][0]));
-        dr_req_valid_q <= dr_req_valid;
-    end else if(dreq_fsm_q == DREQ_FSM_PREEMPTION) begin
-        dr_req_ready_q <= '0;
-    end else begin
-        dr_req_ready_q <= dr_req_ready_q ^ {2{(&dr_req_valid_q) & ~(dr_req_sel_q[0] ^ dr_req_sel_q[1])}};
+      dr_req_sel_q[0] <= dr_req_addr[0][0];
+      dr_req_sel_q[1] <= dr_req_addr[1][0];
+      dr_req_ready_q[0] <= dr_req_valid[0] && ((!bank0_sel_normal && !dr_req_addr[0][0]) || (bank1_sel_normal && dr_req_addr[0][0]));
+      dr_req_ready_q[1] <= dr_req_valid[1] && ((bank0_sel_normal && !dr_req_addr[1][0]) || (!bank1_sel_normal && dr_req_addr[1][0]));
+      dr_req_valid_q <= dr_req_valid;
     end
+    if(dreq_fsm_q == DREQ_FSM_PREEMPTION) begin
+      dr_req_ready_q <= '0;
+    end
+    if(dreq_fsm_q == DREQ_FSM_CONFLICT) begin
+      dr_req_ready_q <= {dr_req_ready_q[0],dr_req_ready_q[1]};
+    end
+  end
+
+  // 对读请求的响应
+  always_comb begin
+    dm_resp_o[0].rdata_d1 = dram_rdata_d1[dr_req_sel_q[0]];
+    dm_resp_o[1].rdata_d1 = dram_rdata_d1[dr_req_sel_q[1]];
+    dm_resp_o[0].r_valid_d1 = dr_req_valid_q[0];
+    dm_resp_o[1].r_valid_d1 = dr_req_valid_q[1];
+    dm_resp_o[0].tag_d1 = tram_rdata_d1[0];
+    dm_resp_o[1].tag_d1 = tram_rdata_d1[1];
+    if(dreq_fsm_q == DREQ_FSM_CONFLICT) begin
+      tram_re = '0;
+    end else begin
+      tram_re = '1;
+    end
+  end
+
+  // ram 的请求
+  always_comb begin
+    tram_raddr[0] = tramaddr(dm_req_i[0].raddr);
+    tram_raddr[1] = tramaddr(dm_req_i[1].raddr);
+    dr_req_addr[0] = dramaddr(dm_req_i[0].raddr);
+    dr_req_addr[1] = dramaddr(dm_req_i[1].raddr);
+    dr_req_valid[0] = dm_req_i[0].rvalid;
+    dr_req_valid[1] = dm_req_i[1].rvalid;
   end
 
 endmodule
