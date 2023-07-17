@@ -734,6 +734,9 @@ module lsu_dm#(
   // CACHE 总线交互机制
   always_comb begin
     // TODO:根据 FSM 状态及总线状态及时的赋值
+    bus_req_o.data_ok;
   end
+
+  // UNCACHE 写 buffer
 
 endmodule
