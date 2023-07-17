@@ -5,11 +5,28 @@
 // random_num 用于处理 bank conflict 时候的选择
 // 返回需要的请求地址 (0 或者 1)
 // 可以使用 一个 LUT6 实现逻辑
-function logic judge_sel(logic[1:0] a, logic[1:0] v);
-  return (!v[0] && v[1]) ||
-         (v[0] && v[1] && a[0]);
+function logic judge_sel(logic[1:0] a, logic[1:0] v, logic local_addr, logic revert);
+  if(v[0] && !v[1] && a[0] == local_addr) begin
+    return 1'b0;
+  end
+  if(v[0] && v[1] && (revert ? (a[1] != local_addr) : (a[0] == local_addr))) begin
+    return 1'b0;
+  end
+  return 1'b1;
 endfunction
-
+function logic[`_DWAY_CNT - 1 : 0][3:0] strobe_ext(logic[`_DWAY_CNT - 1 : 0] way_sel, logic[3:0] strobe);
+  for(integer i = 0 ; i < `_DWAY_CNT ; i++) begin
+    strobe_ext[i] = way_sel[i] ? strobe : '0;
+  end
+  return strobe_ext;
+endfunction
+function logic[31:0] oh_waysel(logic[`_DWAY_CNT - 1 : 0] way_sel, logic[`_DWAY_CNT - 1 : 0][31:0] data);
+  oh_waysel = 0;
+  for(integer i = 0 ; i < `_DWAY_CNT ; i++) begin
+    oh_waysel |= way_sel[i] ? data[i] : '0;
+  end
+  return oh_waysel;
+endfunction
 module lsu_dm#(
     parameter int PIPE_MANAGE_NUM = 2,
     parameter int BANK_NUM = `_DBANK_CNT, // This two parameter is FIXED ACTUALLY.
@@ -106,7 +123,7 @@ module lsu_dm#(
   logic dreq_conflict;
   logic dram_preemption_valid;
   logic dram_preemption_ready;
-  logic[`_DIDX_LEN - 3 : 0] dram_preemption_addr;
+  logic[`_DIDX_LEN - 3 : 0] dram_preemption_addr; // TODO: fixme
 
   // 状态控制
   logic[3:0] dreq_fsm_q,dreq_fsm;
@@ -150,22 +167,30 @@ module lsu_dm#(
   logic[1:0][`_DIDX_LEN - 3 : 0] dr_req_addr;
   logic[1:0][`_DIDX_LEN - 3 : BANK_ID_LEN] dram_rnormal_other_q,dram_rnormal_other,dram_rnormal,dram_rfsm;
 
-  wire bank0_sel_normal = judge_sel({dr_req_addr[1][0],dr_req_addr[0][0]}, dr_req_valid);
-  wire bank1_sel_normal = judge_sel({dr_req_addr[0][0],dr_req_addr[1][0]}, dr_req_valid);
-  wire bank0_sel_other = judge_sel({dr_req_addr[1][0],dr_req_addr[0][0]}, dr_req_valid);
-  wire bank1_sel_other = judge_sel({dr_req_addr[0][0],dr_req_addr[1][0]}, dr_req_valid);
+  // TODO: check logic here
+  wire bank0_sel_normal;
+  assign bank0_sel_normal = judge_sel({dr_req_addr[1][0],dr_req_addr[0][0]}, dr_req_valid, 1'b0, 1'b0);
+  wire bank1_sel_normal;
+  assign bank1_sel_normal = judge_sel({dr_req_addr[1][0],dr_req_addr[0][0]}, dr_req_valid, 1'b1, 1'b0);
+  wire bank0_sel_other;
+  assign bank0_sel_other = judge_sel({dr_req_addr[1][0],dr_req_addr[0][0]}, dr_req_valid, 1'b0, 1'b1);
+  wire bank1_sel_other;
+  assign bank1_sel_other = judge_sel({dr_req_addr[1][0],dr_req_addr[0][0]}, dr_req_valid, 1'b1, 1'b1);
 
   assign dram_rnormal[0] = bank0_sel_normal ? dr_req_addr[1][`_DIDX_LEN - 3 : BANK_ID_LEN] : dr_req_addr[0][`_DIDX_LEN - 3 : BANK_ID_LEN];
-  assign dram_rnormal[1] = bank1_sel_normal ? dr_req_addr[0][`_DIDX_LEN - 3 : BANK_ID_LEN] : dr_req_addr[1][`_DIDX_LEN - 3 : BANK_ID_LEN];
+  assign dram_rnormal[1] = bank1_sel_normal ? dr_req_addr[1][`_DIDX_LEN - 3 : BANK_ID_LEN] : dr_req_addr[0][`_DIDX_LEN - 3 : BANK_ID_LEN];
   assign dram_rnormal_other[0] = bank0_sel_other ? dr_req_addr[1][`_DIDX_LEN - 3 : BANK_ID_LEN] : dr_req_addr[0][`_DIDX_LEN - 3 : BANK_ID_LEN];
-  assign dram_rnormal_other[1] = bank1_sel_other ? dr_req_addr[0][`_DIDX_LEN - 3 : BANK_ID_LEN] : dr_req_addr[1][`_DIDX_LEN - 3 : BANK_ID_LEN];
+  assign dram_rnormal_other[1] = bank1_sel_other ? dr_req_addr[1][`_DIDX_LEN - 3 : BANK_ID_LEN] : dr_req_addr[0][`_DIDX_LEN - 3 : BANK_ID_LEN];
 
   always_ff @(posedge clk) begin
     dram_rnormal_other_q <= dram_rnormal_other;
   end
 
   assign dram_raddr = (dreq_fsm == DREQ_FSM_NORMAL) ? dram_rnormal : dram_rfsm;
-  assign dram_rfsm = (dreq_fsm_q == DREQ_FSM_CONFLICT) ? dram_rnormal_other_q : dram_preemption_addr[`_DIDX_LEN - 3 : BANK_ID_LEN];
+  assign dram_rfsm = (dreq_fsm_q == DREQ_FSM_CONFLICT) ? dram_rnormal_other_q : {
+           dram_preemption_addr[`_DIDX_LEN - 3 : BANK_ID_LEN],
+           dram_preemption_addr[`_DIDX_LEN - 3 : BANK_ID_LEN]
+         };
 
   always_ff @(posedge clk) begin
     if(dreq_fsm_q == DREQ_FSM_NORMAL) begin
@@ -274,6 +299,13 @@ module lsu_dm#(
   else begin
     assign sleep_end_q = '0;
   end
+
+  // TODO: refill cnt 处理
+  logic[`_DIDX_LEN - 1 : 2] refill_cnt_q, refill_cnt;
+  logic[`_DIDX_LEN - 1 : 2] wb_cnt_q, wb_cnt;
+  logic[31:0] wb_data_q, wb_data;
+  logic wb_valid_q, wb_valid, wb_busy_q,wb_busy;
+
   // TODO: 接上这几个信号（需要进行调度）
   logic[3:0] op_q;
   logic[31:0] op_addr_q;
@@ -403,11 +435,10 @@ module lsu_dm#(
   logic[1:0] dram_wreq_ready; // 仅负责 CACHE 的写
   // 对于 UNCACHED 的写，使用另一套状态机维护
   // CACHE 的写，只在主状态机为 NORMAL 下允许进行。
-  typedef logic[2:0] cacw_fsm_t;
+  typedef logic[1:0] cacw_fsm_t;
   cacw_fsm_t cacw_fsm_q,cacw_fsm;
   localparam cacw_fsm_t CAC_FSM_NORMAL = 1;
   localparam cacw_fsm_t CAC_FSM_WBANKCONFLICT = 2; // MAY BE BANK CONFLICTED
-  localparam cacw_fsm_t CAC_FSM_DIRTYCONFLICT = 4; // MAY BE NOT BANK CONFLICTED
   always_ff @(posedge clk) begin
     if(~rst_n) begin
       cacw_fsm_q <= CAC_FSM_NORMAL;
@@ -421,11 +452,11 @@ module lsu_dm#(
     case(cacw_fsm_q)
       CAC_FSM_NORMAL: begin
         if(dram_wreq_valid[0] && dram_wreq_valid[1] && dm_req_i[0].op_addr[2] == dm_req_i[1].op_addr[2]) begin
-          cacw_fsm |= CAC_FSM_WBANKCONFLICT; // 此时先响应 req 0 再响应 req 1
+          cacw_fsm = CAC_FSM_WBANKCONFLICT; // 此时先响应 req 0 再响应 req 1
         end
         if((((~dirty_rdata[0]) & dm_req_i[0].we_sel) != 0 && dram_wreq_valid[0]) ||
             (((~dirty_rdata[1]) & dm_req_i[1].we_sel) != 0 && dram_wreq_valid[1])) begin
-          cacw_fsm |= CAC_FSM_DIRTYCONFLICT;
+          cacw_fsm = CAC_FSM_WBANKCONFLICT;
         end
       end
       default: begin
@@ -499,45 +530,121 @@ module lsu_dm#(
   logic bank1_wsel;
 
   // TODO: DRAM 写赋值
-  always_comb begin
-    dram_waddr = main_fsm_q == MAIN_FSM_NORMAL ? (cacw_fsm_q == CAC_FSM_NORMAL ? dramaddr(dm_req_i[0].op_addr)
-               : dramaddr(dm_req_i[1].op_addr)) :
-               dramaddr (op_addr_q); // TODO: 重填地址相关逻辑在此
-    if(main_fsm_q == MAIN_FSM_NORMAL) begin
-      dram_wdata = '1;
-      dram_we = '0;
-    end
-    else begin
-      dram_we = '0;
+  for(genvar b = 0; b < 2 ; b ++) begin
+    always_comb begin
+      dram_wdata[b] = '0;
+      dram_waddr[b] = '0;
+      dram_we[b] = '0;
+      if(main_fsm_q == MAIN_FSM_NORMAL) begin
+        if(cacw_fsm_q == CAC_FSM_NORMAL && dm_req_i[0].we_valid && (dm_req_i[0].op_addr[2] == b[0])) begin
+          dram_wdata[b] = dm_req_i[0].wdata;
+          dram_waddr[b] = bdramaddr(dm_req_i[0].op_addr);
+          dram_we[b] = strobe_ext(dm_req_i[0].we_sel, dm_req_i[0].strobe);
+        end
+        else begin
+          dram_wdata[b] = dm_req_i[1].wdata;
+          dram_waddr[b] = bdramaddr(dm_req_i[1].op_addr);
+          dram_we[b] = (dm_req_i[1].we_valid && dm_req_i[1].op_addr[2] == b[0]) ? strobe_ext(dm_req_i[1].we_sel, dm_req_i[1].strobe) : '0;
+        end
+      end
+      else begin
+        dram_wdata[b] = bus_resp_i.r_data;
+        dram_waddr[b] = refill_cnt_q[`_DIDX_LEN - 1 : 3];
+        dram_we[b] = (bus_resp_i.data_ok && main_fsm_q == MAIN_FSM_REFIL_RDAT && refill_cnt_q[2] == b[0]) ? strobe_ext(refill_sel_q, 4'b1111) : '0;
+      end
     end
   end
 
-  // TODO: TAG 写赋值
+  // TODO: TAG 写 check
   always_comb begin
-    if(main_fsm_q == MAIN_FSM_NORMAL) begin
-      tram_wdata = '0;
-      tram_waddr = '0;
-      tram_we = '0;
+    tram_we = '0;
+    tram_waddr = tramaddr(op_addr_q);
+    tram_wdata.valid = '0;
+    tram_wdata.addr = tagaddr(op_addr_q); // REFILLING
+    if(main_fsm_q == MAIN_FSM_INVALIDATE) begin
+      tram_we = refill_sel_q;
+    end
+    else if(main_fsm_q == MAIN_FSM_REFIL_RDAT) begin
+      tram_we = (bus_resp_i.data_last & bus_resp_i.data_ok) ? refill_sel_q : '0;
+      tram_wdata.valid = '1;
     end
   end
 
-  // TODO: DIRTY 写赋值
+  // TODO: DIRTY check
   always_comb begin
     if(main_fsm_q == MAIN_FSM_NORMAL) begin
       dirty_wdata = '1;
-      if(cacw_fsm_q == CAC_FSM_NORMAL) begin
+      if(cacw_fsm_q == CAC_FSM_NORMAL && dm_req_i[0].we_valid) begin
         dirty_waddr = tramaddr(dm_req_i[0].op_addr);
-        dirty_we = dm_req_i[0].we_valid ? dm_req_i[0].we_sel : '0;
-      end else begin
+        dirty_we = dm_req_i[0].we_sel;
+      end
+      else begin
         dirty_waddr = tramaddr(dm_req_i[1].op_addr);
         dirty_we = dm_req_i[1].we_valid ? dm_req_i[1].we_sel : '0;
       end
-    end else begin
+    end
+    else begin
       // 对于重填写 / invalidate 的 cache 行，需要对应无效化其 dirty 位
       dirty_wdata = '0;
       dirty_waddr = tramaddr(op_addr_q);
-      dirty_we = (main_fsm_q &(MAIN_FSM_REFIL_WDAT | MAIN_FSM_INVALIDATE)) != 0 ?  refill_sel_q : '0;
+      dirty_we = (main_fsm_q &(MAIN_FSM_REFIL_WDAT | MAIN_FSM_INVALIDATE)) != 0 ? refill_sel_q : '0;
     end
   end
 
+  // dram_preemption_addr 处理逻辑
+  always_comb begin
+    dram_preemption_addr = wb_cnt_q;
+  end
+
+  logic wb_wait_addr_q, wb_wait_addr;
+  always_ff @(posedge clk) begin
+    if(~rst_n) begin
+      wb_valid_q <= '0;
+      wb_busy_q <= '0;
+    end
+    wb_cnt_q <= wb_cnt;
+    refill_cnt_q <= refill_cnt;
+    wb_data_q <= wb_data;
+    wb_valid_q <= wb_valid;
+    wb_busy_q <= wb_busy;
+    wb_wait_addr_q <= wb_wait_addr;
+  end
+  // WB 相关状态机逻辑
+  always_comb begin
+    wb_valid = wb_valid_q;
+    wb_busy = wb_busy_q;
+    wb_cnt = wb_cnt_q;
+    wb_data = wb_data_q;
+    wb_wait_addr = wb_wait_addr_q;
+    if(main_fsm_q == MAIN_FSM_REFIL_WADR && !wb_busy_q) begin
+      wb_wait_addr = '1;
+      wb_cnt = {op_addr_q[`_DIDX_LEN - 1 -: 8], {(`_DIDX_LEN - 10){1'b0}}};
+      wb_busy = '1;
+    end else if(wb_busy_q) begin
+      if(wb_wait_addr) begin
+        wb_wait_addr = '0;
+        wb_cnt = wb_cnt_q + 1;
+      end
+      else if(!wb_valid_q) begin
+        wb_valid = 1'b1;
+        wb_cnt = wb_cnt_q + 1;
+        wb_data = oh_waysel(refill_sel_q, dram_rdata_d1[wb_cnt_q[2]]);
+      end else begin
+        if(bus_resp_i) begin
+          wb_cnt = wb_cnt_q + 1;
+          wb_data = oh_waysel(refill_sel_q, dram_rdata_d1[wb_cnt_q[2]]);
+          if(wb_cnt_q[`_DIDX_LEN - 8 - 1 : 2] == 0) begin
+            wb_valid = '0;
+            wb_busy = '0;
+          end
+        end
+      end
+    end
+  end
+
+  // TODO: refill cnt 处理 相关状态机
+  // logic[`_DIDX_LEN - 1 : 2] refill_cnt_q, refill_cnt;
+  // logic[`_DIDX_LEN - 1 : 2] wb_cnt_q, wb_cnt;
+  // logic[31:0] wb_data_q, wb_data;
+  // logic wb_valid_q, wb_valid;
 endmodule
