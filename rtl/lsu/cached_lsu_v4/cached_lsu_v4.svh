@@ -30,7 +30,7 @@ typedef struct packed {
           logic[31:0] wdata;
 
           logic op_valid;
-          logic[2:0]  op_type;
+          logic[3:0]  op_type;
           logic[31:0] op_addr;
           dcache_tag_t[`_DWAY_CNT - 1 : 0] old_tags;
         } dram_manager_req_t;

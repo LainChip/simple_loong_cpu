@@ -230,7 +230,7 @@ module lsu_dm#(
     tram_raddr[1] = tramaddr(dm_req_i[1].raddr);
     dr_req_addr[0] = dramaddr(dm_req_i[0].raddr);
     dr_req_addr[1] = dramaddr(dm_req_i[1].raddr);
-    dr_req_valid[0] = dm_req_i[0].rvalid; // TODO: 处理冲突
+    dr_req_valid[0] = dm_req_i[0].rvalid; // TODO: check this
     dr_req_valid[1] = dm_req_i[1].rvalid;
   end
 
@@ -245,8 +245,57 @@ module lsu_dm#(
   // 写回仲裁器
   // 注意写回条件（无进行中的 CACHE 操作事务）
   // 注意，每次主状态机完成处理后，等待一段时间（2 ticks），使得 slave 完成相关写入后再进行下一次处理
-  logic op_sel_q;
-  logic op_valid_q; // TODO: 产生 valid 和 sel 的逻辑，这里是固定优先级方法。即当 槽1 上的 OP valid 时，优先处理 槽1 的。
+  logic op_sel_q, op_sel;
+  logic op_valid_q, op_valid; // TODO: 产生 valid 和 sel 的逻辑，这里是固定优先级方法。即当 槽1 上的 OP valid 时，优先处理 槽1 的。
+  // TODO: 接上这几个信号（需要进行调度）
+  logic[3:0] op_q, op;
+  logic[31:0] op_addr_q, op_addr;
+  localparam logic[3:0] MAIN_C_REFILL     = 4'd1;
+  localparam logic[3:0] MAIN_C_UNCREAD    = 4'd2;
+  localparam logic[3:0] MAIN_C_INVALID    = 4'd4;
+  localparam logic[3:0] MAIN_C_INVALID_WB = 4'd8;
+  logic op_ready;   // 注意，此状态机还需要考虑，对于重填请求，从设备是不需要答复响应的。
+  // TODO: op_ready 接线
+
+  always_ff@(posedge clk) begin
+    if(~rst_n) begin
+      op_valid_q <= '0;
+    end
+    op_q <= op;
+    op_valid_q <= op_valid;
+    op_addr_q <= op_addr;
+    op_sel_q <= op_sel;
+  end
+  always_comb begin
+    op = op_q;
+    op_valid = op_valid_q;
+    op_addr = op_addr_q;
+    op_sel = op_sel_q;
+    dm_resp_o[0].op_ready = 1'b0;
+    dm_resp_o[1].op_ready = 1'b0;
+    // 永远优先响应 pipe 0 的请求
+    if(!op_valid_q) begin
+      if(dm_req_i[0].op_valid) begin
+        op = dm_req_i[0].op_type;
+        op_valid = '1;
+        op_addr = dm_req_i[0].op_addr;
+        op_sel = 1'b0;
+      end
+      else if(dm_req_i[1].op_valid) begin
+        op = dm_req_i[1].op_type;
+        op_valid = '1;
+        op_addr = dm_req_i[1].op_addr;
+        op_sel = 1'b1;
+      end
+    end
+    else begin
+      if(op_ready) begin
+        op_valid = '0;
+        dm_resp_o[op_sel_q].op_ready = 1'b1;
+      end
+    end
+  end
+
   // 主状态机完成处理后的休息时间 （2 ticks） 也在这里实现。
   // 等主装态机完成一半的休息时时 （1 ticks），通知从设备op完成响应。
   // 相关参数可以设置为可配置。
@@ -301,19 +350,11 @@ module lsu_dm#(
   end
 
   // TODO: refill cnt 处理
-  logic[`_DIDX_LEN - 1 : 2] refill_cnt_q, refill_cnt;
-  logic[`_DIDX_LEN - 1 : 2] wb_cnt_q, wb_cnt;
+  logic[`_DIDX_LEN - 1 : 2] refill_addr_q, refill_addr;
+  logic[`_DIDX_LEN - 1 : 2] wb_addr_q, wb_addr;
   logic[31:0] wb_data_q, wb_data;
   logic wb_valid_q, wb_valid, wb_busy_q,wb_busy;
 
-  // TODO: 接上这几个信号（需要进行调度）
-  logic[3:0] op_q;
-  logic[31:0] op_addr_q;
-  localparam logic[3:0] MAIN_C_REFILL     = 4'd1;
-  localparam logic[3:0] MAIN_C_UNCREAD    = 4'd2;
-  localparam logic[3:0] MAIN_C_INVALID    = 4'd4;
-  localparam logic[3:0] MAIN_C_INVALID_WB = 4'd8;
-  logic op_ready;   // 注意，此状态机还需要考虑，对于重填请求，从设备是不需要答复响应的。
   typedef logic[5:0] main_fsm_t;
   main_fsm_t main_fsm_q,main_fsm;
   localparam main_fsm_t MAIN_FSM_NORMAL = 0;
@@ -335,6 +376,7 @@ module lsu_dm#(
   end
   always_comb begin
     main_fsm = main_fsm_q;
+    op_ready = '0;
     case(main_fsm_q)
       MAIN_FSM_NORMAL: begin
         if(op_valid_q && sleep_end_q) begin
@@ -380,6 +422,7 @@ module lsu_dm#(
       MAIN_FSM_REFIL_RDAT: begin
         if(bus_resp_i.data_ok && bus_resp_i.data_last) begin
           main_fsm = MAIN_FSM_NORMAL;
+          op_ready = '1;
         end
       end
       MAIN_FSM_REFIL_WADR: begin
@@ -393,6 +436,7 @@ module lsu_dm#(
             main_fsm = MAIN_FSM_REFIL_RADR;
           end
           else begin
+            op_ready = '1;
             main_fsm = MAIN_FSM_NORMAL;
           end
         end
@@ -404,6 +448,7 @@ module lsu_dm#(
       end
       MAIN_FSM_PRDAT: begin
         if(bus_resp_i.data_ok & bus_resp_i.data_last) begin
+          op_ready = '1;
           main_fsm = MAIN_FSM_NORMAL;
         end
       end
@@ -412,6 +457,7 @@ module lsu_dm#(
           main_fsm = MAIN_FSM_REFIL_WADR;
         end
         else begin
+          op_ready = '1;
           main_fsm = MAIN_FSM_NORMAL;
         end
       end
@@ -424,11 +470,6 @@ module lsu_dm#(
   // 考虑到，既然我们目前需要在 M2 级进行 FMT，那么对于写请求，实际上并没有必要在 M1 级别取出其值。
   // 这样实现，对于冲突的两条写请求，仅需要暂停一个周期，更为合理。
   // 在路径延迟方面是一致的，且无法降低 （实际上我感觉也没有必要降低，不会很高）
-
-  // CACHE 总线交互机制
-  always_comb begin
-    // TODO:根据 FSM 状态及总线状态及时的赋值
-  end
 
   // CACHE 写机制
   logic[1:0] dram_wreq_valid;
@@ -549,8 +590,8 @@ module lsu_dm#(
       end
       else begin
         dram_wdata[b] = bus_resp_i.r_data;
-        dram_waddr[b] = refill_cnt_q[`_DIDX_LEN - 1 : 3];
-        dram_we[b] = (bus_resp_i.data_ok && main_fsm_q == MAIN_FSM_REFIL_RDAT && refill_cnt_q[2] == b[0]) ? strobe_ext(refill_sel_q, 4'b1111) : '0;
+        dram_waddr[b] = refill_addr_q[`_DIDX_LEN - 1 : 3];
+        dram_we[b] = (bus_resp_i.data_ok && main_fsm_q == MAIN_FSM_REFIL_RDAT && refill_addr_q[2] == b[0]) ? strobe_ext(refill_sel_q, 4'b1111) : '0;
       end
     end
   end
@@ -593,58 +634,106 @@ module lsu_dm#(
 
   // dram_preemption_addr 处理逻辑
   always_comb begin
-    dram_preemption_addr = wb_cnt_q;
+    dram_preemption_addr = wb_addr_q;
   end
 
+  logic wb_bank_sel_q, wb_bank_sel;
   logic wb_wait_addr_q, wb_wait_addr;
+  logic wb_skid_q,wb_skid;
+  logic [31:0]wb_skid_buf_q,wb_skid_buf;
+  logic wb_last;
+  assign wb_last = wb_addr_q[`_DIDX_LEN - 8 - 1 : 2] == 0 && wb_busy_q;
   always_ff @(posedge clk) begin
     if(~rst_n) begin
       wb_valid_q <= '0;
       wb_busy_q <= '0;
+      wb_skid_q <= '0;
     end
-    wb_cnt_q <= wb_cnt;
-    refill_cnt_q <= refill_cnt;
+    wb_addr_q <= wb_addr;
+    refill_addr_q <= refill_addr;
     wb_data_q <= wb_data;
     wb_valid_q <= wb_valid;
     wb_busy_q <= wb_busy;
     wb_wait_addr_q <= wb_wait_addr;
+    wb_skid_q <= wb_skid;
+    wb_skid_buf_q <= wb_skid_buf;
+    wb_bank_sel_q <= wb_bank_sel;
   end
   // WB 相关状态机逻辑
   always_comb begin
     wb_valid = wb_valid_q;
     wb_busy = wb_busy_q;
-    wb_cnt = wb_cnt_q;
+    wb_addr = wb_addr_q;
     wb_data = wb_data_q;
     wb_wait_addr = wb_wait_addr_q;
+    wb_skid = wb_skid_q;
+    wb_skid_buf = wb_skid_buf_q;
+    wb_bank_sel = wb_bank_sel_q;
     if(main_fsm_q == MAIN_FSM_REFIL_WADR && !wb_busy_q) begin
       wb_wait_addr = '1;
-      wb_cnt = {op_addr_q[`_DIDX_LEN - 1 -: 8], {(`_DIDX_LEN - 10){1'b0}}};
+      wb_addr = {op_addr_q[`_DIDX_LEN - 1 -: 8], {(`_DIDX_LEN - 10){1'b0}}};
       wb_busy = '1;
-    end else if(wb_busy_q) begin
+    end
+    else if(wb_busy_q) begin
       if(wb_wait_addr) begin
         wb_wait_addr = '0;
-        wb_cnt = wb_cnt_q + 1;
+        wb_addr[`_DIDX_LEN - 8 - 1 : 2] = wb_addr_q[`_DIDX_LEN - 8 - 1 : 2] + 1;
       end
       else if(!wb_valid_q) begin
         wb_valid = 1'b1;
-        wb_cnt = wb_cnt_q + 1;
-        wb_data = oh_waysel(refill_sel_q, dram_rdata_d1[wb_cnt_q[2]]);
-      end else begin
-        if(bus_resp_i) begin
-          wb_cnt = wb_cnt_q + 1;
-          wb_data = oh_waysel(refill_sel_q, dram_rdata_d1[wb_cnt_q[2]]);
-          if(wb_cnt_q[`_DIDX_LEN - 8 - 1 : 2] == 0) begin
-            wb_valid = '0;
-            wb_busy = '0;
+        wb_addr[`_DIDX_LEN - 8 - 1 : 2] = wb_addr_q[`_DIDX_LEN - 8 - 1 : 2] + 1;
+        wb_data = oh_waysel(refill_sel_q, dram_rdata_d1[wb_addr_q[2]]);
+      end
+      else begin
+        if(bus_resp_i.data_ok) begin
+          if(wb_skid_q) begin
+            wb_skid = '0;
+            wb_data = wb_skid_buf_q; // TODO: ADD THIS REIGSTER
           end
+          else begin
+            wb_data = oh_waysel(refill_sel_q, dram_rdata_d1[wb_addr_q[2]]);
+            if(wb_addr_q[`_DIDX_LEN - 8 - 1 : 2] == 0) begin
+              wb_valid = '0;
+              wb_busy = '0;
+            end
+            else begin
+              wb_addr[`_DIDX_LEN - 8 - 1 : 2] = wb_addr_q[`_DIDX_LEN - 8 - 1 : 2] + 1;
+            end
+          end
+        end
+        else begin
+          wb_skid = '0;
+          wb_skid_buf = oh_waysel(refill_sel_q, dram_rdata_d1[wb_addr_q[2]]);
         end
       end
     end
   end
 
-  // TODO: refill cnt 处理 相关状态机
-  // logic[`_DIDX_LEN - 1 : 2] refill_cnt_q, refill_cnt;
-  // logic[`_DIDX_LEN - 1 : 2] wb_cnt_q, wb_cnt;
-  // logic[31:0] wb_data_q, wb_data;
-  // logic wb_valid_q, wb_valid;
+  // TODO: refill cnt 处理 相关状态机 check
+  logic refill_last;
+  assign refill_last = bus_resp_i.data_last & bus_resp_i.data_ok;
+  always_ff @(posedge clk) begin
+    refill_addr_q <= refill_addr;
+  end
+  always_comb begin
+    refill_addr = refill_addr_q;
+    if(main_fsm_q == MAIN_FSM_REFIL_RADR) begin
+      refill_addr = {op_addr_q[`_DIDX_LEN - 1 -: 8], {(`_DIDX_LEN - 10){1'b0}}};
+    end
+    else if(main_fsm_q == MAIN_FSM_REFIL_RDAT && bus_resp_i.data_ok) begin
+      refill_addr[`_DIDX_LEN - 8 - 1 : 2] = refill_addr_q[`_DIDX_LEN - 8 - 1 : 2] + 1;
+    end
+  end
+
+  // TODO: REFILL UPDATE LOGIC
+  always_comb begin
+    refill_state_force = main_fsm_q == MAIN_FSM_INVALIDATE && (op_q & (MAIN_C_INVALID_WB | MAIN_C_INVALID)) != 0 && op_valid_q;
+    refill_state_update = refill_last;
+  end
+
+  // CACHE 总线交互机制
+  always_comb begin
+    // TODO:根据 FSM 状态及总线状态及时的赋值
+  end
+
 endmodule
