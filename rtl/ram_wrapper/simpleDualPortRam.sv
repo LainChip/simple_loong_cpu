@@ -39,7 +39,7 @@ xpm_memory_sdpram
 	.READ_DATA_WIDTH_B(readMuler * dataWidth),
 	.READ_LATENCY_B(latency),
 	.WRITE_DATA_WIDTH_A(dataWidth),
-	.WRITE_MODE_B("read_first")
+	.WRITE_MODE_B("write_first")
 	)instanceSdpram(
 	.clka(clk),
 	.clkb(clk),

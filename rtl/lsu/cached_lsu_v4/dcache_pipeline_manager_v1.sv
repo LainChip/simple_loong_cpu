@@ -41,6 +41,14 @@ module lsu #(
     input dram_manager_resp_t dm_resp_i,
     input dram_manager_snoop_t dm_snoop_i
   );
+  // 接入 M2 级别的有效信号时需要注意内存序陷阱。
+  // 第二条管线的内存序靠后，一定需要后一个执行。
+  // 也即产生 BANK CONFLICT 时，优先执行后者。
+  // 若两者同时产生了 CACHE 冲突，优先执行后者。
+  // 对 DCACHE FLUSH 类 cacop，不需要刷新管线。
+  // 对 ICACHE FLUSH 类 cacop，需要刷新管线。
+  // 最后统一的妥协就是单发射 cacop。
+
   // EX 级接线（真的就是单纯的接线）
   always_comb begin
     dm_req_o.rvalid = ex_valid_i;
@@ -353,7 +361,7 @@ module lsu #(
   // 产生向 DM 的请求
   always_comb begin
     dm_req_o.op_type = m2_op_i;
-    dm_req_o.op_valid = 1'b0;
+    dm_req_o.op_valid = (m2_fsm_q & (M2_FSM_CACHE_OP | M2_FSM_UREAD_WAIT)) != 0;
     dm_req_o.op_addr = m2_paddr_i;
     dm_req_o.we_valid = (m2_op_i == `_DCAHE_OP_WRITE) && (m2_uncached_i || !m2_miss_q) &&
                       (m2_fsm_q & (M2_FSM_WRITE_WAIT | M2_FSM_NORMAL)) != 0;
