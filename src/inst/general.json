@@ -10,16 +10,48 @@
         "_REG_W_RJD": "2'b10",
         "_REG_W_RD": "2'b01",
         "_REG_W_NONE": "2'b00",
-        "_READY_EX": "1'b0",
-        "_READY_M2": "1'b1",
-        "_USE_EX": "1'b0",
-        "_USE_M2": "1'b1"
+
+        "_IMM_U5"  : "3'd0",
+        "_IMM_U12" : "3'd1",
+        "_IMM_S14" : "3'd2",
+        "_IMM_S16" : "3'd3",
+        "_IMM_S20" : "3'd4",
+        "_IMM_S26" : "3'd5",
+        "_IMM_S21" : "3'd6",
+
+        "_ADDRIMM_S12": "1'd0",
+        "_ADDRIMM_S14": "1'd1"
     },
     "signal": {
         "debug_inst": {
             "length": 32,
             "stage": "wb",
             "default_value": "inst_i"
+        },
+        "need_csr": {
+            "length": 1,
+            "stage": "m2",
+            "default_value": "1'b0"
+        },
+        "need_mul": {
+            "length": 1,
+            "stage": "m2",
+            "default_value": "1'b0"
+        },
+        "need_div": {
+            "length": 1,
+            "stage": "m2",
+            "default_value": "1'b0"
+        },
+        "need_lsu": {
+            "length": 1,
+            "stage": "m2",
+            "default_value": "1'b0"
+        },
+        "need_bpu": {
+            "length": 1,
+            "stage": "m2",
+            "default_value": "1'b0"
         },
         "latest_stage_ex": {
             "length": 1,
@@ -75,6 +107,11 @@
             "length": 2,
             "stage": "is",
             "default_value": "`_REG_W_NONE"
+        },
+        "imm_type": {
+            "length": 3,
+            "stage": "is",
+            "default_value": "`_IMM_U5"
         }
     }
 }
