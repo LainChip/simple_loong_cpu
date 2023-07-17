@@ -5,12 +5,12 @@
         "_BRANCH_INDIRECT": "2'b10",
         "_BRANCH_CONDITION": "2'b11",
 
-        "_CMP_EQL": "3'd0",
-        "_CMP_NEQ": "3'd1",
-        "_CMP_LSS": "3'd2",
-        "_CMP_GER": "3'd3",
-        "_CMP_LEQ": "3'd4",
-        "_CMP_GEQ": "3'd5",
+        "_CMP_E": "3'd0",
+        "_CMP_NE": "3'd1",
+        "_CMP_LE": "3'd2",
+        "_CMP_GT": "3'd3",
+        "_CMP_LT": "3'd4", 
+        "_CMP_GE": "3'd5",
         "_CMP_LTU": "3'd6",
         "_CMP_GEU": "3'd7"
     },
@@ -18,21 +18,21 @@
     "signal": {
        	"branch_type": {
             "length": 2,
-            "stage": "ex",
+            "stage": "m1",
             "default_value": 0,
             "invalid_value": 0
         },
 
         "cmp_type": {
             "length": 3,
-            "stage": "ex",
+            "stage": "m1",
             "default_value": 0,
             "invalid_value": 0
         },
 
         "branch_link": {
             "length": 1,
-            "stage": "ex",
+            "stage": "m1",
             "default_value": 0,
             "invalid_value": 0
         }

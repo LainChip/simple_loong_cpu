@@ -38,4 +38,22 @@
             "default_value": "{`_USE_EX,`_USE_EX}",
             "invalid_value": "{`_USE_EX,`_USE_EX}"
         },
+
+
+        "_ALU_TYPE_NIL" : "4'd0",
+        "_ALU_TYPE_ADD" : "4'd1", //int
+        "_ALU_TYPE_SUB" : "4'd2", //int
+        "_ALU_TYPE_SLT" : "4'd3",  //CMP + -
+        "_ALU_TYPE_AND" : "4'd4", //BW
+        "_ALU_TYPE_OR"  : "4'd5", //BW
+        "_ALU_TYPE_XOR" : "4'd6", //BW
+        "_ALU_TYPE_NOR" : "4'd7", //BW
+        "_ALU_TYPE_SL"  : "4'd8",
+        "_ALU_TYPE_SR"  : "4'd9",
+        "_ALU_TYPE_MUL" : "4'd10",
+        "_ALU_TYPE_MULH": "4'd11",
+        "_ALU_TYPE_DIV" : "4'd12",
+        "_ALU_TYPE_MOD" : "4'd13",
+        "_ALU_TYPE_LUI" : "4'd14", //int
+
 ```
