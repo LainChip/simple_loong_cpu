@@ -42,74 +42,74 @@
         "jirl": {
             "opcode": "010011",
             "branch_type": "`_BRANCH_INDIRECT",
-            "reg_type": "`_REG_TYPE_RW",
-            "ready_time": "`_READY_EX",
-            "use_time": "`_USE_EX",
+            xxx_delete: "`_REG_TYPE_RW",
+            xxx_delete "`_READY_EX",
+            xxx_delete "`_USE_EX",
             "wb_sel": "`_REG_WB_BPF",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "b": {
             "opcode": "010100",
             "branch_type": "`_BRANCH_IMMEDIATE",
-            "reg_type": "`_REG_TYPE_I",
-            "pipe_one_inst": 1
+            xxx_delete: "`_REG_TYPE_I",
+            xxx_delete: 1
         },
         "bl": {
             "opcode": "010101",
             "branch_type": "`_BRANCH_IMMEDIATE",
-            "reg_type": "`_REG_TYPE_BL",
-            "ready_time": "`_READY_EX",
+            xxx_delete: "`_REG_TYPE_BL",
+            xxx_delete "`_READY_EX",
             "branch_link": 1,
             "wb_sel": "`_REG_WB_BPF",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "beq": {
             "opcode": "010110",
             "branch_type": "`_BRANCH_CONDITION",
-            "reg_type": "`_REG_TYPE_RR",
-            "use_time": "{`_USE_EX, `_USE_EX}",
+            xxx_delete: "`_REG_TYPE_RR",
+            xxx_delete "{`_USE_EX, `_USE_EX}",
             "cmp_type": "`_CMP_EQL",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "bne": {
             "opcode": "010111",
             "branch_type": "`_BRANCH_CONDITION",
-            "reg_type": "`_REG_TYPE_RR",
-            "use_time": "{`_USE_EX, `_USE_EX}",
+            xxx_delete: "`_REG_TYPE_RR",
+            xxx_delete "{`_USE_EX, `_USE_EX}",
             "cmp_type": "`_CMP_NEQ",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "blt": {
             "opcode": "011000",
             "branch_type": "`_BRANCH_CONDITION",
-            "reg_type": "`_REG_TYPE_RR",
-            "use_time": "{`_USE_EX, `_USE_EX}",
+            xxx_delete: "`_REG_TYPE_RR",
+            xxx_delete "{`_USE_EX, `_USE_EX}",
             "cmp_type": "`_CMP_LSS",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "bge": {
             "opcode": "011001",
             "branch_type": "`_BRANCH_CONDITION",
-            "reg_type": "`_REG_TYPE_RR",
-            "use_time": "{`_USE_EX, `_USE_EX}",
+            xxx_delete: "`_REG_TYPE_RR",
+            xxx_delete "{`_USE_EX, `_USE_EX}",
             "cmp_type": "`_CMP_GEQ",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "bltu": {
             "opcode": "011010",
             "branch_type": "`_BRANCH_CONDITION",
-            "reg_type": "`_REG_TYPE_RR",
-            "use_time": "{`_USE_EX, `_USE_EX}",
+            xxx_delete: "`_REG_TYPE_RR",
+            xxx_delete "{`_USE_EX, `_USE_EX}",
             "cmp_type": "`_CMP_LTU",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "bgeu": {
             "opcode": "011011",
             "branch_type": "`_BRANCH_CONDITION",
-            "reg_type": "`_REG_TYPE_RR",
-            "use_time": "{`_USE_EX, `_USE_EX}",
+            xxx_delete: "`_REG_TYPE_RR",
+            xxx_delete "{`_USE_EX, `_USE_EX}",
             "cmp_type": "`_CMP_GEU",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         }
     }
 }

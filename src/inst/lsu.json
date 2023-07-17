@@ -44,116 +44,116 @@
         "ld.hu": {
             "opcode": "0010101001",
             "mem_type": "`_MEM_TYPE_UHALF",
-            "reg_type": "`_REG_TYPE_RW",
+            xxx_delete: "`_REG_TYPE_RW",
             "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "ld.bu": {
             "opcode": "0010101000",
             "mem_type": "`_MEM_TYPE_UBYTE",
-            "reg_type": "`_REG_TYPE_RW",
+            xxx_delete: "`_REG_TYPE_RW",
             "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "ll.w": {
             "opcode": "00100000",
             "mem_type": "`_MEM_TYPE_WORD",
-            "reg_type": "`_REG_TYPE_RW",
+            xxx_delete: "`_REG_TYPE_RW",
             "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
             "llsc": 1,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "sc.w": {
             "opcode": "00100001",
             "mem_type": "`_MEM_TYPE_WORD",
-            "reg_type": "`_REG_TYPE_CSRXCHG",
+            xxx_delete: "`_REG_TYPE_CSRXCHG",
             "wb_sel": "`_REG_WB_MDU",
             "mem_valid": 1,
             "mem_write": 1,
             "llsc": 1,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "ld.w": {
             "opcode": "0010100010",
             "mem_type": "`_MEM_TYPE_WORD",
-            "reg_type": "`_REG_TYPE_RW",
+            xxx_delete: "`_REG_TYPE_RW",
             "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "ld.h": {
             "opcode": "0010100001",
             "mem_type": "`_MEM_TYPE_HALF",
-            "reg_type": "`_REG_TYPE_RW",
+            xxx_delete: "`_REG_TYPE_RW",
             "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "ld.b": {
             "opcode": "0010100000",
             "mem_type": "`_MEM_TYPE_BYTE",
-            "reg_type": "`_REG_TYPE_RW",
+            xxx_delete: "`_REG_TYPE_RW",
             "wb_sel": "`_REG_WB_LSU",
             "mem_valid": 1,
             "mem_write": 0,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "st.w": {
             "opcode": "0010100110",
             "mem_type": "`_MEM_TYPE_WORD",
-            "reg_type": "`_REG_TYPE_RR",
+            xxx_delete: "`_REG_TYPE_RR",
             "mem_valid": 1,
             "mem_write": 1,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "st.h": {
             "opcode": "0010100101",
             "mem_type": "`_MEM_TYPE_HALF",
-            "reg_type": "`_REG_TYPE_RR",
+            xxx_delete: "`_REG_TYPE_RR",
             "mem_valid": 1,
             "mem_write": 1,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "st.b": {
             "opcode": "0010100100",
             "mem_type": "`_MEM_TYPE_BYTE",
-            "reg_type": "`_REG_TYPE_RR",
+            xxx_delete: "`_REG_TYPE_RR",
             "mem_valid": 1,
             "mem_write": 1,
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "cacop":{
             "opcode": "0000011000",
             "mem_type": "`_MEM_TYPE_BYTE",
-            "reg_type": "`_REG_TYPE_RR",
+            xxx_delete: "`_REG_TYPE_RR",
             "cacop": 1,
-            "pipe_one_inst": 1,
+            xxx_delete: 1,
             "refetch":1,
             "priv_inst": 1
         },
         "dbar":{
             "opcode":"00111000011100100",
-            "reg_type":"`_REG_TYPE_I",
-            "pipe_one_inst": 1,
+            xxx_delete:"`_REG_TYPE_I",
+            xxx_delete: 1,
             "refetch":1
         },
         "ibar":{
             "opcode":"00111000011100101",
-            "reg_type":"`_REG_TYPE_I",
-            "pipe_one_inst": 1,
+            xxx_delete:"`_REG_TYPE_I",
+            xxx_delete: 1,
             "refetch":1
         },
         "preld_nop":{
             "opcode":"0010101011",
-            "reg_type":"`_REG_TYPE_I"
+            xxx_delete:"`_REG_TYPE_I"
         }
     }
 }

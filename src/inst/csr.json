@@ -111,86 +111,86 @@
     "inst": {
         "syscall": {
             "opcode": "00000000001010110",
-            "reg_type": "`_REG_TYPE_I",
+            xxx_delete: "`_REG_TYPE_I",
             "exception_hint": "`_EXCEPTION_HINT_SYSCALL",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "break": {
             "opcode": "00000000001010100",
-            "reg_type": "`_REG_TYPE_I",
+            xxx_delete: "`_REG_TYPE_I",
             "exception_hint": "`_EXCEPTION_HINT_SYSCALL",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "ertn": {
             "opcode": "0000011001001000001110",
-            "reg_type": "`_REG_TYPE_I",
+            xxx_delete: "`_REG_TYPE_I",
             "do_ertn": 1,
-            "pipe_one_inst": 1,
+            xxx_delete: 1,
             "priv_inst": 1
         },
         "csrwrxchg": {
             "opcode": "00000100",
             "csr_write_en": 1,
-            "reg_type": "`_REG_TYPE_CSRXCHG",
-            "use_time": "{`_USE_M2,`_USE_M2}",
-            "ready_time": "`_READY_M2",
+            xxx_delete: "`_REG_TYPE_CSRXCHG",
+            xxx_delete "{`_USE_M2,`_USE_M2}",
+            xxx_delete "`_READY_M2",
             "wb_sel": "`_REG_WB_CSR",
-            "pipe_one_inst": 1,
+            xxx_delete: 1,
             "priv_inst": 1,
             "refetch": 1
         },
         "tlbsrch": {
             "opcode": "0000011001001000001010",
             "tlbsrch_en": 1,
-            "reg_type": "`_REG_TYPE_RW",
-            "pipe_one_inst": 1,
+            xxx_delete: "`_REG_TYPE_RW",
+            xxx_delete: 1,
             "priv_inst": 1,
             "refetch": 1
         },
         "tlbrd": {
             "opcode": "0000011001001000001011",
             "tlbrd_en": 1,
-            "reg_type": "`_REG_TYPE_RW",
-            "pipe_one_inst": 1,
+            xxx_delete: "`_REG_TYPE_RW",
+            xxx_delete: 1,
             "priv_inst": 1,
             "refetch": 1
         },
         "tlbwr": {
             "opcode": "0000011001001000001100",
             "tlbwr_en": 1,
-            "reg_type": "`_REG_TYPE_RW",
-            "pipe_one_inst": 1,
+            xxx_delete: "`_REG_TYPE_RW",
+            xxx_delete: 1,
             "priv_inst": 1,
             "refetch": 1
         },
         "tlbfill": {
             "opcode": "0000011001001000001101",
             "tlbfill_en": 1,
-            "reg_type": "`_REG_TYPE_RW",
-            "pipe_one_inst": 1,
+            xxx_delete: "`_REG_TYPE_RW",
+            xxx_delete: 1,
             "priv_inst": 1,
             "refetch": 1
         },
         "invtlb": {
             "opcode": "00000110010010011",
             "invtlb_en": 1,
-            "reg_type": "`_REG_TYPE_INVTLB",
-            "use_time": "{`_USE_M2,`_USE_M2}",
-            "pipe_one_inst": 1,
+            xxx_delete: "`_REG_TYPE_INVTLB",
+            xxx_delete "{`_USE_M2,`_USE_M2}",
+            xxx_delete: 1,
             "priv_inst": 1,
             "refetch": 1
         },
         "rdcnt.w": {
             "opcode": "000000000000000001100",
-            "reg_type": "`_REG_TYPE_RDCNTID",
-            "ready_time": "`_READY_M2",
+            xxx_delete: "`_REG_TYPE_RDCNTID",
+            xxx_delete "`_READY_M2",
             "wb_sel": "`_REG_WB_CSR",
-            "pipe_one_inst": 1
+            xxx_delete: 1
         },
         "idle": {
             "opcode": "00000110010010001",
-            "reg_type": "`_REG_TYPE_I",
-            "pipe_one_inst": 1,
+            xxx_delete: "`_REG_TYPE_I",
+            xxx_delete: 1,
             "priv_inst": 1,
             "wait_hint": 1,
             "refetch": 1
