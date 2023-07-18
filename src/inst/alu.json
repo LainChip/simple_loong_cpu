@@ -13,6 +13,7 @@
 
         "_ALU_STYPE_ADD": "2'b00",
         "_ALU_STYPE_SUB": "2'b10",
+        "_ALU_STYPE_PCPLUS4": "2'b10",
         "_ALU_STYPE_LUI": "2'b01",
         "_ALU_STYPE_PCADDUI": "2'b11",
 
@@ -30,7 +31,9 @@
         "_DIV_TYPE_DIV": "2'b00",
         "_DIV_TYPE_DIVU": "2'b01",
         "_DIV_TYPE_MOD": "2'b10",
-        "_DIV_TYPE_MODU": "2'b11"
+        "_DIV_TYPE_MODU": "2'b11",
+
+        "_LINK_TYPE_PCPLUS4": "2'b00"
     },
     "signal": {
         "alu_grand_op": {
