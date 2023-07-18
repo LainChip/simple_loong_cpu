@@ -50,20 +50,12 @@ typedef struct packed {
 
 // 输入到后端的指令流
 typedef struct packed {
-	is_t is_info;
+	is_t decode_info;
 	reg_info_t reg_info;
 	bpu_into_t bpu_predict;
 	fetch_excp_t fetch_excp;
 	logic[31:0] pc;
-	logic valid;
 } inst_t;
-
-typedef struct packed{
-	is_t decode_info;  // 指令控制信息 ::: 不需要 rst clr | 跳转 clr
-	bpu_predict_t bpu_predict;
-	fetch_excp_t fetch_excp;
-	logic[31:0] pc;
-} pipeline_ctrl_is_t; // 移位寄存器实现的部分
 
 typedef struct packed{
 	ex_t decode_info;  // 指令控制信息 ::: 不需要 rst clr | 跳转 clr
