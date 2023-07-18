@@ -1,6 +1,7 @@
 from functools import cmp_to_key
 import json
 import os
+import sys
 import types
 import re
 
@@ -202,3 +203,13 @@ if __name__ == '__main__':
     f = open('decoder.svh','w')
     f.write(parser.gen_sv_header())
     f.close()
+    # -m : move decoder directly to rtl/decoder/
+    if len(sys.argv) > 1:
+        op = sys.argv[1]
+        if op == '-m' or op == '--move':
+            cur_file_path = os.path.split(os.path.realpath(__file__))[0]
+            tar_path = os.path.join(cur_file_path, '../../rtl/decoder/')
+            os.system("cp decoder.sv " + tar_path)
+            print("cp decoder.sv " + tar_path)
+            os.system("cp decoder.svh "+ tar_path)
+            print("cp decoder.svh "+ tar_path)
