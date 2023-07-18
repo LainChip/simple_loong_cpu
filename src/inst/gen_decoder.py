@@ -32,6 +32,8 @@ class decoder_parser:
         for signal_name in signal_info:
             sub_dict = signal_info[signal_name]
             self.signal_package_list.add(sub_dict['stage'])
+            if sub_dict.get('invalid_value') is None:
+                sub_dict['invalid_value'] = 0
             self.signal_list[signal_name] = (sub_dict['stage'],sub_dict['length'],sub_dict['default_value'])
 
     def parse_inst_list(self, inst_info):

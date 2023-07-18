@@ -1,20 +1,10 @@
-`ifdef _FPGA
-    `define FULL_TEST
-`endif
-
-`ifdef _DIFFTEST_ENABLE
-    `define FULL_TEST
-`endif
-
-`ifndef FULL_TEST
+`ifndef _TEST_REG_FILE
     `include "../bank_mpregfiles_4r2w/bank_mpregfiles_4r2w.sv"  // can be included in Makefile instead
 `endif
 
 /*--JSON--{"module_name":"reg_file","module_ver":"2","module_type":"module"}--JSON--*/
 module reg_file #(
     parameter int DATA_WIDTH = 32,
-    // fixed READ_PORT = 4, WRITE_PORT = 2 (odd/even)
-    // fixed DEPTH = 32
     parameter type reg_data_t = logic [DATA_WIDTH-1:0],
     parameter type reg_addr_t = logic [4 : 0] 
 )(
@@ -52,7 +42,7 @@ module reg_file #(
         .wa0_i(w_addr_i[0]),
         .wa1_i(w_addr_i[1]),
         .we0_i(w_en_i[0] & ~(w_addr_i[0] == '0)),
-        .we1_i(w_en_i[1] & ~(w_addr_i[0] == '0)),
+        .we1_i(w_en_i[1] & ~(w_addr_i[1] == '0)),
         // signal
         .conflict_o()
     );

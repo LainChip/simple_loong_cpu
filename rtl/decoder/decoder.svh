@@ -1,26 +1,85 @@
 `ifndef _DECODE_HEADER
 `define _DECODE_HEADER
 
-`define _ALU_TYPE_NIL (4'd0)
-`define _ALU_TYPE_ADD (4'd1)
-`define _ALU_TYPE_SUB (4'd2)
-`define _ALU_TYPE_SLT (4'd3)
-`define _ALU_TYPE_AND (4'd4)
-`define _ALU_TYPE_OR (4'd5)
-`define _ALU_TYPE_XOR (4'd6)
-`define _ALU_TYPE_NOR (4'd7)
-`define _ALU_TYPE_SL (4'd8)
-`define _ALU_TYPE_SR (4'd9)
-`define _ALU_TYPE_MUL (4'd10)
-`define _ALU_TYPE_MULH (4'd11)
-`define _ALU_TYPE_DIV (4'd12)
-`define _ALU_TYPE_MOD (4'd13)
-`define _ALU_TYPE_LUI (4'd14)
-`define _OPD_REG (3'b000)
-`define _OPD_IMM_U5 (3'b001)
-`define _OPD_IMM_S12 (3'b010)
-`define _OPD_IMM_U12 (3'b011)
-`define _OPD_IMM_S20 (3'b100)
+`define _MEM_TYPE_NONE (3'd0)
+`define _MEM_TYPE_WORD (3'd1)
+`define _MEM_TYPE_HALF (3'd2)
+`define _MEM_TYPE_BYTE (3'd3)
+`define _MEM_TYPE_UWORD (3'd5)
+`define _MEM_TYPE_UHALF (3'd6)
+`define _MEM_TYPE_UBYTE (3'd7)
+`define _BRANCH_INVALID (2'b00)
+`define _BRANCH_CONDITION (2'b01)
+`define _BRANCH_INDIRECT (2'b10)
+`define _CMP_E (3'd0)
+`define _CMP_NE (3'd1)
+`define _CMP_LE (3'd2)
+`define _CMP_GT (3'd3)
+`define _CMP_LT (3'd4)
+`define _CMP_GE (3'd5)
+`define _CMP_LTU (3'd6)
+`define _CMP_GEU (3'd7)
+`define _REG_R0_IMM (2'b11)
+`define _REG_R0_RD (2'b10)
+`define _REG_R0_RK (2'b01)
+`define _REG_R0_NONE (2'b00)
+`define _REG_R1_RJ (1'b1)
+`define _REG_R1_NONE (1'b0)
+`define _REG_W_BL1 (2'b11)
+`define _REG_W_RJD (2'b10)
+`define _REG_W_RD (2'b01)
+`define _REG_W_NONE (2'b00)
+`define _IMM_U5 (3'd0)
+`define _IMM_U12 (3'd1)
+`define _IMM_S12 (3'd2)
+`define _IMM_S20 (3'd3)
+`define _IMM_S16 (3'd4)
+`define _IMM_S21 (3'd5)
+`define _ADDR_IMM_S12 (2'd0)
+`define _ADDR_IMM_S14 (2'd1)
+`define _ADDR_IMM_S16 (2'd2)
+`define _ADDR_IMM_S26 (2'd3)
+`define _FUSEL_EX_NONE (1'd0)
+`define _FUSEL_EX_ALU (1'd1)
+`define _FUSEL_M1_NONE (2'd0)
+`define _FUSEL_M1_ALU (2'd1)
+`define _FUSEL_M1_MEM (2'd2)
+`define _FUSEL_M2_NONE (2'd0)
+`define _FUSEL_M2_ALU (2'd1)
+`define _FUSEL_M2_CSR (2'd2)
+`define _FUSEL_M2_MUL (2'd3)
+`define _FUSEL_WB_NONE (1'd0)
+`define _FUSEL_WB_DIV (1'd1)
+`define _ALU_GTYPE_BW (2'd0)
+`define _ALU_GTYPE_INT (2'd1)
+`define _ALU_GTYPE_LI (2'd1)
+`define _ALU_GTYPE_SFT (2'd2)
+`define _ALU_GTYPE_CMP (2'd3)
+`define _ALU_STYPE_NOR (2'b00)
+`define _ALU_STYPE_AND (2'b01)
+`define _ALU_STYPE_OR (2'b10)
+`define _ALU_STYPE_XOR (2'b11)
+`define _ALU_STYPE_ADD (2'b00)
+`define _ALU_STYPE_LIEMPTYSLOT (2'b00)
+`define _ALU_STYPE_SUB (2'b10)
+`define _ALU_STYPE_PCPLUS4 (2'b10)
+`define _ALU_STYPE_LUI (2'b01)
+`define _ALU_STYPE_INTEMPTYSLOT0 (2'b00)
+`define _ALU_STYPE_PCADDUI (2'b11)
+`define _ALU_STYPE_INTEMPTYSLOT1 (2'b00)
+`define _ALU_STYPE_SRA (2'b00)
+`define _ALU_STYPE_SLL (2'b10)
+`define _ALU_STYPE_SRL (2'b11)
+`define _ALU_STYPE_SLT (2'b00)
+`define _ALU_STYPE_SLTU (2'b01)
+`define _MUL_TYPE_MULL (2'b00)
+`define _MUL_TYPE_MULH (2'b01)
+`define _MUL_TYPE_MULHU (2'b10)
+`define _DIV_TYPE_DIV (2'b00)
+`define _DIV_TYPE_DIVU (2'b01)
+`define _DIV_TYPE_MOD (2'b10)
+`define _DIV_TYPE_MODU (2'b11)
+`define _LINK_TYPE_PCPLUS4 (2'b00)
 `define _CSR_CRMD (14'h0)
 `define _CSR_PRMD (14'h1)
 `define _CSR_ECTL (14'h4)
@@ -53,139 +112,138 @@
 `define _CSR_DMW1 (14'h181)
 `define _CSR_BRK (14'h100)
 `define _CSR_DISABLE_CACHE (14'h101)
-`define _EXCEPTION_HINT_NONE (2'd0)
-`define _EXCEPTION_HINT_SYSCALL (2'd1)
-`define _EXCEPTION_HINT_INVALID (2'd2)
-`define _MEM_TYPE_NONE (3'd0)
-`define _MEM_TYPE_WORD (3'd1)
-`define _MEM_TYPE_HALF (3'd2)
-`define _MEM_TYPE_BYTE (3'd3)
-`define _MEM_TYPE_UWORD (3'd5)
-`define _MEM_TYPE_UHALF (3'd6)
-`define _MEM_TYPE_UBYTE (3'd7)
-`define _REG_TYPE_I (5'b00_0_00)
-`define _REG_TYPE_RW (5'b00_1_01)
-`define _REG_TYPE_RRW (5'b01_1_01)
-`define _REG_TYPE_W (5'b01_1_01)
-`define _REG_TYPE_RR (5'b10_1_00)
-`define _REG_TYPE_BL (5'b00_0_11)
-`define _REG_TYPE_CSRXCHG (5'b10_1_01)
-`define _REG_TYPE_RDCNTID (5'b00_0_10)
-`define _REG_TYPE_INVTLB (5'b01_1_00)
-`define _REG_WB_ALU (3'd0)
-`define _REG_WB_BPF (3'd1)
-`define _REG_WB_LSU (3'd2)
-`define _REG_WB_CSR (3'd3)
-`define _REG_WB_MDU (3'd4)
-`define _READY_EX (1'b0)
-`define _READY_M2 (1'b1)
-`define _USE_EX (1'b0)
-`define _USE_M2 (1'b1)
-`define _BRANCH_INVALID (2'b00)
-`define _BRANCH_IMMEDIATE (2'b01)
-`define _BRANCH_INDIRECT (2'b10)
-`define _BRANCH_CONDITION (2'b11)
-`define _CMP_EQL (3'd0)
-`define _CMP_NEQ (3'd1)
-`define _CMP_LSS (3'd2)
-`define _CMP_GER (3'd3)
-`define _CMP_LEQ (3'd4)
-`define _CMP_GEQ (3'd5)
-`define _CMP_LTU (3'd6)
-`define _CMP_GEU (3'd7)
+`define _INV_TLB_ALL (4'b1111)
+`define _INV_TLB_MASK_G (4'b1000)
+`define _INV_TLB_MASK_NG (4'b0100)
+`define _INV_TLB_MASK_ASID (4'b0010)
+`define _INV_TLB_MASK_VA (4'b0001)
+`define _RDCNT_NONE (2'd0)
+`define _RDCNT_ID (2'd1)
+`define _RDCNT_VLOW (2'd2)
+`define _RDCNT_VHIGH (2'd3)
 
 typedef logic[25 : 0] inst25_0_t;
-typedef logic[3 : 0] alu_type_t;
-typedef logic[2 : 0] opd_type_t;
-typedef logic[0 : 0] opd_unsigned_t;
-typedef logic[1 : 0] exception_hint_t;
-typedef logic[0 : 0] do_rdcntid_t;
-typedef logic[13 : 0] csr_num_t;
-typedef logic[0 : 0] csr_write_en_t;
+typedef logic[2 : 0] mem_type_t;
+typedef logic[0 : 0] mem_write_t;
+typedef logic[0 : 0] mem_read_t;
+typedef logic[0 : 0] mem_cacop_t;
+typedef logic[0 : 0] llsc_inst_t;
+typedef logic[0 : 0] ibarrier_t;
+typedef logic[0 : 0] dbarrier_t;
+typedef logic[1 : 0] branch_type_t;
+typedef logic[2 : 0] cmp_type_t;
+typedef logic[31 : 0] debug_inst_t;
+typedef logic[0 : 0] need_csr_t;
+typedef logic[0 : 0] need_mul_t;
+typedef logic[0 : 0] need_div_t;
+typedef logic[0 : 0] need_lsu_t;
+typedef logic[0 : 0] need_bpu_t;
+typedef logic[0 : 0] latest_r0_ex_t;
+typedef logic[0 : 0] latest_r0_m1_t;
+typedef logic[0 : 0] latest_r0_m2_t;
+typedef logic[0 : 0] latest_r0_wb_t;
+typedef logic[0 : 0] latest_r1_ex_t;
+typedef logic[0 : 0] latest_r1_m1_t;
+typedef logic[0 : 0] latest_r1_m2_t;
+typedef logic[0 : 0] latest_r1_wb_t;
+typedef logic[0 : 0] fu_sel_ex_t;
+typedef logic[1 : 0] fu_sel_m1_t;
+typedef logic[1 : 0] fu_sel_m2_t;
+typedef logic[0 : 0] fu_sel_wb_t;
+typedef logic[1 : 0] reg_type_r0_t;
+typedef logic[0 : 0] reg_type_r1_t;
+typedef logic[1 : 0] reg_type_w_t;
+typedef logic[2 : 0] imm_type_t;
+typedef logic[1 : 0] addr_imm_type_t;
+typedef logic[1 : 0] alu_grand_op_t;
+typedef logic[1 : 0] alu_op_t;
+typedef logic[0 : 0] ertn_inst_t;
+typedef logic[0 : 0] priv_inst_t;
+typedef logic[0 : 0] refetch_t;
+typedef logic[0 : 0] wait_inst_t;
+typedef logic[0 : 0] invalid_inst_t;
+typedef logic[0 : 0] syscall_inst_t;
+typedef logic[0 : 0] break_inst_t;
+typedef logic[0 : 0] csr_op_en_t;
 typedef logic[0 : 0] tlbsrch_en_t;
 typedef logic[0 : 0] tlbrd_en_t;
 typedef logic[0 : 0] tlbwr_en_t;
 typedef logic[0 : 0] tlbfill_en_t;
 typedef logic[0 : 0] invtlb_en_t;
-typedef logic[0 : 0] do_ertn_t;
-typedef logic[0 : 0] priv_inst_t;
-typedef logic[0 : 0] refetch_t;
-typedef logic[0 : 0] wait_hint_t;
-typedef logic[2 : 0] mem_type_t;
-typedef logic[0 : 0] mem_write_t;
-typedef logic[0 : 0] mem_valid_t;
-typedef logic[0 : 0] llsc_t;
-typedef logic[0 : 0] cacop_t;
-typedef logic[31 : 0] debug_inst_t;
-typedef logic[0 : 0] valid_t;
-typedef logic[2 : 0] wb_sel_t;
-typedef logic[0 : 0] pipe_one_inst_t;
-typedef logic[0 : 0] pipe_two_inst_t;
-typedef logic[0 : 0] ready_time_t;
-typedef logic[1 : 0] use_time_t;
-typedef logic[4 : 0] reg_type_t;
-typedef logic[1 : 0] branch_type_t;
-typedef logic[2 : 0] cmp_type_t;
-typedef logic[0 : 0] branch_link_t;
 
 typedef struct packed {
-    debug_inst_t debug_inst;
-    valid_t valid;
-    wb_sel_t wb_sel;
-}wb_t;
+    mem_type_t mem_type;
+    mem_write_t mem_write;
+    mem_read_t mem_read;
+    ibarrier_t ibarrier;
+    dbarrier_t dbarrier;
+    branch_type_t branch_type;
+    cmp_type_t cmp_type;
+    latest_r0_m1_t latest_r0_m1;
+    latest_r1_m1_t latest_r1_m1;
+    fu_sel_m1_t fu_sel_m1;
+    ertn_inst_t ertn_inst;
+    priv_inst_t priv_inst;
+    refetch_t refetch;
+    wait_inst_t wait_inst;
+    invalid_inst_t invalid_inst;
+    syscall_inst_t syscall_inst;
+    break_inst_t break_inst;
+}m1_t;
 
 typedef struct packed {
-    exception_hint_t exception_hint;
-    do_rdcntid_t do_rdcntid;
-    csr_num_t csr_num;
-    csr_write_en_t csr_write_en;
+    mem_cacop_t mem_cacop;
+    llsc_inst_t llsc_inst;
+    need_csr_t need_csr;
+    need_mul_t need_mul;
+    need_div_t need_div;
+    need_lsu_t need_lsu;
+    need_bpu_t need_bpu;
+    latest_r0_m2_t latest_r0_m2;
+    latest_r1_m2_t latest_r1_m2;
+    fu_sel_m2_t fu_sel_m2;
+    fu_sel_wb_t fu_sel_wb;
+    alu_grand_op_t alu_grand_op;
+    alu_op_t alu_op;
+    csr_op_en_t csr_op_en;
     tlbsrch_en_t tlbsrch_en;
     tlbrd_en_t tlbrd_en;
     tlbwr_en_t tlbwr_en;
     tlbfill_en_t tlbfill_en;
     invtlb_en_t invtlb_en;
-    do_ertn_t do_ertn;
-    priv_inst_t priv_inst;
-    refetch_t refetch;
-    wait_hint_t wait_hint;
-    llsc_t llsc;
-    cacop_t cacop;
 }m2_t;
 
 typedef struct packed {
-    mem_type_t mem_type;
-    mem_write_t mem_write;
-    mem_valid_t mem_valid;
-}m1_t;
+    reg_type_r0_t reg_type_r0;
+    reg_type_r1_t reg_type_r1;
+    reg_type_w_t reg_type_w;
+    imm_type_t imm_type;
+}is_t;
 
 typedef struct packed {
-    pipe_one_inst_t pipe_one_inst;
-    pipe_two_inst_t pipe_two_inst;
-    ready_time_t ready_time;
-    use_time_t use_time;
-    reg_type_t reg_type;
-}is_t;
+    latest_r0_ex_t latest_r0_ex;
+    latest_r1_ex_t latest_r1_ex;
+    fu_sel_ex_t fu_sel_ex;
+    addr_imm_type_t addr_imm_type;
+}ex_t;
+
+typedef struct packed {
+    debug_inst_t debug_inst;
+    latest_r0_wb_t latest_r0_wb;
+    latest_r1_wb_t latest_r1_wb;
+}wb_t;
 
 typedef struct packed {
     inst25_0_t inst25_0;
 }general_t;
 
 typedef struct packed {
-    alu_type_t alu_type;
-    opd_type_t opd_type;
-    opd_unsigned_t opd_unsigned;
-    branch_type_t branch_type;
-    cmp_type_t cmp_type;
-    branch_link_t branch_link;
-}ex_t;
-
-typedef struct packed {
-    wb_t wb;
-    m2_t m2;
     m1_t m1;
+    m2_t m2;
     is_t is;
-    general_t general;
     ex_t ex;
+    wb_t wb;
+    general_t general;
 }decode_info_t;
 
 `endif

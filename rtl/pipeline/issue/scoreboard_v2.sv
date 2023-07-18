@@ -1,0 +1,74 @@
+/*--JSON--{"module_name":"scoreboard","module_ver":"2","module_type":"module"}--JSON--*/
+module scoreboard #(
+    parameter type reg_addr_t = logic [4 : 0]
+  )(
+    input logic clk,
+    input logic rst_n,
+    input logic [3:0][4:0] is_r_addr_i,
+    output logic [3:0][3:0] is_r_id_o,
+    output logic [3:0] is_r_valid_o,
+
+    input logic [1:0][4:0] is_w_addr_i,
+    input logic [1:0] is_i,
+    output logic [1:0][3:0] is_w_id_o,
+    // 注意： 冲突逻辑交由 issue 模块处理，此模块不考虑可能的任何冲突情况，需要 issue 逻辑保证不会发射两条冲突的指令
+
+    input logic [1:0][4:0] wb_w_addr_i,
+    input logic [1:0][2:0] wb_w_id_i,
+    input logic [1:0] wb_valid_i
+  );
+
+  logic [3:0][3:0] issueboard_is_r_id;
+  // 注意： tid == 0 是保留给 0 号寄存器使用的
+  // 在复位，分配tid时，从 tid == 1 开始分配
+  // 含义为 不进行转发（数据已就绪）
+  // 这里只有一个timer，是两路指令合用的，用最低位区别其在上管线还是下管线。
+  logic [2:0] issueboard_tid_q,issueboard_tid;
+  always_ff @(posedge clk) begin
+    if(!rst_n) begin
+      issueboard_tid_q <= 3'd1;
+    end
+    else begin
+      issueboard_tid_q <= issueboard_tid;
+    end
+  end
+  always_comb begin
+    issueboard_tid = issueboard_tid_q;
+    if(|is_i) begin
+      if(issueboard_tid_q == '1) begin
+        issueboard_tid = 3'd1;
+      end
+      else begin
+        issueboard_tid = issueboard_tid_q + 1;
+      end
+    end
+  end
+
+  bank_mpregfiles_4r2w #(
+                         .WIDTH(4),
+                         .RESET_NEED(1'b1),
+                         .ONLY_RESET_ZERO(1'b1)
+                       ) issue_board (
+                         .clk,
+                         .rst_n,
+                         // read port
+                         .ra0_i(is_r_addr_i[0]),
+                         .ra1_i(is_r_addr_i[1]),
+                         .ra2_i(is_r_addr_i[2]),
+                         .ra3_i(is_r_addr_i[3]),
+                         .rd0_o(issueboard_is_r_id[0]),
+                         .rd1_o(issueboard_is_r_id[1]),
+                         .rd2_o(issueboard_is_r_id[2]),
+                         .rd3_o(issueboard_is_r_id[3]),
+                         // write port
+                         .wd0_i({issueboard_tid,1'b1,issueboard_tid,1'b0}), // TODO: WRITE DATA
+                         .wd1_i(w_data_i[1]),
+                         .wa0_i(is_w_addr_i[0]),
+                         .wa1_i(is_w_addr_i[1]),
+                         .we0_i(is_i[0] && (is_w_addr_i[0] != '0)),
+                         .we1_i(is_i[1] && (is_w_addr_i[1] != '0)),
+                         // signal
+                         .conflict_o()
+                       );
+
+endmodule
