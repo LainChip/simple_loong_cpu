@@ -18,4 +18,5 @@ src/inst/decoder.svh
 dist
 
 # self trial
-rtl/test    
+rtl/test
+rtl/pipeline/issue/decoder.svh
