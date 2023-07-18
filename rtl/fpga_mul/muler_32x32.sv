@@ -37,12 +37,12 @@ module muler_32x32(
     end
   end
 
-  logic[63:0] full_result;
-  assign full_result = {{15{l_q[48]}}, l_q} + {h_q[63:16],16'd0};
+  logic[63:16] high_part_result;
+  assign full_result = {{15{l_q[48]}}, l_q[48:16]} + {h_q[63:16]};
   always @(posedge clk) begin
     if(!m2_stall_i) begin
       if(get_high_q) begin
-        result_o <= full_result[63:32];
+        result_o <= high_part_result[63:32];
       end
       else begin
         result_o <= l_q[31:0] + {h_q[31:16], 16'd0};

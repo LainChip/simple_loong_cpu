@@ -59,6 +59,8 @@ typedef struct packed {
 
 typedef struct packed{
           ex_t decode_info;  // 指令控制信息 ::: 不需要 rst clr | 跳转 clr
+          logic[4:0] w_reg;
+          logic[2:0] w_id;
           bpu_predict_t bpu_predict;
           fetch_excp_t fetch_excp;
           logic[25:0] addr_imm;
