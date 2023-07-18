@@ -260,11 +260,12 @@ module backend(
     logic[31:0] alu_result;
     logic[31:0] jump_target;
     logic[31:0] vaddr, rel_target;
-    alu #(
-          .CONFIGURE()
+    detachable_alu #(
+          .USE_LI(1),
+          .USE_INT(0),
+          .USE_SFT(0),
+          .USE_CMP(0)
         )ex_alu(
-          .clk(clk),
-          .rst_n(rst_n),
           .grand_op_i(pipeline_ctrl_ex_q[p].decode_info.alu_grand_op),
           .op_i(pipeline_ctrl_ex_q[p].decode_info.alu_op),
 
@@ -272,7 +273,7 @@ module backend(
           .r1_i(pipeline_data_ex_q[p].r_data[1]),
           .pc_i(pipeline_ctrl_ex_q[p].pc),
 
-          .result_o(alu_result)
+          .res_o(alu_result)
         );
 
     excp_flow_t ex_excp_flow;
