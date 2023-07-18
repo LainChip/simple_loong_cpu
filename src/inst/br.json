@@ -2,7 +2,9 @@
     "const": {
         "_BRANCH_INVALID": "2'b00",
         "_BRANCH_CONDITION": "2'b01",
-        "_BRANCH_INDIRECT": "2'b10",
+        "_BRANCH_NOCONDITION": "2'b10",
+        "_TARGET_REL": "1'b0",
+        "_TARGET_ABS": "1'b1",
         "_CMP_E": "3'd0",
         "_CMP_NE": "3'd1",
         "_CMP_LE": "3'd2",
@@ -19,6 +21,12 @@
             "default_value": 0,
             "invalid_value": 0
         },
+        "target_type": {
+            "length": 1,
+            "stage": "ex",
+            "default_value": 0,
+            "invalid_value": 0
+        },
         "cmp_type": {
             "length": 3,
             "stage": "m1",
@@ -31,7 +39,8 @@
             "opcode": "010011",
             "alu_grand_op": "`_ALU_GTYPE_LI",
             "alu_op": "`_ALU_STYPE_PCPLUS4",
-            "branch_type": "`_BRANCH_INDIRECT",
+            "branch_type": "`_BRANCH_NOCONDITION",
+            "target_type": "`_TARGET_ABS",
             "reg_type_r0": "`_REG_R0_NONE",
             "addr_imm_type": "`_ADDR_IMM_S16",
             "reg_type_r1": "`_REG_R1_RJ",
@@ -42,7 +51,8 @@
         },
         "b": {
             "opcode": "010100",
-            "branch_type": "`_BRANCH_INDIRECT",
+            "branch_type": "`_BRANCH_NOCONDITION",
+            "target_type": "`_TARGET_REL",
             "reg_type_r0": "`_REG_R0_NONE",
             "addr_imm_type": "`_ADDR_IMM_S26",
             "reg_type_r1": "`_REG_R1_NONE",
@@ -55,7 +65,8 @@
             "opcode": "010101",
             "alu_grand_op": "`_ALU_GTYPE_LI",
             "alu_op": "`_ALU_STYPE_PCPLUS4",
-            "branch_type": "`_BRANCH_INDIRECT",
+            "branch_type": "`_BRANCH_NOCONDITION",
+            "target_type": "`_TARGET_REL",
             "reg_type_r0": "`_REG_R0_NONE",
             "addr_imm_type": "`_ADDR_IMM_S26",
             "reg_type_r1": "`_REG_R1_NONE",
@@ -67,6 +78,7 @@
         "beq": {
             "opcode": "010110",
             "branch_type": "`_BRANCH_CONDITION",
+            "target_type": "`_TARGET_REL",
             "cmp_type": "`_CMP_E",
             "reg_type_r0": "`_REG_R0_RD",
             "reg_type_r1": "`_REG_R1_RJ",
@@ -78,6 +90,7 @@
         "bne": {
             "opcode": "010111",
             "branch_type": "`_BRANCH_CONDITION",
+            "target_type": "`_TARGET_REL",
             "cmp_type": "`_CMP_NE",
             "reg_type_r0": "`_REG_R0_RD",
             "reg_type_r1": "`_REG_R1_RJ",
@@ -89,6 +102,7 @@
         "blt": {
             "opcode": "011000",
             "branch_type": "`_BRANCH_CONDITION",
+            "target_type": "`_TARGET_REL",
             "cmp_type": "`_CMP_LT",
             "reg_type_r0": "`_REG_R0_RD",
             "reg_type_r1": "`_REG_R1_RJ",
@@ -100,6 +114,7 @@
         "bge": {
             "opcode": "011001",
             "branch_type": "`_BRANCH_CONDITION",
+            "target_type": "`_TARGET_REL",
             "cmp_type": "`_CMP_GE",
             "reg_type_r0": "`_REG_R0_RD",
             "reg_type_r1": "`_REG_R1_RJ",
@@ -111,6 +126,7 @@
         "bltu": {
             "opcode": "011010",
             "branch_type": "`_BRANCH_CONDITION",
+            "target_type": "`_TARGET_REL",
             "cmp_type": "`_CMP_LTU",
             "reg_type_r0": "`_REG_R0_RD",
             "reg_type_r1": "`_REG_R1_RJ",
@@ -122,6 +138,7 @@
         "bgeu": {
             "opcode": "011011",
             "branch_type": "`_BRANCH_CONDITION",
+            "target_type": "`_TARGET_REL",
             "cmp_type": "`_CMP_GEU",
             "reg_type_r0": "`_REG_R0_RD",
             "reg_type_r1": "`_REG_R1_RJ",

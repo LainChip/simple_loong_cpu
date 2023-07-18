@@ -205,20 +205,62 @@ module backend(
   end
   /* SKID BUF 结束*/
   /* ------ ------ ------ ------ ------ EX 级 ------ ------ ------ ------ ------ */
-  // EX 级别
+  for(genvar p = 0 ; p < 2 ; p++) begin
+    // EX 级别
+    // EX 的 FU 部分，接入 ALU、乘法器、除法队列 pusher（Optional）
+    logic[31:0] alu_result;
+    logic[31:0] jump_target;
+    logic[31:0] vaddr, con_target;
+    alu #(
+          .CONFIGURE()
+        )ex_alu(
+          .clk(clk),
+          .rst_n(rst_n),
+          .grand_op_i(pipeline_ctrl_ex_q[p].decode_info.alu_grand_op),
+          .op_i(pipeline_ctrl_ex_q[p].decode_info.alu_op),
 
-  // EX 数据前递部分（M1、M2、WB） 完全，需要验证有效性。
-  // 输入来自 IS-EX 级别的流水线寄存器。
-  // 当 EX 级没有暂停时，EX 的流水线寄存器 来自 IS / SKID BUF
-  // 当 EX 级暂停的时候（ex_stall == 1），EX 的流水线寄存器，来自转发后的 EX
+          .r0_i(pipeline_data_ex_q[p].r_data[0]),
+          .r1_i(pipeline_data_ex_q[p].r_data[1]),
+          .pc_i(pipeline_ctrl_ex_q[p].pc),
 
-  // EX 的 FU 部分，接入 ALU、乘法器、除法队列 pusher（Optional）
+          .result_o(alu_result)
+        );
 
-  // EX 的额外部分
-  // EX 级别的访存地址计算 / 地址翻译逻辑
+    excp_flow_t ex_excp_flow;
+    // ex_excp_flow 产生逻辑
+    always_comb begin
 
-  // EX 级别的目标地址计算
-  // 接入 dcache
+    end
+
+    // EX 的结果选择部分
+    always_comb begin
+      pipeline_ctrl_m1[p].decode_info = get_m1_from_ex(pipeline_ctrl_ex_q[p].decode_info);
+      pipeline_ctrl_m1[p].bpu_predict = pipeline_ctrl_ex_q[p].bpu_predict;
+      pipeline_ctrl_m1[p].excp_flow = ex_excp_flow;
+      pipeline_ctrl_m1[p].csr_id = pipeline_ctrl_ex_q[p].addr_imm[13:0];
+      pipeline_ctrl_m1[p].jump_target = jump_target;
+      pipeline_ctrl_m1[p].vaddr = vaddr;
+      pipeline_ctrl_m1[p].pc = pipeline_ctrl_ex_q[p].pc;
+    end
+
+    // EX 的额外部分
+    // EX 级别的访存地址计算 / 地址翻译逻辑
+    always_comb begin
+      vaddr = {{6{pipeline_ctrl_ex_q[p].addr_imm[25]}},
+               pipeline_ctrl_ex_q[p].addr_imm} +
+            pipeline_data_ex_q[p].r_data[1];
+    end
+    always_comb begin
+      con_target = ;
+    end
+    always_comb begin
+      // TODO
+      jump_target = pipeline_ctrl_ex_q[p].branch_type == `_BRANCH_INDIRECT ?
+                  vaddr : ;
+    end
+
+    // 接入 dcache
+  end
 
   /* ------ ------ ------ ------ ------ M1 级 ------ ------ ------ ------ ------ */
   // M1 数据接受前递部分（M2、WB） 完全
