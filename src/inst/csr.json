@@ -114,8 +114,8 @@
             "default_value": 0,
             "invalid_value": 0
         },
-        "invtlb_op": {
-            "length": 4,
+        "invtlb_en": {
+            "length": 1,
             "stage": "m2",
             "default_value": 0,
             "invalid_value": 0
@@ -169,7 +169,8 @@
             "reg_type_r0": "`_REG_R0_NONE",
             "reg_type_r1": "`_REG_R1_NONE",
             "reg_type_w": "`_REG_W_NONE",
-            "priv_inst": 1
+            "priv_inst": 1,
+            "refetch": 1
         },
         "tlbwr": {
             "opcode": "0000011001001000001100",
@@ -189,9 +190,9 @@
             "priv_inst": 1,
             "refetch": 1
         },
-        "invtlb_all": {
-            "opcode": "00000110010010011-10-0000",
-            "invtlb_op": "4'b1100",
+        "invtlb": {
+            "opcode": "00000110010010011",
+            "invtlb_en": 1,
             "reg_type_r0": "`_REG_R0_RK",
             "reg_type_r1": "`_REG_R1_RJ",
             "reg_type_w": "`_REG_W_NONE",
@@ -200,62 +201,6 @@
             "priv_inst": 1,
             "refetch": 1
         },
-        "invtlb_g": {
-            "opcode": "00000110010010011-10-00010",
-            "invtlb_op": "4'b1000",
-            "reg_type_r0": "`_REG_R0_RK",
-            "reg_type_r1": "`_REG_R1_RJ",
-            "reg_type_w": "`_REG_W_NONE",
-            "latest_r0_m2": 1,
-            "latest_r1_m2": 1,
-            "priv_inst": 1,
-            "refetch": 1
-        },
-        "invtlb_ng": {
-            "opcode": "00000110010010011-10-00011",
-            "invtlb_op": "4'b0100",
-            "reg_type_r0": "`_REG_R0_RK",
-            "reg_type_r1": "`_REG_R1_RJ",
-            "reg_type_w": "`_REG_W_NONE",
-            "latest_r0_m2": 1,
-            "latest_r1_m2": 1,
-            "priv_inst": 1,
-            "refetch": 1
-        },
-        "invtlb_asid": {
-            "opcode": "00000110010010011-10-00100",
-            "invtlb_op": "4'b0110",
-            "reg_type_r0": "`_REG_R0_RK",
-            "reg_type_r1": "`_REG_R1_RJ",
-            "reg_type_w": "`_REG_W_NONE",
-            "latest_r0_m2": 1,
-            "latest_r1_m2": 1,
-            "priv_inst": 1,
-            "refetch": 1
-        },
-        "invtlb_va": {
-            "opcode": "00000110010010011-10-00101",
-            "invtlb_op": "4'b0111",
-            "reg_type_r0": "`_REG_R0_RK",
-            "reg_type_r1": "`_REG_R1_RJ",
-            "reg_type_w": "`_REG_W_NONE",
-            "latest_r0_m2": 1,
-            "latest_r1_m2": 1,
-            "priv_inst": 1,
-            "refetch": 1
-        },
-        "invtlb_gva": {
-            "opcode": "00000110010010011-10-00110",
-            "invtlb_op": "4'b1111",
-            "reg_type_r0": "`_REG_R0_RK",
-            "reg_type_r1": "`_REG_R1_RJ",
-            "reg_type_w": "`_REG_W_NONE",
-            "latest_r0_m2": 1,
-            "latest_r1_m2": 1,
-            "priv_inst": 1,
-            "refetch": 1
-        },
-
         "rdcnt.w": {
             "opcode": "0000000000000000011000",
             "reg_type_r0": "`_REG_R0_NONE",
