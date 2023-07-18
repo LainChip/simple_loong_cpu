@@ -35,7 +35,8 @@ module backend(
   logic wb_stall_req, wb_stall;
 
   // 注意： invalidate 不同于 ~rst_n ，只要求无效化指令，不清除管线中的指令。
-  logic [1:0]ex_invalidate, m1_invalidate, m1_invalidate_req;
+  logic [1:0]m1_invalidate, m1_invalidate_req;
+  logic ex_invalidate;
 
   logic is_skid_q;
 
@@ -50,6 +51,11 @@ module backend(
   end
 
   // INVALIDATE MANAGER
+  always_comb begin
+    ex_invalidate = |m1_invalidate_req;
+    m1_invalidate[0] = m1_invalidate_req[0];
+    m1_invalidate[1] = m1_invalidate_req[0] | m1_invalidate_req[1];
+  end
 
   // forwarding manager
   /* 所有级流水的前递模块在这里实例化*/
@@ -174,12 +180,29 @@ module backend(
   // SKID 数据前递部分（EX、WB） 不完全。
   // 输入是 pipeline_ctrl_skid_q，输出 pipeline_ctrl_skid_fwd
   // SKID BUF 对于 scoreboard 来说应该是透明的，使用 valid-ready 握手
+  // assign ex_skid_ready_q = ~is_skid_q;
   always_ff @(posedge clk) begin
-    if(~rst_n) begin
-        is_skid_q <= '0;
+    if(~rst_n || ex_invalidate) begin
+      is_skid_q <= '0;
+      ex_skid_ready_q <= '1;
+    end
+    else begin
+      if(is_skid_q) begin
+        if(ex_ready) begin
+          is_skid_q <= '0;
+          ex_skid_ready_q <= '1;
+        end
+        pipeline_data_skid_q <= pipeline_data_skid_fwd;
+      end
+      else begin
+        if(ex_skid_valid & ~ex_ready) begin
+          is_skid_q <= '1;
+          ex_skid_ready_q <= '0;
+        end
+        pipeline_data_skid_q <= pipeline_data_is_fwd;
+      end
     end
   end
-  assign ex_skid_ready_q = ~is_skid_q;
   /* SKID BUF 结束*/
   /* ------ ------ ------ ------ ------ EX 级 ------ ------ ------ ------ ------ */
   // EX 级别
