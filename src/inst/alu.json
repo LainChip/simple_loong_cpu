@@ -12,10 +12,13 @@
         "_ALU_STYPE_XOR": "2'b11",
 
         "_ALU_STYPE_ADD": "2'b00",
+        "_ALU_STYPE_LIEMPTYSLOT": "2'b00",
         "_ALU_STYPE_SUB": "2'b10",
         "_ALU_STYPE_PCPLUS4": "2'b10",
         "_ALU_STYPE_LUI": "2'b01",
+        "_ALU_STYPE_INTEMPTYSLOT0": "2'b00",
         "_ALU_STYPE_PCADDUI": "2'b11",
+        "_ALU_STYPE_INTEMPTYSLOT1": "2'b00",
 
         "_ALU_STYPE_SRA": "2'b00",
         "_ALU_STYPE_SLL": "2'b10",

@@ -32,9 +32,17 @@
         "_CSR_DMW1": "14'h181",
         "_CSR_BRK": "14'h100",
         "_CSR_DISABLE_CACHE": "14'h101",
-        "_EXCEPTION_HINT_NONE": "2'd0",
-        "_EXCEPTION_HINT_SYSCALL": "2'd1",
-        "_EXCEPTION_HINT_INVALID": "2'd2"
+
+        "_INV_TLB_ALL": "4'b1111",
+        "_INV_TLB_MASK_G": "4'b1000",
+        "_INV_TLB_MASK_NG": "4'b0100",
+        "_INV_TLB_MASK_ASID": "4'b0010",
+        "_INV_TLB_MASK_VA": "4'b0001",
+
+        "_RDCNT_NONE": "2'd0",
+        "_RDCNT_ID": "2'd1",
+        "_RDCNT_VLOW": "2'd2",
+        "_RDCNT_VHIGH": "2'd3"
     },
     "signal": {
         "ertn_inst": {
@@ -71,7 +79,12 @@
             "stage": "m1",
             "default_value": 0
         },
-        "csr_write_en": {
+        "break_inst": {
+            "length": 1,
+            "stage": "m1",
+            "default_value": 0
+        },
+        "csr_op_en": {
             "length": 1,
             "stage": "m2",
             "default_value": 0,
@@ -101,8 +114,8 @@
             "default_value": 0,
             "invalid_value": 0
         },
-        "invtlb_en": {
-            "length": 1,
+        "invtlb_op": {
+            "length": 4,
             "stage": "m2",
             "default_value": 0,
             "invalid_value": 0
@@ -111,88 +124,157 @@
     "inst": {
         "syscall": {
             "opcode": "00000000001010110",
-            xxx_delete: "`_REG_TYPE_I",
-            "exception_hint": "`_EXCEPTION_HINT_SYSCALL",
-            xxx_delete: 1
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_NONE",
+            "syscall_inst": 1
         },
         "break": {
-            "opcode": "00000000001010100",
-            xxx_delete: "`_REG_TYPE_I",
-            "exception_hint": "`_EXCEPTION_HINT_SYSCALL",
-            xxx_delete: 1
+            "opcode": "00000000001010110",
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_NONE",
+            "break_inst": 1
         },
         "ertn": {
             "opcode": "0000011001001000001110",
-            xxx_delete: "`_REG_TYPE_I",
-            "do_ertn": 1,
-            xxx_delete: 1,
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_NONE",
+            "ertn_inst": 1,
             "priv_inst": 1
         },
         "csrwrxchg": {
             "opcode": "00000100",
-            "csr_write_en": 1,
-            xxx_delete: "`_REG_TYPE_CSRXCHG",
-            xxx_delete "{`_USE_M2,`_USE_M2}",
-            xxx_delete "`_READY_M2",
-            "wb_sel": "`_REG_WB_CSR",
-            xxx_delete: 1,
-            "priv_inst": 1,
-            "refetch": 1
+            "csr_op_en": 1,
+            "reg_type_r0": "`_REG_R0_RD",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_RD",
+            "latest_r0_m1": 1,
+            "latest_r1_m1": 1,
+            "fu_sel_m2": "`_FUSEL_M2_CSR",
+            "priv_inst": 1
         },
         "tlbsrch": {
             "opcode": "0000011001001000001010",
             "tlbsrch_en": 1,
-            xxx_delete: "`_REG_TYPE_RW",
-            xxx_delete: 1,
-            "priv_inst": 1,
-            "refetch": 1
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_NONE",
+            "priv_inst": 1
         },
         "tlbrd": {
             "opcode": "0000011001001000001011",
             "tlbrd_en": 1,
-            xxx_delete: "`_REG_TYPE_RW",
-            xxx_delete: 1,
-            "priv_inst": 1,
-            "refetch": 1
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_NONE",
+            "priv_inst": 1
         },
         "tlbwr": {
             "opcode": "0000011001001000001100",
             "tlbwr_en": 1,
-            xxx_delete: "`_REG_TYPE_RW",
-            xxx_delete: 1,
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_NONE",
             "priv_inst": 1,
             "refetch": 1
         },
         "tlbfill": {
             "opcode": "0000011001001000001101",
             "tlbfill_en": 1,
-            xxx_delete: "`_REG_TYPE_RW",
-            xxx_delete: 1,
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_NONE",
             "priv_inst": 1,
             "refetch": 1
         },
-        "invtlb": {
-            "opcode": "00000110010010011",
-            "invtlb_en": 1,
-            xxx_delete: "`_REG_TYPE_INVTLB",
-            xxx_delete "{`_USE_M2,`_USE_M2}",
-            xxx_delete: 1,
+        "invtlb_all": {
+            "opcode": "00000110010010011-10-0000",
+            "invtlb_op": "4'b1100",
+            "reg_type_r0": "`_REG_R0_RK",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_NONE",
+            "latest_r0_m2": 1,
+            "latest_r1_m2": 1,
             "priv_inst": 1,
             "refetch": 1
         },
+        "invtlb_g": {
+            "opcode": "00000110010010011-10-00010",
+            "invtlb_op": "4'b1000",
+            "reg_type_r0": "`_REG_R0_RK",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_NONE",
+            "latest_r0_m2": 1,
+            "latest_r1_m2": 1,
+            "priv_inst": 1,
+            "refetch": 1
+        },
+        "invtlb_ng": {
+            "opcode": "00000110010010011-10-00011",
+            "invtlb_op": "4'b0100",
+            "reg_type_r0": "`_REG_R0_RK",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_NONE",
+            "latest_r0_m2": 1,
+            "latest_r1_m2": 1,
+            "priv_inst": 1,
+            "refetch": 1
+        },
+        "invtlb_asid": {
+            "opcode": "00000110010010011-10-00100",
+            "invtlb_op": "4'b0110",
+            "reg_type_r0": "`_REG_R0_RK",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_NONE",
+            "latest_r0_m2": 1,
+            "latest_r1_m2": 1,
+            "priv_inst": 1,
+            "refetch": 1
+        },
+        "invtlb_va": {
+            "opcode": "00000110010010011-10-00101",
+            "invtlb_op": "4'b0111",
+            "reg_type_r0": "`_REG_R0_RK",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_NONE",
+            "latest_r0_m2": 1,
+            "latest_r1_m2": 1,
+            "priv_inst": 1,
+            "refetch": 1
+        },
+        "invtlb_gva": {
+            "opcode": "00000110010010011-10-00110",
+            "invtlb_op": "4'b1111",
+            "reg_type_r0": "`_REG_R0_RK",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_NONE",
+            "latest_r0_m2": 1,
+            "latest_r1_m2": 1,
+            "priv_inst": 1,
+            "refetch": 1
+        },
+
         "rdcnt.w": {
-            "opcode": "000000000000000001100",
-            xxx_delete: "`_REG_TYPE_RDCNTID",
-            xxx_delete "`_READY_M2",
-            "wb_sel": "`_REG_WB_CSR",
-            xxx_delete: 1
+            "opcode": "0000000000000000011000",
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_RJ",
+            "reg_type_w": "`_REG_W_RJD",
+            "latest_r1_m2": 1,
+            "fu_sel_m2": "`_FUSEL_M2_CSR"
+        },
+        "rdcnth.w": {
+            "opcode": "0000000000000000011001",
+            "reg_type_r0": "`_REG_R0_NONE",
+            "reg_type_r1": "`_REG_R1_NONE",
+            "reg_type_w": "`_REG_W_RJD",
+            "fu_sel_m2": "`_FUSEL_M2_CSR"
         },
         "idle": {
             "opcode": "00000110010010001",
-            xxx_delete: "`_REG_TYPE_I",
-            xxx_delete: 1,
+            "wait_inst": 1,
             "priv_inst": 1,
-            "wait_hint": 1,
             "refetch": 1
         }
     }
