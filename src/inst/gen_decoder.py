@@ -9,14 +9,11 @@ class decoder_parser:
         # base data
         self.const_list = []
         self.signal_package_list = set()
+        self.signal_list = {}
         self.inst_list = {}
         self.stage_order = ()
         # derived data
         self.parent_signals = {} # for all '_parent': include signal whose parent is '_parent'
-
-        # initial configuration
-        self.signal_package_list.add('general')
-        self.signal_list['inst25_0'] = ('general', 26, 'inst_i[25:0]') # (signal_parent, signal_length, signal_default_value)
 
     def debug_print(self):
         print(self.const_list)
@@ -34,7 +31,7 @@ class decoder_parser:
             self.signal_package_list.add(sub_dict['stage'])
             if sub_dict.get('invalid_value') is None:
                 sub_dict['invalid_value'] = 0
-            self.signal_list[signal_name] = (sub_dict['stage'],sub_dict['length'],sub_dict['default_value'])
+            self.signal_list[signal_name] = (sub_dict['stage'],sub_dict['length'],sub_dict['default_value'],sub_dict['invalid_value'])
 
     def parse_inst_list(self, inst_info):
         for inst_name in inst_info:
@@ -107,10 +104,10 @@ class decoder_parser:
             str_builder += '} ' + parent_struct + '_t;\n\n'
 
         # main_decode_struct define
-        str_builder += 'typedef struct packed {\n'
-        for parent_struct in self.signal_package_list:
-            str_builder += '    ' + parent_struct + '_t ' + parent_struct + ';\n'
-        str_builder += '} decode_info_t;\n\n'
+        # str_builder += 'typedef struct packed {\n'
+        # for parent_struct in self.signal_package_list:
+        #     str_builder += '    ' + parent_struct + '_t ' + parent_struct + ';\n'
+        # str_builder += '} decode_info_t;\n\n'
 
         # stage_flow function define
         for i in range(0, len(self.stage_order)-1):
@@ -122,16 +119,10 @@ class decoder_parser:
             # <statement>
             str_builder += '    ' + to_stage + '_t ' + 'ret;\n'
             for to_stage_signal in self.parent_signals[to_stage]:
-                str_builder += '    ret.' + to_stage_signal + ' = ' + from_stage + '.' + to_stage_signal + '\n'
+                str_builder += '    ret.' + to_stage_signal + ' = ' + from_stage + '.' + to_stage_signal + ';\n'
             str_builder += '    return ret;\n'
             # endfunction
             str_builder += 'endfunction\n\n'
-            
-        first_stage = self.stage_order[0]
-        str_builder += 'function ' + first_stage + '_t ' # function [type]
-        str_builder += 'd_to_' + first_stage + '(decode_info_t decode_info);\n' # name(value)
-        str_builder += '    return decode_info.is;\n' # [statement]
-        str_builder += 'endfunction\n\n' # endfunction
 
         str_builder += "`endif\n"
         return str_builder
@@ -149,8 +140,8 @@ class decoder_parser:
         return (int(str_a_std) - int(str_b_std))
 
     def gen_sv_module(self):
-        str_builder = "`include \"common.svh\"\n`include \"decoder.svh\"\n\n"
-        str_builder += "module decoder(\n    input logic[31:0] inst_i,\n    input logic fetch_err_i,\n    output decode_info_t decode_info_o,\n    output logic[31:0][7:0] inst_string_o\n);\n\n"
+        str_builder = "`include \"decoder.svh\"\n\n"
+        str_builder += "module decoder(\n    input logic[31:0] inst_i,\n    input logic fetch_err_i,\n    output is_t is_o,\n    output logic[31:0][7:0] inst_string_o\n);\n\n"
         
         # main combine logic
         depth = 1
@@ -178,8 +169,8 @@ class decoder_parser:
                         signal_value = self.signal_list[signal][2]
                     if isinstance(signal_value,int):
                         signal_value = str(self.signal_list[signal][1]) + "\'d" + str(signal_value)
-                        
-                    str_builder += self.gen_blank(depth) + 'decode_info_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
+                    str_builder += self.gen_blank(depth) + 'is_o.' + signal + ' = ' + signal_value + ';\n'
+                    # str_builder += self.gen_blank(depth) + 'is_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
                 # str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in inst]) + '}; //' + inst + '\n'
                 str_builder += self.gen_blank(depth) + 'inst_string_o = \'0; //' + inst + '\n' 
                 depth -= 1
@@ -190,7 +181,7 @@ class decoder_parser:
             signal_value = self.signal_list[signal][3]
             if isinstance(signal_value,int):
                 signal_value = str(self.signal_list[signal][1]) + "\'d" + str(signal_value)
-            str_builder += self.gen_blank(depth) + 'decode_info_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
+            str_builder += self.gen_blank(depth) + 'is_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
         str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in 'NONEVALID']) + '}; //' + 'NONEVALID' + '\n'
         depth -= 1
         str_builder += self.gen_blank(depth) + "end\n"

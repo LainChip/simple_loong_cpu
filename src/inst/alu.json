@@ -227,7 +227,7 @@
             "reg_type_w": "`_REG_W_RD",
             "latest_r0_ex": 1,
             "latest_r1_ex": 1,
-            "fu_sel_wb": "`_FUSEL_M2_DIV"
+            "fu_sel_wb": "`_FUSEL_WB_DIV"
         },
         "mod.w": {
             "opcode": "00000000001000001",
@@ -238,7 +238,7 @@
             "reg_type_w": "`_REG_W_RD",
             "latest_r0_ex": 1,
             "latest_r1_ex": 1,
-            "fu_sel_wb": "`_FUSEL_M2_DIV"
+            "fu_sel_wb": "`_FUSEL_WB_DIV"
         },
         "div.wu": {
             "opcode": "00000000001000010",
@@ -249,7 +249,7 @@
             "reg_type_w": "`_REG_W_RD",
             "latest_r0_ex": 1,
             "latest_r1_ex": 1,
-            "fu_sel_wb": "`_FUSEL_M2_DIV"
+            "fu_sel_wb": "`_FUSEL_WB_DIV"
         },
         "mod.wu": {
             "opcode": "00000000001000011",
@@ -260,7 +260,7 @@
             "reg_type_w": "`_REG_W_RD",
             "latest_r0_ex": 1,
             "latest_r1_ex": 1,
-            "fu_sel_wb": "`_FUSEL_M2_DIV"
+            "fu_sel_wb": "`_FUSEL_WB_DIV"
         },
         "slli.w": {
             "opcode": "00000000010000001",

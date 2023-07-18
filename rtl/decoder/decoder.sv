@@ -2282,7 +2282,7 @@ module decoder(
                 decode_info_o.ex.fu_sel_ex = 1'd0;
                 decode_info_o.m1.fu_sel_m1 = 2'd0;
                 decode_info_o.m2.fu_sel_m2 = 2'd0;
-                decode_info_o.m2.fu_sel_wb = `_FUSEL_M2_DIV;
+                decode_info_o.m2.fu_sel_wb = `_FUSEL_WB_DIV;
                 decode_info_o.is.reg_type_r0 = `_REG_R0_RK;
                 decode_info_o.is.reg_type_r1 = `_REG_R1_RJ;
                 decode_info_o.is.reg_type_w = `_REG_W_RD;
@@ -2333,7 +2333,7 @@ module decoder(
                 decode_info_o.ex.fu_sel_ex = 1'd0;
                 decode_info_o.m1.fu_sel_m1 = 2'd0;
                 decode_info_o.m2.fu_sel_m2 = 2'd0;
-                decode_info_o.m2.fu_sel_wb = `_FUSEL_M2_DIV;
+                decode_info_o.m2.fu_sel_wb = `_FUSEL_WB_DIV;
                 decode_info_o.is.reg_type_r0 = `_REG_R0_RK;
                 decode_info_o.is.reg_type_r1 = `_REG_R1_RJ;
                 decode_info_o.is.reg_type_w = `_REG_W_RD;
@@ -2384,7 +2384,7 @@ module decoder(
                 decode_info_o.ex.fu_sel_ex = 1'd0;
                 decode_info_o.m1.fu_sel_m1 = 2'd0;
                 decode_info_o.m2.fu_sel_m2 = 2'd0;
-                decode_info_o.m2.fu_sel_wb = `_FUSEL_M2_DIV;
+                decode_info_o.m2.fu_sel_wb = `_FUSEL_WB_DIV;
                 decode_info_o.is.reg_type_r0 = `_REG_R0_RK;
                 decode_info_o.is.reg_type_r1 = `_REG_R1_RJ;
                 decode_info_o.is.reg_type_w = `_REG_W_RD;
@@ -2435,7 +2435,7 @@ module decoder(
                 decode_info_o.ex.fu_sel_ex = 1'd0;
                 decode_info_o.m1.fu_sel_m1 = 2'd0;
                 decode_info_o.m2.fu_sel_m2 = 2'd0;
-                decode_info_o.m2.fu_sel_wb = `_FUSEL_M2_DIV;
+                decode_info_o.m2.fu_sel_wb = `_FUSEL_WB_DIV;
                 decode_info_o.is.reg_type_r0 = `_REG_R0_RK;
                 decode_info_o.is.reg_type_r1 = `_REG_R1_RJ;
                 decode_info_o.is.reg_type_w = `_REG_W_RD;
