@@ -90,9 +90,12 @@ typedef struct packed{
 typedef struct packed{
           read_flow_t r_flow;
           logic[1:0][31:0] r_data;
+        } pipeline_data_t; // 无法使用移位寄存器实现，普通寄存器
+
+typedef struct packed{
           write_flow_t w_flow;
           logic[31:0] w_data;
-        } pipeline_data_t; // 无法使用移位寄存器实现，普通寄存器
+        } pipeline_wdata_t;
 
 typedef struct packed {
           logic [31:0] data;  // reg data
