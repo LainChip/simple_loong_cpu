@@ -1,7 +1,3 @@
-`ifndef _TEST_REG_FILE
-    `include "../bank_mpregfiles_4r2w/bank_mpregfiles_4r2w.sv"  // can be included in Makefile instead
-`endif
-
 /*--JSON--{"module_name":"reg_file","module_ver":"2","module_type":"module"}--JSON--*/
 module reg_file #(
     parameter int DATA_WIDTH = 32,
