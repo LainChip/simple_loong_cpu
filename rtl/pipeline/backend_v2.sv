@@ -111,6 +111,28 @@ module backend(
     end
   end
 
+  // LSU 端口实例化
+
+
+  // MUL 端口实例化
+  logic[1:0] mul_op;
+  logic[31:0] mul_r0,mul_r1,mul_result;
+  muler_32x32 mul_i(
+      .clk(clk),
+      .rst_n(rst_n),
+      .op_i(mul_op),
+
+      .ex_stall_i(ex_stall),
+      .m1_stall_i(m1_stall),
+      .m2_stall_i(m2_stall),
+
+      .r0_i(mul_r0),
+      .r1_i(mul_r1),
+
+      .result_o(mul_result)
+    );
+
+  /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
 
   /* ------ ------ ------ ------ ------ IS 级 ------ ------ ------ ------ ------ */
   // ISSUE 级别：
@@ -261,6 +283,9 @@ module backend(
     end
 
     // 接入 dcache
+    /* TODO */
+
+    // 接入 mul
   end
 
   /* ------ ------ ------ ------ ------ M1 级 ------ ------ ------ ------ ------ */
