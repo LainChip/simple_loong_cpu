@@ -10,7 +10,9 @@
 `define _MEM_TYPE_UBYTE (3'd7)
 `define _BRANCH_INVALID (2'b00)
 `define _BRANCH_CONDITION (2'b01)
-`define _BRANCH_INDIRECT (2'b10)
+`define _BRANCH_NOCONDITION (2'b10)
+`define _TARGET_REL (1'b0)
+`define _TARGET_ABS (1'b1)
 `define _CMP_E (3'd0)
 `define _CMP_NE (3'd1)
 `define _CMP_LE (3'd2)
@@ -130,6 +132,7 @@ typedef logic [0 : 0] llsc_inst_t;
 typedef logic [0 : 0] ibarrier_t;
 typedef logic [0 : 0] dbarrier_t;
 typedef logic [1 : 0] branch_type_t;
+typedef logic [0 : 0] target_type_t;
 typedef logic [2 : 0] cmp_type_t;
 typedef logic [31 : 0] debug_inst_t;
 typedef logic [0 : 0] need_csr_t;
@@ -169,6 +172,12 @@ typedef logic [0 : 0] tlbrd_en_t;
 typedef logic [0 : 0] tlbwr_en_t;
 typedef logic [0 : 0] tlbfill_en_t;
 typedef logic [0 : 0] invtlb_en_t;
+
+typedef struct packed {
+    debug_inst_t debug_inst;
+    latest_r0_wb_t latest_r0_wb;
+    latest_r1_wb_t latest_r1_wb;
+} wb_t;
 
 typedef struct packed {
     mem_type_t mem_type;
@@ -213,16 +222,11 @@ typedef struct packed {
 } m1_t;
 
 typedef struct packed {
-    debug_inst_t debug_inst;
-    latest_r0_wb_t latest_r0_wb;
-    latest_r1_wb_t latest_r1_wb;
-} wb_t;
-
-typedef struct packed {
     reg_type_r0_t reg_type_r0;
     reg_type_r1_t reg_type_r1;
     reg_type_w_t reg_type_w;
     imm_type_t imm_type;
+    target_type_t target_type;
     latest_r0_ex_t latest_r0_ex;
     latest_r1_ex_t latest_r1_ex;
     fu_sel_ex_t fu_sel_ex;
@@ -269,31 +273,7 @@ typedef struct packed {
 } is_t;
 
 typedef struct packed {
-    mem_cacop_t mem_cacop;
-    llsc_inst_t llsc_inst;
-    need_csr_t need_csr;
-    need_mul_t need_mul;
-    need_div_t need_div;
-    need_lsu_t need_lsu;
-    need_bpu_t need_bpu;
-    latest_r0_m2_t latest_r0_m2;
-    latest_r1_m2_t latest_r1_m2;
-    fu_sel_m2_t fu_sel_m2;
-    fu_sel_wb_t fu_sel_wb;
-    alu_grand_op_t alu_grand_op;
-    alu_op_t alu_op;
-    csr_op_en_t csr_op_en;
-    tlbsrch_en_t tlbsrch_en;
-    tlbrd_en_t tlbrd_en;
-    tlbwr_en_t tlbwr_en;
-    tlbfill_en_t tlbfill_en;
-    invtlb_en_t invtlb_en;
-    debug_inst_t debug_inst;
-    latest_r0_wb_t latest_r0_wb;
-    latest_r1_wb_t latest_r1_wb;
-} m2_t;
-
-typedef struct packed {
+    target_type_t target_type;
     latest_r0_ex_t latest_r0_ex;
     latest_r1_ex_t latest_r1_ex;
     fu_sel_ex_t fu_sel_ex;
@@ -339,8 +319,34 @@ typedef struct packed {
     latest_r1_wb_t latest_r1_wb;
 } ex_t;
 
+typedef struct packed {
+    mem_cacop_t mem_cacop;
+    llsc_inst_t llsc_inst;
+    need_csr_t need_csr;
+    need_mul_t need_mul;
+    need_div_t need_div;
+    need_lsu_t need_lsu;
+    need_bpu_t need_bpu;
+    latest_r0_m2_t latest_r0_m2;
+    latest_r1_m2_t latest_r1_m2;
+    fu_sel_m2_t fu_sel_m2;
+    fu_sel_wb_t fu_sel_wb;
+    alu_grand_op_t alu_grand_op;
+    alu_op_t alu_op;
+    csr_op_en_t csr_op_en;
+    tlbsrch_en_t tlbsrch_en;
+    tlbrd_en_t tlbrd_en;
+    tlbwr_en_t tlbwr_en;
+    tlbfill_en_t tlbfill_en;
+    invtlb_en_t invtlb_en;
+    debug_inst_t debug_inst;
+    latest_r0_wb_t latest_r0_wb;
+    latest_r1_wb_t latest_r1_wb;
+} m2_t;
+
 function ex_t get_ex_from_is(is_t is);
     ex_t ret;
+    ret.target_type = is.target_type;
     ret.latest_r0_ex = is.latest_r0_ex;
     ret.latest_r1_ex = is.latest_r1_ex;
     ret.fu_sel_ex = is.fu_sel_ex;

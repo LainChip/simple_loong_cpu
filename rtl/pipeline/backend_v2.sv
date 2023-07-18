@@ -210,7 +210,7 @@ module backend(
     // EX 的 FU 部分，接入 ALU、乘法器、除法队列 pusher（Optional）
     logic[31:0] alu_result;
     logic[31:0] jump_target;
-    logic[31:0] vaddr, con_target;
+    logic[31:0] vaddr, rel_target;
     alu #(
           .CONFIGURE()
         )ex_alu(
@@ -251,12 +251,13 @@ module backend(
             pipeline_data_ex_q[p].r_data[1];
     end
     always_comb begin
-      con_target = ;
+      rel_target = pipeline_ctrl_ex_q[p].pc + {{6{pipeline_ctrl_ex_q[p].addr_imm[25]}},
+                 pipeline_ctrl_ex_q[p].addr_imm};
     end
     always_comb begin
       // TODO
-      jump_target = pipeline_ctrl_ex_q[p].branch_type == `_BRANCH_INDIRECT ?
-                  vaddr : ;
+      jump_target = pipeline_ctrl_ex_q[p].target_type == `_TARGET_ABS ?
+                  vaddr : rel_target;
     end
 
     // 接入 dcache
