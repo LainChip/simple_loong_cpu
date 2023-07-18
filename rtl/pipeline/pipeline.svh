@@ -61,7 +61,7 @@ typedef struct packed{
           ex_t decode_info;  // 指令控制信息 ::: 不需要 rst clr | 跳转 clr
           bpu_predict_t bpu_predict;
           fetch_excp_t fetch_excp;
-		  logic[25:0] addr_imm;
+          logic[25:0] addr_imm;
           logic[31:0] pc;
         } pipeline_ctrl_ex_t; // 移位寄存器实现的部分
 
@@ -69,17 +69,17 @@ typedef struct packed{
           m1_t decode_info;  // 指令控制信息 ::: 不需要 rst clr | 跳转 clr
           bpu_predict_t bpu_predict;
           excp_flow_t excp_flow;
-		  logic[13:0] csr_id;
-		  logic[31:0] jump_target;
-		  logic[31:0] vaddr; 
-		  logic[31:0] pc;
+          logic[13:0] csr_id;
+          logic[31:0] jump_target;
+          logic[31:0] vaddr;
+          logic[31:0] pc;
         } pipeline_ctrl_m1_t; // 移位寄存器实现的部分
 
 typedef struct packed{
           m2_t decode_info;  // 指令控制信息 ::: 不需要 rst clr | 跳转 clr
-		  logic[31:0] vaddr;
-		  logic[31:0] paddr; 
-		  logic[31:0] pc;
+          logic[31:0] vaddr;
+          logic[31:0] paddr;
+          logic[31:0] pc;
         } pipeline_ctrl_m2_t; // 移位寄存器实现的部分
 
 typedef struct packed{
@@ -100,10 +100,11 @@ typedef struct packed {
           logic valid;        // whether data is valid
         } fwd_data_t;
 typedef struct packed {
-          logic empty;
+          logic[1:0] inst_valid;
+          inst_t[1:0] inst;
         }frontend_req_t;
 typedef struct packed {
-          logic empty;
+          logic[1:0] issue;
         }frontend_resp_t;
 
 `endif

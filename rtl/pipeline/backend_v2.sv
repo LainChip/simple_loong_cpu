@@ -14,16 +14,64 @@ module backend(
   /* ------ ------ ------ ------ ------ IS 级 ------ ------ ------ ------ ------ */
   // ISSUE 级别：
   // 判定来自前段的指令能否发射
+  logic ex_skid_ready_q,ex_skid_valid;
+  logic ex_ready, ex_valid;
+  logic [1:0] issue;
+  issue issue_inst (
+          .clk(clk),
+          .rst_n(rst_n),
+          .inst_i(frontend_req_i.inst),
+          .d_valid_i(frontend_req_i.inst_valid),
+          .ex_ready_i(ex_ready),
+          .ex_valid_o(ex_valid),
+          .is_o(issue)
+        );
+  assign frontend_resp_o.issue = issue;
 
   // 读取寄存器堆，或者生成立即数
+  logic[1:0][1:0][4:0] is_r_addr;
+  logic[1:0][1:0][31:0] is_r_data;
+  logic[1:0][1:0] is_r_ready;
+  logic[1:0][1:0][3:0] is_r_id;
+  logic[1:0][4:0] is_w_addr;
+  logic[2:0] is_w_id;
+
+  logic[1:0][4:0] wb_w_addr;
+  logic[1:0][31:0] wb_w_data;
+  logic[1:0][2:0] wb_w_id;
+  logic[1:0] wb_valid;
+  logic[1:0] wb_commit;
+  reg_file # (
+             .DATA_WIDTH(32)
+           )
+           reg_file_inst (
+             .clk(clk),
+             .rst_n(rst_n),
+             .r_addr_i(is_r_addr),
+             .r_data_o(is_r_data),
+             .w_addr_i(wb_w_addr),
+             .w_data_i(wb_w_data),
+             .w_en_i(wb_valid & wb_commit)
+           );
 
   // 读取 scoreboard，判断寄存器值是否有效
+  scoreboard  scoreboard_inst (
+                .clk(clk),
+                .rst_n(rst_n),
+                .is_r_addr_i(is_r_addr),
+                .is_r_id_o(is_r_id),
+                .is_r_valid_o(is_r_ready),
+                .is_w_addr_i(is_w_addr),
+                .is_i(issue),
+                .is_w_id_o(is_w_id),
+                .wb_w_addr_i(wb_w_addr),
+                .wb_w_id_i(wb_w_id),
+                .wb_valid_i(wb_valid)
+              );
 
   // 产生 EX 级的流水线信号 x 2
   // IS 数据前递部分（EX、WB） 不完全。
 
-  logic ex_skid_ready_q,ex_skid_valid;
-  logic ex_ready, ex_valid;
   /* SKID BUF(可选的) */
   // SKID 数据前递部分（M2、WB） 不完全。
   // SKID BUF 对于 scoreboard 来说应该是透明的，使用 valid-ready 握手

@@ -1,7 +1,5 @@
 /*--JSON--{"module_name":"scoreboard","module_ver":"2","module_type":"module"}--JSON--*/
-module scoreboard #(
-    parameter type reg_addr_t = logic [4 : 0]
-  )(
+module scoreboard (
     input logic clk,
     input logic rst_n,
     input logic [3:0][4:0] is_r_addr_i,
@@ -10,7 +8,7 @@ module scoreboard #(
 
     input logic [1:0][4:0] is_w_addr_i,
     input logic [1:0] is_i,
-    output logic [1:0][3:0] is_w_id_o,
+    output logic [2:0] is_w_id_o,
     // 注意： 冲突逻辑交由 issue 模块处理，此模块不考虑可能的任何冲突情况，需要 issue 逻辑保证不会发射两条冲突的指令
 
     input logic [1:0][4:0] wb_w_addr_i,
@@ -30,8 +28,8 @@ module scoreboard #(
   end
   for(genvar i = 0 ; i < 2 ; i ++) begin
     assign issueboard_is_w_id[i] = {issueboard_tid_q,i[0]};
-    assign is_w_id_o[i] = issueboard_is_w_id;
   end
+  assign is_w_id_o = issueboard_tid_q;
 
   // 注意： tid == 0 是保留给 0 号寄存器使用的
   // 在复位，分配tid时，从 tid == 1 开始分配

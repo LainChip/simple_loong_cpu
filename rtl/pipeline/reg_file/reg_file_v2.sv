@@ -1,17 +1,15 @@
 /*--JSON--{"module_name":"reg_file","module_ver":"2","module_type":"module"}--JSON--*/
 module reg_file #(
-    parameter int DATA_WIDTH = 32,
-    parameter type reg_data_t = logic [DATA_WIDTH-1:0],
-    parameter type reg_addr_t = logic [4 : 0] 
+    parameter int DATA_WIDTH = 32 
 )(
-    input clk,
-    input rst_n,
+    input logic clk,
+    input logic  rst_n,
     // read port
-    input   reg_addr_t [3:0] r_addr_i,
-    output  reg_data_t [3:0] r_data_o,
+    input   logic [3:0][4:0] r_addr_i,
+    output  logic [3:0][DATA_WIDTH - 1 : 0] r_data_o,
     // write port
-    input   reg_addr_t [1:0] w_addr_i,
-    input   reg_data_t [1:0] w_data_i,
+    input   logic [1:0][4:0] w_addr_i,
+    input   logic [1:0][DATA_WIDTH - 1 : 0] w_data_i,
     input   logic [1:0] w_en_i
 );
     localparam READ_PORT  = 4;
