@@ -15,7 +15,10 @@ module backend(
     output frontend_resp_t frontend_resp_o,
 
     input cache_bus_resp_t bus_resp_i,
-    output cache_bus_req_t bus_req_o
+    output cache_bus_req_t bus_req_o,
+
+    output tlb_w_req_t itlb_w_req_o,
+    output tlb_inv_req_t itlb_inv_req_o
   );
 
   /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
@@ -608,13 +611,13 @@ module backend(
 
     // 接入 scoreboard、寄存器堆
     always_comb begin
-        wb_w_data[p] = pipeline_wdata_wb[p].w_data;
-        wb_w_addr[p] = pipeline_wdata_wb[p].w_flow.w_addr;
-        wb_commit[p] = exc_wb_q.need_commit;
-        wb_valid[p] = exc_wb_q.valid_inst;
-      end
+      wb_w_data[p] = pipeline_wdata_wb[p].w_data;
+      wb_w_addr[p] = pipeline_wdata_wb[p].w_flow.w_addr;
+      wb_commit[p] = exc_wb_q.need_commit;
+      wb_valid[p] = exc_wb_q.valid_inst;
     end
-    assign wb_w_id = pipeline_wdata_wb[0].w_flow.w_id;
+  end
+  assign wb_w_id = pipeline_wdata_wb[0].w_flow.w_id;
 
-  endmodule
+endmodule
 
