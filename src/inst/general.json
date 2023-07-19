@@ -48,67 +48,67 @@
         "need_csr": {
             "length": 1,
             "stage": "m2",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "need_mul": {
             "length": 1,
             "stage": "m2",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "need_div": {
             "length": 1,
             "stage": "m2",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "need_lsu": {
             "length": 1,
             "stage": "m2",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "need_bpu": {
             "length": 1,
             "stage": "m2",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r0_ex": {
             "length": 1,
             "stage": "ex",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r0_m1": {
             "length": 1,
             "stage": "m1",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r0_m2": {
             "length": 1,
             "stage": "m2",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r0_wb": {
             "length": 1,
             "stage": "wb",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r1_ex": {
             "length": 1,
             "stage": "ex",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r1_m1": {
             "length": 1,
             "stage": "m1",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r1_m2": {
             "length": 1,
             "stage": "m2",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "latest_r1_wb": {
             "length": 1,
             "stage": "wb",
-            "default_value": "1'b0"
+            "default_value": 0
         },
         "fu_sel_ex": {
             "length": 1,
@@ -153,7 +153,7 @@
         "addr_imm_type": {
             "length": 2,
             "stage": "ex",
-            "default_value": "`_IMM_S12"
+            "default_value": "`_ADDR_IMM_S12"
         }
     }
 }

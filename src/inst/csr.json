@@ -2,6 +2,7 @@
     "const": {
         "_CSR_CRMD": "14'h0",
         "_CSR_PRMD": "14'h1",
+        "_CSR_EUEN": "14'h2",
         "_CSR_ECTL": "14'h4",
         "_CSR_ESTAT": "14'h5",
         "_CSR_ERA": "14'h6",

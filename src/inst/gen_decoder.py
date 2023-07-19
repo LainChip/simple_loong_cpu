@@ -142,7 +142,12 @@ class decoder_parser:
 
     def gen_sv_module(self):
         str_builder = "`include \"decoder.svh\"\n\n"
-        str_builder += "module decoder(\n    input logic[31:0] inst_i,\n    input logic fetch_err_i,\n    output is_t is_o,\n    output logic[31:0][7:0] inst_string_o\n);\n\n"
+        str_builder += 'module decoder(\n'
+        str_builder += '    input logic [31:0] inst_i,\n'
+        str_builder += '    input logic fetch_err_i,\n'
+        str_builder += '    output is_t is_o\n'
+        # str_builder += '    output logic[31:0][7:0] inst_string_o\n'
+        str_builder += ');\n\n'
         
         # main combine logic
         depth = 1
@@ -173,7 +178,7 @@ class decoder_parser:
                     str_builder += self.gen_blank(depth) + 'is_o.' + signal + ' = ' + signal_value + ';\n'
                     # str_builder += self.gen_blank(depth) + 'is_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
                 # str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in inst]) + '}; //' + inst + '\n'
-                str_builder += self.gen_blank(depth) + 'inst_string_o = \'0; //' + inst + '\n' 
+                # str_builder += self.gen_blank(depth) + 'inst_string_o = \'0; //' + inst + '\n' 
                 depth -= 1
                 str_builder += self.gen_blank(depth) + "end\n"
         str_builder += self.gen_blank(depth) + "default: begin\n"
@@ -182,8 +187,8 @@ class decoder_parser:
             signal_value = self.signal_list[signal][3]
             if isinstance(signal_value,int):
                 signal_value = str(self.signal_list[signal][1]) + "\'d" + str(signal_value)
-            str_builder += self.gen_blank(depth) + 'is_o.' + self.signal_list[signal][0] + '.' + signal + ' = ' + signal_value + ';\n'
-        str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in 'NONEVALID']) + '}; //' + 'NONEVALID' + '\n'
+            str_builder += self.gen_blank(depth) + 'is_o.' + signal + ' = ' + signal_value + ';\n'
+        # str_builder += self.gen_blank(depth) + 'inst_string_o = {' + ' ,'.join(['8\'d' + str(ord(s)) for s in 'NONEVALID']) + '}; //' + 'NONEVALID' + '\n'
         depth -= 1
         str_builder += self.gen_blank(depth) + "end\n"
 

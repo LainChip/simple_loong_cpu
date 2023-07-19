@@ -5,7 +5,7 @@ module detachable_alu #(
     parameter bit USE_INT = 1,
     parameter bit USE_MUL = 0,
     parameter bit USE_SFT = 1,
-    parameter bit USE_CMP = 1,
+    parameter bit USE_CMP = 1
   )(
     input   logic [31:0] mul_i,
     input   logic [31:0] r0_i,
