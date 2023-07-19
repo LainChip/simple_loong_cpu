@@ -37,8 +37,6 @@ module la_csr(
   assign csr_we = !m2_stall_i && csr_we_i && commit_i && valid_i;
   assign csr_w_data = (csr_r_data_o & ~csr_w_mask_i) | (csr_w_data_i & ~csr_w_mask_i);
 
-  logic crmd_we,crmd_re;
-  assign crmd_we = csr_we && (csr_w_addr_i == `_CSR_CRMD);
 
   // EXCPTION JUDGE OH
   logic excp_int;
@@ -90,6 +88,8 @@ module la_csr(
   logic [31:0] dmw0_q;
   logic [31:0] dmw1_q;
 
+  logic crmd_we,crmd_re;
+  assign crmd_we = csr_we && (csr_w_addr_i == `_CSR_CRMD);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
       crmd_q[  `_CRMD_PLV] <= 2'b0;
@@ -652,4 +652,5 @@ module la_csr(
       end
     end
   end
+
 endmodule

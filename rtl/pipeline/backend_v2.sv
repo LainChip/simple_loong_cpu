@@ -541,9 +541,11 @@ module backend(
   /* ------ ------ ------ ------ ------ WB 级 ------ ------ ------ ------ ------ */
   // 不存在数据前递
 
+  for(genvar i = 0 ; i < 2 ; i++) begin
   // WB 的 FU 部分，接入 DIV，等待 DIV 完成。
-
+    
   // WB 需要接回 IS 级的 寄存器堆和 scoreboard
+  end
 
 endmodule
 
