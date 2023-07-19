@@ -47,17 +47,17 @@
         },
         "need_csr": {
             "length": 1,
-            "stage": "m2",
+            "stage": "is",
             "default_value": 0
         },
         "need_mul": {
             "length": 1,
-            "stage": "m2",
+            "stage": "ex",
             "default_value": 0
         },
         "need_div": {
             "length": 1,
-            "stage": "m2",
+            "stage": "wb",
             "default_value": 0
         },
         "need_lsu": {
@@ -127,7 +127,7 @@
         },
         "fu_sel_wb": {
             "length": 1,
-            "stage": "m2",
+            "stage": "wb",
             "default_value": 0
         },
         "reg_type_r0": {

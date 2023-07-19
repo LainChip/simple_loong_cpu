@@ -19,6 +19,8 @@ module backend(
   );
 
   /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
+  // TODO: DTLB L0 HERE
+
   // TODO: PIPELINE ME
   pipeline_ctrl_ex_t[1:0] pipeline_ctrl_is,pipeline_ctrl_skid_q,
                     pipeline_ctrl_ex,pipeline_ctrl_ex_q;
@@ -52,6 +54,7 @@ module backend(
   logic[1:0] m1_stall_req;
   logic[1:0] m2_stall_req;
   logic[1:0] wb_stall_req;
+  logic[1:0] lsu_stall_req;
 
   // 注意： invalidate 不同于 ~rst_n ，只要求无效化指令，不清除管线中的指令。
   logic [1:0]m1_invalidate, m1_invalidate_req;
@@ -68,6 +71,10 @@ module backend(
     m2_stall = |m2_stall_req | |wb_stall_req;
     wb_stall = |wb_stall_req;
   end
+
+  // M2 级的跳转寄存器设计位
+  logic[31:0] m2_jump_target_q;
+  logic m2_jump_valid_q;
 
   // INVALIDATE MANAGER
   always_comb begin
@@ -159,6 +166,10 @@ module backend(
                 .result_o(mul_result)
               );
 
+  // 除法器例化 TODO: FIXME
+  logic[31:0] div_result;
+  logic div_result_valid;
+
   // TODO: CONNECT CSR
 
   // CSR 接入 (M1)
@@ -174,9 +185,15 @@ module backend(
   logic[31:0] csr_r_data,csr_w_data,csr_w_mask;
 
   // TLB REQ 接入
-  logic[1:0] tlb_req;
-  logic[1:0][4:0] tlb_op_req;
-  logic[4:0] tlb_op; // ONE HOT ENCODING OF TLBSRCH | TLBRD | TLBWR | TLBFILL | INVTLB
+  logic[1:0] ctlb_req;
+  tlb_op_t[1:0] tlb_op_req;
+  tlb_op_t tlb_op; // ONE HOT ENCODING OF TLBSRCH | TLBRD | TLBWR | TLBFILL | INVTLB
+
+  // CACHE | MMU opcode 接入
+  logic[1:0][4:0] ctlb_opcode_req;
+  logic[4:0] ctlb_opcode;
+  assign tlb_op = ctlb_req[0] ? tlb_op_req[0] : tlb_op_req[1];
+  assign ctlb_opcode = ctlb_req[0] ? ctlb_opcode_req[0] : ctlb_opcode_req[1];
 
   // CSR output
   csr_t csr_value;
@@ -300,7 +317,7 @@ module backend(
                    );
 
     excp_flow_t ex_excp_flow;
-    // ex_excp_flow 产生逻辑
+    // ex_excp_flow 产生逻辑: TODO
     always_comb begin
 
     end
@@ -341,7 +358,7 @@ module backend(
     // 接入暂停请求
     always_comb begin
       ex_stall_req[p] = ((pipeline_ctrl_ex_q[p].latest_r0_ex & ~pipeline_data_ex_q[p].r_flow.r_ready[0]) |
-                         (pipeline_ctrl_ex_q[p].latest_r0_ex & ~pipeline_data_ex_q[p].r_flow.r_ready[0]) ) &
+                         (pipeline_ctrl_ex_q[p].latest_r1_ex & ~pipeline_data_ex_q[p].r_flow.r_ready[1]) ) &
                   exc_ex_q.valid_inst & exc_ex_q.need_commit; // LUT6 - 1
     end
 
@@ -361,6 +378,7 @@ module backend(
       pipeline_ctrl_m1[p].decode_info = get_m1_from_ex(pipeline_ctrl_ex_q[p].decode_info);
       pipeline_ctrl_m1[p].bpu_predict = pipeline_ctrl_ex_q[p].bpu_predict;
       pipeline_ctrl_m1[p].excp_flow = ex_excp_flow;
+      pipeline_ctrl_m1[p].ctlb_opcode = pipeline_ctrl_ex[p].ctlb_opcode;
       pipeline_ctrl_m1[p].csr_id = pipeline_ctrl_ex_q[p].addr_imm[13:0];
       pipeline_ctrl_m1[p].jump_target = jump_target;
       pipeline_ctrl_m1[p].vaddr = vaddr;
@@ -454,22 +472,21 @@ module backend(
 
     // 接入暂停请求
     always_comb begin
-      m1_stall_req[p] = ((pipeline_ctrl_m1_q[p].latest_r0_ex & ~pipeline_data_m1_q[p].r_flow.r_ready[0]) |
-                         (pipeline_ctrl_m1_q[p].latest_r0_ex & ~pipeline_data_m1_q[p].r_flow.r_ready[0]) ) &
+      m1_stall_req[p] = ((pipeline_ctrl_m1_q[p].latest_r0_m1 & ~pipeline_data_m1_q[p].r_flow.r_ready[0]) |
+                         (pipeline_ctrl_m1_q[p].latest_r1_m1 & ~pipeline_data_m1_q[p].r_flow.r_ready[1]) ) &
                   exc_m1_q.valid_inst & exc_m1_q.need_commit; // LUT6 - 1
     end
 
     // 流水线间信息传递
     always_comb begin
       pipeline_ctrl_m2[p].decode_info = get_m2_from_m1(decode_info);
+      pipeline_ctrl_m2[p].ctlb_opcode = pipeline_ctrl_m1[p].ctlb_opcode;
       pipeline_ctrl_m2[p].vaddr = pipeline_ctrl_m1[p].vaddr;
       pipeline_ctrl_m2[p].paddr = paddr;
       pipeline_ctrl_m2[p].pc = pipeline_ctrl_ex_q[p].pc;
     end
   end
   /* ------ ------ ------ ------ ------ M2 级 ------ ------ ------ ------ ------ */
-  // M2 数据接受前递部分（WB）完全
-
   for(genvar p = 0 ; p < 2 ; p++) begin
     m1_t decode_info;
     assign decode_info = pipeline_ctrl_m2_q[p].decode_info;
@@ -499,13 +516,20 @@ module backend(
     // M2 的额外部分
     // CSR 修改相关指令的执行，如写 CSR、写 TLB、缓存控制均在此处执行。
     always_comb begin
-      tlb_req[p] = decode_info.invtlb_en || decode_info.tlbfill_en || decode_info.tlbwr_en
-             || decode_info.tlbrd_en || decode_info.tlbsrch_en;
-      tlb_op_req[p] = {decode_info.invtlb_en,
-                       decode_info.tlbfill_en,
-                       decode_info.tlbwr_en,
-                       decode_info.tlbrd_en,
-                       decode_info.tlbsrch_en};
+      ctlb_req[p] = decode_info.invtlb_en || decode_info.tlbfill_en || decode_info.tlbwr_en
+              || decode_info.tlbrd_en || decode_info.tlbsrch_en || decode_info.mem_cacop;
+      {
+        tlb_op_req[p].invtlb,
+        tlb_op_req[p].tlbfill,
+        tlb_op_req[p].tlbwr,
+        tlb_op_req[p].tlbrd,
+        tlb_op_req[p].tlbsrch
+      } = {
+        decode_info.invtlb_en,
+        decode_info.tlbfill_en,
+        decode_info.tlbwr_en,
+        decode_info.tlbrd_en,
+        decode_info.tlbsrch_en};
     end
 
     // M2 的数据选择
@@ -530,6 +554,20 @@ module backend(
       endcase
     end
 
+    // 接入转发源
+    always_comb begin
+      fwd_data_m2[p] = mkfwddata(pipeline_wdata_m2[p]);
+    end
+
+    // 接入暂停请求
+    always_comb begin
+      m2_stall_req[p] = ((decode_info.latest_r0_m2 & ~pipeline_data_m2_q[p].r_flow.r_ready[0]) |
+                         (decode_info.latest_r1_m2 & ~pipeline_data_m2_q[p].r_flow.r_ready[1]) |
+                         lsu_stall_req[p]) &
+                  exc_m2_q.valid_inst & exc_m2_q.need_commit; // LUT6 + MUXF7
+    end
+
+
     // 流水线间信息传递
     always_comb begin
       pipeline_ctrl_wb[p].decode_info = get_wb_from_m2(decode_info);
@@ -541,11 +579,42 @@ module backend(
   /* ------ ------ ------ ------ ------ WB 级 ------ ------ ------ ------ ------ */
   // 不存在数据前递
 
-  for(genvar i = 0 ; i < 2 ; i++) begin
-  // WB 的 FU 部分，接入 DIV，等待 DIV 完成。
-    
-  // WB 需要接回 IS 级的 寄存器堆和 scoreboard
-  end
+  for(genvar p = 0 ; p < 2 ; p++) begin
+    // WB 的 FU 部分，接入 DIV，等待 DIV 完成。
+    wb_t decode_info;
+    assign decode_info = pipeline_ctrl_wb_q[p].decode_info;
 
-endmodule
+    // WB 需要接回 IS 级的 寄存器堆和 scoreboard
+
+    // 生成写数据
+    always_comb begin
+      pipeline_wdata_wb[p] = pipeline_wdata_m2_q[p];
+      if(decode_info.fu_sel_wb == `_FUSEL_WB_DIV) begin
+        pipeline_wdata_wb[p].w_data = div_result;
+        pipeline_wdata_wb[p].w_flow.w_valid = div_result_valid;
+      end
+    end
+
+    // 接入转发源
+    always_comb begin
+      fwd_data_wb[p] = mkfwddata(pipeline_wdata_wb[p]);
+    end
+
+    // 接入暂停请求
+    always_comb begin
+      wb_stall_req[p] = exc_ex_q.valid_inst & exc_ex_q.need_commit
+                  & decode_info.need_div & !div_result_valid; // 4 - 1
+    end
+
+    // 接入 scoreboard、寄存器堆
+    always_comb begin
+        wb_w_data[p] = pipeline_wdata_wb[p].w_data;
+        wb_w_addr[p] = pipeline_wdata_wb[p].w_flow.w_addr;
+        wb_commit[p] = exc_wb_q.need_commit;
+        wb_valid[p] = exc_wb_q.valid_inst;
+      end
+    end
+    assign wb_w_id = pipeline_wdata_wb[0].w_flow.w_id;
+
+  endmodule
 
