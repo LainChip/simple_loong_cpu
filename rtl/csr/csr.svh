@@ -1,6 +1,8 @@
 `ifndef _CSR_HEADER
 `define _CSR_HEADER
 
+`include "pipeline.svh"
+
 //INSTR
 `define _INSTR_RJ       9:5
 `define _INSTR_CSR_NUM  23:10
@@ -27,7 +29,7 @@
 //EENTRY
 `define _EENTRY_VA       31:6
 //TLBIDX
-`define _TLBIDX_INDEX     4:0
+`define _TLBIDX_INDEX     $clog2(`_TLB_ENTRY_NUM)-1:0
 `define _TLBIDX_PS        29:24
 `define _TLBIDX_NE        31
 //TLBEHI

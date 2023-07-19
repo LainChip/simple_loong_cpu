@@ -16,8 +16,14 @@ module la_csr(
     input logic[13:0] csr_w_addr_i, // M2 in
     input logic[31:0] csr_w_mask_i,
     input logic[31:0] csr_w_data_i,
-    input tlb_s_resp_t tlb_s_i,
-    input tlb_entry_t tlb_e_i,
+    input logic[31:0] badv_i,
+    input tlb_op_t tlb_op_i,
+    input tlb_s_resp_t tlb_srch_i,
+    input tlb_entry_t tlb_entry_i,
+    input logic llbit_set_i,
+    input logic llbit_i,
+  
+
     output logic[31:0] csr_r_data_o,
     output csr_t csr_o
   );
@@ -53,6 +59,7 @@ module la_csr(
   logic excp_ine;
   logic excp_ipe;
   logic excp_tlbr; // TODO: FIXME
+  logic excp_tlb; //TODO
 
   logic excp_valid; // TODO: FIXME
   logic ertn_valid;
@@ -62,13 +69,13 @@ module la_csr(
   logic [8 :0] esubcode // TODO
   logic [31:0] era, badva; // TODO
   logic va_error;
-  logic tlbsrch_en, tlbsrch_found;  // TODO
-  logic [4:0] tlbsrch_index;
-  logic [31:0] tlb_index;
+
+  logic tlbsrch_en;  // TODO
   logic tlbrd_valid_wr_en, tlbrd_invalid_wr_en;  // TODO
 
   assign va_error = excp_tlbr | excp_adef | excp_adem | excp_ale | excp_pil | excp_pis | excp_pif | excp_pme | excp_ppi;
-
+  assign tlbrd_valid_wr_en = tlb_op_i.tlbrd && tlb_entry_i.e;
+  assign tlbrd_invalid_wr_en = tlb_op_i.tlbrd && !tlb_entry_i.e;
   // csr register
   logic [31:0] crmd_q;
   logic [31:0] prmd_q;
@@ -291,17 +298,17 @@ module la_csr(
     if(!rst_n) begin
       tlbidx_q[23: 5] <= 19'b0;
       tlbidx_q[30]    <= 1'b0;
-		  tlbidx_q[`_TLBIDX_INDEX]<= 5'b0;
+		  tlbidx_q[`_TLBIDX_INDEX]<= '0;
     end
     else begin
       if(tlbidx_we) begin
         tlbidx_q[`_TLBIDX_INDEX] <= csr_w_data[`_TLBIDX_INDEX];
         tlbidx_q[`_TLBIDX_PS]    <= csr_w_data[`_TLBIDX_PS];
         tlbidx_q[`_TLBIDX_NE]    <= csr_w_data[`_TLBIDX_NE];
-      end // TODO
-      else if (tlbsrch_en) begin
-        if (tlbsrch_found) begin
-          tlbidx_q[`_TLBIDX_INDEX] <= tlbsrch_index;
+      end 
+      else if (tlb_op_i.tlbsrch) begin
+        if (tlb_srch_i.found) begin
+          tlbidx_q[`_TLBIDX_INDEX] <= tlb_srch_i.index;
           tlbidx_q[`_TLBIDX_NE] <= 1'b0;
         end
         else begin
@@ -309,12 +316,12 @@ module la_csr(
         end
       end
       else if (tlbrd_valid_wr_en) begin
-        tlbidx_q[`_TLBIDX_PS] <= tlb_index[`_TLBIDX_PS];
-        tlbidx_q[`_TLBIDX_NE] <= tlb_index[`_TLBIDX_NE];
+        tlbidx_q[`_TLBIDX_PS] <= tlb_entry_i.ps;
+        tlbidx_q[`_TLBIDX_NE] <= ~tlb_entry_i.e;
       end 
       else if (tlbrd_invalid_wr_en) begin
         tlbidx_q[`_TLBIDX_PS] <= 6'b0;
-        tlbidx_q[`_TLBIDX_NE] <= tlb_index;
+        tlbidx_q[`_TLBIDX_NE] <= ~tlb_entry_t.e;
       end
     end
   end
@@ -329,11 +336,22 @@ module la_csr(
     end
     else begin
       if(tlbehi_we) begin
-        tlbehi_q <= csr_w_data;
+        tlbehi_q[`_TLBEHI_VPPN] <= csr_w_data[`_TLBEHI_VPPN];
+      end
+      else if (tlbrd_valid_wr_en) begin
+        tlbehi_q[`_TLBEHI_VPPN] <= tlb_entry_i.vppn;
+      end
+      else if (tlbrd_invalid_wr_en) begin
+        tlbehi_q[`_TLBEHI_VPPN] <= '0;
+      end
+      else if (excp_tlb) begin
+        tlbehi_q[`_TLBEHI_VPPN] <= badv_i[`_TLBEHI_VPPN];
       end
     end
   end
   assign csr_o.tlbehi = tlbehi_q;
+
+  //tlbelo0
   logic tlbelo0_we,tlbelo0_re;
   assign tlbelo0_we = csr_we && (csr_w_addr_i == `_CSR_TLBELO0);
   always_ff @(posedge clk) begin
@@ -343,10 +361,34 @@ module la_csr(
     else begin
       if(tlbelo0_we) begin
         tlbelo0_q <= csr_w_data;
+        tlbelo0_q[`_TLBELO_TLB_V] <= csr_w_data[`_TLBELO_TLB_V];
+        tlbelo0_q[`_TLBELO_TLB_D] <= csr_w_data[`_TLBELO_TLB_D];
+        tlbelo0_q[`_TLBELO_TLB_PLV] <= csr_w_data[`_TLBELO_TLB_PLV];
+        tlbelo0_q[`_TLBELO_TLB_MAT] <= csr_w_data[`_TLBELO_TLB_MAT];
+        tlbelo0_q[`_TLBELO_TLB_G] <= csr_w_data[`_TLBELO_TLB_G];
+        tlbelo0_q[`_TLBELO_TLB_PPN] <= csr_w_data[`_TLBELO_TLB_PPN];
+      end
+      else if (tlbrd_valid_wr_en) begin
+        tlbelo0_q[`_TLBELO_TLB_V] <= tlb_entry_i.v0;
+        tlbelo0_q[`_TLBELO_TLB_D] <= tlb_entry_i.d0;
+        tlbelo0_q[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv0;
+        tlbelo0_q[`_TLBELO_TLB_MAT] <= tlb_entry_i.mat0;
+        tlbelo0_q[`_TLBELO_TLB_G] <= tlb_entry_i.g;
+        tlbelo0_q[`_TLBELO_TLB_PPN] <= tlb_entry_i.ppn0;
+      end
+      else if (tlbrd_invalid_wr_en) begin
+        tlbelo0_q[`_TLBELO_TLB_V] <= '0;
+        tlbelo0_q[`_TLBELO_TLB_D] <= '0;
+        tlbelo0_q[`_TLBELO_TLB_PLV] <= '0;
+        tlbelo0_q[`_TLBELO_TLB_MAT] <= '0;
+        tlbelo0_q[`_TLBELO_TLB_G] <= '0;
+        tlbelo0_q[`_TLBELO_TLB_PPN] <= '0;
       end
     end
   end
   assign csr_o.tlbelo0 = tlbelo0_q;
+
+//tlblo1
   logic tlbelo1_we,tlbelo1_re;
   assign tlbelo1_we = csr_we && (csr_w_addr_i == `_CSR_TLBELO1);
   always_ff @(posedge clk) begin
@@ -356,23 +398,55 @@ module la_csr(
     else begin
       if(tlbelo1_we) begin
         tlbelo1_q <= csr_w_data;
+        tlbelo1_q[`_TLBELO_TLB_V] <= csr_w_data[`_TLBELO_TLB_V];
+        tlbelo1_q[`_TLBELO_TLB_D] <= csr_w_data[`_TLBELO_TLB_D];
+        tlbelo1_q[`_TLBELO_TLB_PLV] <= csr_w_data[`_TLBELO_TLB_PLV];
+        tlbelo1_q[`_TLBELO_TLB_MAT] <= csr_w_data[`_TLBELO_TLB_MAT];
+        tlbelo1_q[`_TLBELO_TLB_G] <= csr_w_data[`_TLBELO_TLB_G];
+        tlbelo1_q[`_TLBELO_TLB_PPN] <= csr_w_data[`_TLBELO_TLB_PPN];
+      end
+      else if (tlbrd_valid_wr_en) begin
+        tlbelo1_q[`_TLBELO_TLB_V] <= tlb_entry_i.v1;
+        tlbelo1_q[`_TLBELO_TLB_D] <= tlb_entry_i.d1;
+        tlbelo1_q[`_TLBELO_TLB_PLV] <= tlb_entry_i.plv1;
+        tlbelo1_q[`_TLBELO_TLB_MAT] <= tlb_entry_i.mat1;
+        tlbelo1_q[`_TLBELO_TLB_G] <= tlb_entry_i.g;
+        tlbelo1_q[`_TLBELO_TLB_PPN] <= tlb_entry_i.ppn1;
+      end
+      else if (tlbrd_invalid_wr_en) begin
+        tlbelo1_q[`_TLBELO_TLB_V] <= '0;
+        tlbelo1_q[`_TLBELO_TLB_D] <= '0;
+        tlbelo1_q[`_TLBELO_TLB_PLV] <= '0;
+        tlbelo1_q[`_TLBELO_TLB_MAT] <= '0;
+        tlbelo1_q[`_TLBELO_TLB_G] <= '0;
+        tlbelo1_q[`_TLBELO_TLB_PPN] <= '0;
       end
     end
   end
   assign csr_o.tlbelo1 = tlbelo1_q;
+
+  //asid
   logic asid_we,asid_re;
   assign asid_we = csr_we && (csr_w_addr_i == `_CSR_ASID);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      asid_q <= /*DEFAULT VALUE*/'0;
+      asid_q[31:10] <= /*DEFAULT VALUE*/22'h280;
     end
     else begin
-      if(asid_we) begin
-        asid_q <= csr_w_data;
+      if (asid_we) begin
+        asid_q[`_ASID] <= csr_w_data[`_ASID];
+      end
+      else if (tlbrd_valid_wr_en) begin
+        asid_q[`_ASID] <= tlb_entry_i.asid;
+      end
+      else if (tlbrd_invalid_wr_en) begin
+        asid_q[`_ASID] <= 10'b0;
       end
     end
   end
   assign csr_o.asid = asid_q;
+
+//pgdl
   logic pgdl_we,pgdl_re;
   assign pgdl_we = csr_we && (csr_w_addr_i == `_CSR_PGDL);
   always_ff @(posedge clk) begin
@@ -381,11 +455,13 @@ module la_csr(
     end
     else begin
       if(pgdl_we) begin
-        pgdl_q <= csr_w_data;
+        pgdl_q[`_PGD_BASE] <= csr_w_data[`_PGD_BASE];
       end
     end
   end
   assign csr_o.pgdl = pgdl_q;
+
+  //pgdh
   logic pgdh_we,pgdh_re;
   assign pgdh_we = csr_we && (csr_w_addr_i == `_CSR_PGDH);
   always_ff @(posedge clk) begin
@@ -394,24 +470,28 @@ module la_csr(
     end
     else begin
       if(pgdh_we) begin
-        pgdh_q <= csr_w_data;
+        pgdh_q[`_PGD_BASE] <= csr_w_data[`_PGD_BASE];
       end
     end
   end
   assign csr_o.pgdh = pgdh_q;
+
+  //cpuid
   logic cpuid_we,cpuid_re;
   assign cpuid_we = csr_we && (csr_w_addr_i == `_CSR_CPUID);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
       cpuid_q <= /*DEFAULT VALUE*/'0;
     end
-    else begin
-      if(cpuid_we) begin
-        cpuid_q <= csr_w_data;
-      end
-    end
+    // else begin
+    //   if(cpuid_we) begin
+    //     cpuid_q <= csr_w_data; //TODO
+    //   end
+    // end
   end
   assign csr_o.cpuid = cpuid_q;
+
+  //savd0
   logic save0_we,save0_re;
   assign save0_we = csr_we && (csr_w_addr_i == `_CSR_SAVE0);
   always_ff @(posedge clk) begin
@@ -464,6 +544,8 @@ module la_csr(
     end
   end
   assign csr_o.save3 = save3_q;
+
+  //tid
   logic tid_we,tid_re;
   assign tid_we = csr_we && (csr_w_addr_i == `_CSR_TID);
   always_ff @(posedge clk) begin
@@ -477,19 +559,25 @@ module la_csr(
     end
   end
   assign csr_o.tid = tid_q;
+
+  //tcfg
   logic tcfg_we,tcfg_re;
   assign tcfg_we = csr_we && (csr_w_addr_i == `_CSR_TCFG);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      tcfg_q <= /*DEFAULT VALUE*/'0;
+      tcfg_q[`_TCFG_EN] <= /*DEFAULT VALUE*/'0;
     end
     else begin
       if(tcfg_we) begin
-        tcfg_q <= csr_w_data;
+        tcfg_q[`_TCFG_EN] <= csr_w_data[`_TCFG_EN];
+        tcfg_q[`_TCFG_PERIODIC] <= csr_w_data[`_TCFG_PERIODIC];
+        tcfg_q[`_TCFG_INITVAL] <= csr_w_data[`_TCFG_INITVAL];
       end
     end
   end
   assign csr_o.tcfg = tcfg_q;
+  
+  //tval
   logic tval_we,tval_re;
   assign tval_we = csr_we && (csr_w_addr_i == `_CSR_TVAL);
   always_ff @(posedge clk) begin
@@ -497,12 +585,22 @@ module la_csr(
       tval_q <= /*DEFAULT VALUE*/'0;
     end
     else begin
-      if(tval_we) begin
-        tval_q <= csr_w_data;
+      if(tcfg_we) begin
+        tval_q <= {csr_w_data[`_TCFG_INITVAL], 2'b0};
+      end
+      else if (timer_en) begin
+        if (tval_q != 32'b0) begin
+          tval_q <= tval_q - 32'b1;
+        end
+        else if (tval_q == 32'b0) begin
+          tval_q <= tcfg_q[`_TCFG_PERIODIC] ? {tcfg_q[`_TCFG_INITVAL], 2'b0} : 32'hffffffff;
+        end
       end
     end
   end
   assign csr_o.tval = tval_q;
+
+  //cntc
   logic cntc_we,cntc_re;
   assign cntc_we = csr_we && (csr_w_addr_i == `_CSR_CNTC);
   always_ff @(posedge clk) begin
@@ -516,45 +614,71 @@ module la_csr(
     end
   end
   assign csr_o.cntc = cntc_q;
+
+  //ticlr
   logic ticlr_we,ticlr_re;
   assign ticlr_we = csr_we && (csr_w_addr_i == `_CSR_TICLR);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
       ticlr_q <= /*DEFAULT VALUE*/'0;
     end
-    else begin
-      if(ticlr_we) begin
-        ticlr_q <= csr_w_data;
-      end
-    end
+    // else begin
+    //   if(ticlr_we) begin
+    //     ticlr_q <= csr_w_data;
+    //   end
+    // end
+    // TODO
   end
   assign csr_o.ticlr = ticlr_q;
+
+//llbctl TODO
   logic llbctl_we,llbctl_re;
   assign llbctl_we = csr_we && (csr_w_addr_i == `_CSR_LLBCTL);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      llbctl_q <= /*DEFAULT VALUE*/'0;
+      llbctl_q[`_LLBCT_KLO] <= /*DEFAULT VALUE*/'0;
+      llbctl_q[31:3] <= 29'b0;
+      llbctl_q[`_LLBCT_WCLLB] <= 1'b0;
+      llbit_q <= 1'b0;
     end
     else begin
-      if(llbctl_we) begin
-        llbctl_q <= csr_w_data;
+      if (ertn_valid) begin
+        if(llbctl_q[`_LLBCT_KLO]) begin
+          llbctl_q[`_LLBCT_KLO] <= 1'b0;
+        end
+        else begin
+          llbit_q <= 1'b0;
+        end
+      end
+      else if(llbctl_we) begin
+        llbctl_q[`_LLBCT_KLO] <= csr_w_data[`_LLBCT_KLO];
+        if (csr_w_data[`_LLBCT_WCLLB] == 1'b1)begin
+          llbit_q <= 1'b0;
+        end
+      end
+      else if (llbit_set_i) begin
+        llbit_q <= llbit_i;
       end
     end
   end
   assign csr_o.llbctl = llbctl_q;
+
+//tlbrentry
   logic tlbrentry_we,tlbrentry_re;
   assign tlbrentry_we = csr_we && (csr_w_addr_i == `_CSR_TLBRENTRY);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      tlbrentry_q <= /*DEFAULT VALUE*/'0;
+      tlbrentry_q[5:0] <= /*DEFAULT VALUE*/'0;
     end
     else begin
       if(tlbrentry_we) begin
-        tlbrentry_q <= csr_w_data;
+        tlbrentry_q[`_TLBRENTRY_PA] <= csr_w_data[`_TLBRENTRY_PA];
       end
     end
   end
   assign csr_o.tlbrentry = tlbrentry_q;
+
+//ctag
   logic ctag_we,ctag_re;
   assign ctag_we = csr_we && (csr_w_addr_i == `_CSR_CTAG);
   always_ff @(posedge clk) begin
@@ -568,6 +692,8 @@ module la_csr(
     end
   end
   assign csr_o.ctag = ctag_q;
+
+//dmw0
   logic dmw0_we,dmw0_re;
   assign dmw0_we = csr_we && (csr_w_addr_i == `_CSR_DMW0);
   always_ff @(posedge clk) begin
@@ -576,11 +702,17 @@ module la_csr(
     end
     else begin
       if(dmw0_we) begin
-        dmw0_q <= csr_w_data;
+        dmw0_q[`_DMW_PLV0] <= csr_w_data[`_DMW_PLV0];
+        dmw0_q[`_DMW_PLV3] <= csr_w_data[`_DMW_PLV3];
+        dmw0_q[`_DMW_MAT] <= csr_w_data[`_DMW_MAT];
+        dmw0_q[`_DMW_PSEG] <= csr_w_data[`_DMW_PSEG];
+        dmw0_q[`_DMW_VSEG] <= csr_w_data[`_DMW_VSEG];
       end
     end
   end
   assign csr_o.dmw0 = dmw0_q;
+
+  //dmw1
   logic dmw1_we,dmw1_re;
   assign dmw1_we = csr_we && (csr_w_addr_i == `_CSR_DMW1);
   always_ff @(posedge clk) begin
@@ -589,11 +721,17 @@ module la_csr(
     end
     else begin
       if(dmw1_we) begin
-        dmw1_q <= csr_w_data;
+        dmw1_q[`_DMW_PLV0] <= csr_w_data[`_DMW_PLV0];
+        dmw1_q[`_DMW_PLV3] <= csr_w_data[`_DMW_PLV3];
+        dmw1_q[`_DMW_MAT] <= csr_w_data[`_DMW_MAT];
+        dmw1_q[`_DMW_PSEG] <= csr_w_data[`_DMW_PSEG];
+        dmw1_q[`_DMW_VSEG] <= csr_w_data[`_DMW_VSEG];
       end
     end
   end
   assign csr_o.dmw1 = dmw1_q;
+
+  //llbit
   logic llbit_q;
   always_ff @(posedge clk) begin
     if(!rst_n) begin
