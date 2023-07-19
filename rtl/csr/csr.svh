@@ -14,12 +14,18 @@
 //PRMD
 `define _PRMD_PPLV      1:0
 `define _PRMD_PIE       2
+//EUEN
+`define _EUEN_FPE       0
 //ECTL
 `define _ECTL_LIE       12:0
+`define _ECTL_LIE1      9:0
+`define _ECTL_LIE2      12:11
 //ESTAT
 `define _ESTAT_IS        12:0
 `define _ESTAT_ECODE     21:16
 `define _ESTAT_ESUBCODE  30:22
+//EENTRY
+`define _EENTRY_VA       31:6
 //TLBIDX
 `define _TLBIDX_INDEX     4:0
 `define _TLBIDX_PS        29:24

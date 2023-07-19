@@ -16,7 +16,8 @@ module la_csr(
     input logic[13:0] csr_w_addr_i, // M2 in
     input logic[31:0] csr_w_mask_i,
     input logic[31:0] csr_w_data_i,
-
+    input tlb_s_resp_t tlb_s_i,
+    input tlb_entry_t tlb_e_i,
     output logic[31:0] csr_r_data_o,
     output csr_t csr_o
   );
@@ -37,10 +38,10 @@ module la_csr(
   assign csr_we = !m2_stall_i && csr_we_i && commit_i && valid_i;
   assign csr_w_data = (csr_r_data_o & ~csr_w_mask_i) | (csr_w_data_i & ~csr_w_mask_i);
 
-
   // EXCPTION JUDGE OH
   logic excp_int;
   logic excp_pif;
+  logic excp_pil;
   logic excp_pis;
   logic excp_pme;
   logic excp_ppi;
@@ -57,6 +58,18 @@ module la_csr(
   logic ertn_valid;
   logic ertn_tlbr_valid;
 
+  logic [5 :0] ecode;   // TODO
+  logic [8 :0] esubcode // TODO
+  logic [31:0] era, badva; // TODO
+  logic va_error;
+  logic tlbsrch_en, tlbsrch_found;  // TODO
+  logic [4:0] tlbsrch_index;
+  logic [31:0] tlb_index;
+  logic tlbrd_valid_wr_en, tlbrd_invalid_wr_en;  // TODO
+
+  assign va_error = excp_tlbr | excp_adef | excp_adem | excp_ale | excp_pil | excp_pis | excp_pif | excp_pme | excp_ppi;
+
+  // csr register
   logic [31:0] crmd_q;
   logic [31:0] prmd_q;
   logic [31:0] euen_q;
@@ -88,6 +101,7 @@ module la_csr(
   logic [31:0] dmw0_q;
   logic [31:0] dmw1_q;
 
+  // crmd
   logic crmd_we,crmd_re;
   assign crmd_we = csr_we && (csr_w_addr_i == `_CSR_CRMD);
   always_ff @(posedge clk) begin
@@ -130,111 +144,183 @@ module la_csr(
   end
   assign csr_o.crmd = crmd_q;
 
+  // prmd
   logic prmd_we,prmd_re;
   assign prmd_we = csr_we && (csr_w_addr_i == `_CSR_PRMD);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      prmd_q <= /*DEFAULT VALUE*/'0;
+      prmd_q[31:3] <= 29'b0;
     end
     else begin
+      if (excp_valid) begin
+        prmd_q[`_PRMD_PPLV] <= crmd_q[`_CRMD_PLV];
+        prmd_q[ `_PRMD_PIE] <= crmd_q[ `_CRMD_IE];
+      end
       if(prmd_we) begin
-        prmd_q <= csr_w_data;
+        prmd_q[`_PRMD_PPLV] <= csr_w_data[`_PRMD_PPLV];
+        prmd_q[ `_PRMD_PIE] <= csr_w_data[ `_PRMD_PIE];
       end
     end
   end
   assign csr_o.prmd = prmd_q;
 
+  // euen
   logic euen_we,euen_re;
   assign euen_we = csr_we && (csr_w_addr_i == `_CSR_EUEN);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      euen_q <= /*DEFAULT VALUE*/'0;
+      euen_q <= '0;
     end
     else begin
       if(euen_we) begin
-        euen_q <= csr_w_data;
+        euen_q[`_EUEN_FPE] <= csr_w_data[`_EUEN_FPE];
       end
     end
   end
   assign csr_o.euen = euen_q;
+
+  // ectl
   logic ectl_we,ectl_re;
   assign ectl_we = csr_we && (csr_w_addr_i == `_CSR_ECTL);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      ectl_q <= /*DEFAULT VALUE*/'0;
+      ectl_q <= '0;
     end
     else begin
       if(ectl_we) begin
-        ectl_q <= csr_w_data;
+        ectl_q[`_ECTL_LIE1] <= csr_w_data[`_ECTL_LIE1];
+        ectl_q[`_ECTL_LIE2] <= csr_w_data[`_ECTL_LIE2];
       end
     end
   end
   assign csr_o.ectl = ectl_q;
+
+  // estat
   logic estat_we,estat_re;
+  logic timer_en;
   assign estat_we = csr_we && (csr_w_addr_i == `_CSR_ESTAT);
   always_ff @(posedge clk) begin
-    if(!rst_n) begin
-      estat_q <= /*DEFAULT VALUE*/'0;
+    if (!rst_n) begin
+      estat_q[ 1: 0] <= 2'b0; 
+		  estat_q[10]    <= 1'b0;
+		  estat_q[12]    <= 1'b0;
+      estat_q[15:13] <= 3'b0;
+      estat_q[31]    <= 1'b0;
+
+      timer_en <= 1'b0;
     end
     else begin
-      if(estat_we) begin
-        estat_q <= csr_w_data;
+      if (ticlr_we && csr_w_data[`_TICLR_CLR]) begin
+        estat_q[11] <= 1'b0;
+      end 
+      else if (tcfg_we) begin
+        timer_en <= csr_w_data[`TCFG_EN];
+      end
+      else if (timer_en && (tval_q == 32'b0)) begin
+        estat_q[11] <= 1'b1;
+        timer_en    <= tcfg_q[`_TCFG_PERIODIC];
+      end
+
+      estat_q[9:2] <= excp_int;
+      if (excp_valid) begin
+        estat_q[`_ESTAT_ECODE   ] <= ecode;
+        estat_q[`_ESTAT_ESUBCODE] <= esubcode;
+      end
+      if (estat_we) begin
+        estat_q[1:0] <= csr_w_data[1:0];
       end
     end
   end
   assign csr_o.estat = estat_q;
+
+  // era
   logic era_we,era_re;
   assign era_we = csr_we && (csr_w_addr_i == `_CSR_ERA);
   always_ff @(posedge clk) begin
-    if(!rst_n) begin
-      era_q <= /*DEFAULT VALUE*/'0;
+    if (!rst_n) begin
+      era_q <= '0;  // need not
     end
     else begin
-      if(era_we) begin
+      if (excp_valid) begin
+        era_q <= era;
+      end
+      if (era_we) begin
         era_q <= csr_w_data;
       end
     end
   end
   assign csr_o.era = era_q;
+
+  // badv
   logic badv_we,badv_re;
   assign badv_we = csr_we && (csr_w_addr_i == `_CSR_BADV);
   always_ff @(posedge clk) begin
-    if(!rst_n) begin
-      badv_q <= /*DEFAULT VALUE*/'0;
+    if (!rst_n) begin
+      badv_q <= '0; // need not
     end
     else begin
-      if(badv_we) begin
+      if (va_error) begin
+        badv_q <= badva;
+      end
+      if (badv_we) begin
         badv_q <= csr_w_data;
       end
     end
   end
   assign csr_o.badv = badv_q;
+
+  // eentry
   logic eentry_we,eentry_re;
   assign eentry_we = csr_we && (csr_w_addr_i == `_CSR_EENTRY);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      eentry_q <= /*DEFAULT VALUE*/'0;
+      eentry_q[5:0] <= 6'b0;
     end
     else begin
       if(eentry_we) begin
-        eentry_q <= csr_w_data;
+        eentry_q[`_EENTRY_VA] <= csr_w_data[`_EENTRY_VA];
       end
     end
   end
   assign csr_o.eentry = eentry_q;
+
+  // tlbidx
   logic tlbidx_we,tlbidx_re;
   assign tlbidx_we = csr_we && (csr_w_addr_i == `_CSR_TLBIDX);
   always_ff @(posedge clk) begin
     if(!rst_n) begin
-      tlbidx_q <= /*DEFAULT VALUE*/'0;
+      tlbidx_q[23: 5] <= 19'b0;
+      tlbidx_q[30]    <= 1'b0;
+		  tlbidx_q[`_TLBIDX_INDEX]<= 5'b0;
     end
     else begin
       if(tlbidx_we) begin
-        tlbidx_q <= csr_w_data;
+        tlbidx_q[`_TLBIDX_INDEX] <= csr_w_data[`_TLBIDX_INDEX];
+        tlbidx_q[`_TLBIDX_PS]    <= csr_w_data[`_TLBIDX_PS];
+        tlbidx_q[`_TLBIDX_NE]    <= csr_w_data[`_TLBIDX_NE];
+      end // TODO
+      else if (tlbsrch_en) begin
+        if (tlbsrch_found) begin
+          tlbidx_q[`_TLBIDX_INDEX] <= tlbsrch_index;
+          tlbidx_q[`_TLBIDX_NE] <= 1'b0;
+        end
+        else begin
+          tlbidx_q[`_TLBIDX_NE] <= 1'b1;
+        end
+      end
+      else if (tlbrd_valid_wr_en) begin
+        tlbidx_q[`_TLBIDX_PS] <= tlb_index[`_TLBIDX_PS];
+        tlbidx_q[`_TLBIDX_NE] <= tlb_index[`_TLBIDX_NE];
+      end 
+      else if (tlbrd_invalid_wr_en) begin
+        tlbidx_q[`_TLBIDX_PS] <= 6'b0;
+        tlbidx_q[`_TLBIDX_NE] <= tlb_index;
       end
     end
   end
   assign csr_o.tlbidx = tlbidx_q;
+
+  // tlbehi
   logic tlbehi_we,tlbehi_re;
   assign tlbehi_we = csr_we && (csr_w_addr_i == `_CSR_TLBEHI);
   always_ff @(posedge clk) begin
