@@ -13,23 +13,29 @@ module daddr_trans#(
 
     input logic m1_stall_i,
     output logic ready_o,
-    output logic[31:0] paddr_o,
 
     input csr_t csr_i,
     input logic flush_trans_i, // trigger when address translation change.
 
-    input tlb_w_req_t tlb_w_req_i,
-    input tlb_inv_req_t tlb_inv_req_i,
+    output tlb_s_req_t tlb_req_o,
+    output logic tlb_req_valid_o,
+
+    input logic tlb_req_ready_i,
+    input tlb_s_resp_t tlb_resp_i,
 
     output tlb_s_resp_t tlb_raw_result_o
   );
 
+  tlb_s_resp_t dmw0_fake_tlb;
+  tlb_s_resp_t dmw1_fake_tlb;
+  logic[2:0] dmw0_vseg,dmw1_vseg; // TODO: FIXME
+
   if(ENABLE_TLB) begin
     logic[7:0][1:0] valid_table_q;
     logic[7:0][1:0] istlb_table_q;
-    tlb_result_q[7:0] table_tmp_q; // 00 invalid, 11 tlb valid, 01 dmw0 hit, 10 dmw1 hit
+    tlb_s_resp_t[7:0] table_tmp_q; // 00 invalid, 11 tlb valid, 01 dmw0 hit, 10 dmw1 hit
     logic[7:0][28:12] tlb_vaddr_q;
-    tlb_result_q m1_result_q;
+    tlb_s_resp_t m1_result_q;
     logic m1_tlb_vaddr_miss_q;
     logic valid_q;
     logic istlb_q;
@@ -75,9 +81,38 @@ module daddr_trans#(
       fsm = fsm_q;
       if(flush_trans_i) begin
         fsm = TRANS_FSM_DMW0;
-      end else begin
-        if(fsm_q == TRANS_FSM_DMW1) begin
-            
+      end
+      else begin
+        if(fsm_q == TRANS_FSM_DMW0) begin
+          fsm = TRANS_FSM_DMW1;
+        end
+        else if(fsm_q == TRANS_FSM_DMW1) begin
+          fsm = TRANS_FSM_NORMAL;
+        end
+        else if(fsm_q == TRANS_FSM_TLB) begin
+          if(tlb_req_ready_i) begin
+            fsm = TRANS_FSM_NORMAL;
+          end
+        end
+        else if(m1_miss) begin
+          fsm = TRANS_FSM_TLB;
+        end
+      end
+    end
+    always_ff @(posedge clk) begin
+      if(!rst_n) begin
+        valid_table_q <= '0;
+      end
+      else begin
+        if(fsm_q == TRANS_FSM_DMW0) begin
+          valid_table_q[dmw0_vseg] <= 1'b1;
+          istlb_table_q[] <= 1'b0;
+          table_tmp_q[dmw0_vseg] <= dmw0_fake_tlb;
+        end
+        else if(fsm_q == TRANS_FSM_DMW1) begin
+          valid_table_q[csr_i.dmw0[`VSEG]] <= 1'b1;
+          istlb_table_q[csr_i.dmw0[`VSEG]] <= 1'b0;
+          table_tmp_q[csr_i.dmw0[`VSEG]] <= dmw0_fake_tlb;
         end
       end
     end
@@ -90,12 +125,13 @@ module daddr_trans#(
     logic[2:0] dmw_hit_result;
     logic dmw_miss;
     always_comb begin
-      dmw0_hit = ((csr_i.dmw0[`PLV0] && csr_i.crmd[`PLV] == 2'd0)
-                  || (csr_i.dmw0[`PLV3] && csr_i.crmd[`PLV] == 2'd3))
-               && (vaddr_i[31:29] == csr_i.dmw0[`VSEG]);
-      dmw1_hit = ((csr_i.dmw1[`PLV0] && csr_i.crmd[`PLV] == 2'd0)
-                  || (csr_i.dmw1[`PLV3] && csr_i.crmd[`PLV] == 2'd3))
-               && (vaddr_i[31:29] == csr_i.dmw1[`VSEG]);
+      dmw0_hit = vaddr_i[31:29] == csr_i.dmw0[`VSEG];
+      // ((csr_i.dmw0[`PLV0] && csr_i.crmd[`PLV] == 2'd0)
+      // || (csr_i.dmw0[`PLV3] && csr_i.crmd[`PLV] == 2'd3))
+      // && ;
+      // 权限判断并不在这一级进行，由 M1 检查。
+      // 本级只需要给出所谓虚拟访存结果即可
+      dmw1_hit = vaddr_i[31:29] == csr_i.dmw1[`VSEG];
       dmw_miss = ~(dmw0_hit | dmw1_hit);
       dmw_hit_result = dmw0_hit ? csr_i.dmw0[`PSEG] : csr_i.dmw1[`PSEG];
     end
