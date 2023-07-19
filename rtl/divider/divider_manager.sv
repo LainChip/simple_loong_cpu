@@ -6,6 +6,7 @@ module divider_manager(
 
     input logic[31:0] r0_i,
     input logic[31:0] r1_i,
+    input logic unsigned_i,
     input logic push_valid_i,
     output logic push_ready_o,
     input logic[2:0] push_id_i,
@@ -68,18 +69,20 @@ module divider_manager(
       end
     end
   end
-  divider  divider_i (
-    .clk(clk),
-    .rst_n(rst_n),
-    .div_valid(),
-    .div_ready(div_ready),
-    .res_valid(res_valid),
-    .res_ready(res_ready),
-    .div_signed_i(div_signed_i),
-    .Z_i(Z_i),
-    .D_i(D_i),
-    .q_o(q_o),
-    .s_o(s_o)
-  );
+  assign push_ready_o = ~div_busy_q;
 
-  endmodule
+  divider  divider_i (
+             .clk(clk),
+             .rst_n(rst_n),
+             .div_valid(push_valid_i & push_ready_o),
+             .div_ready(),
+             .res_valid(div_finish),
+             .res_ready(1'b1),
+             .div_signed_i(unsigned_i),
+             .Z_i(r1_i),
+             .D_i(r0_i),
+             .q_o(div_result),
+             .s_o(mod_result)
+           );
+
+endmodule

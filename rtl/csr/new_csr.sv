@@ -129,6 +129,7 @@ module la_csr(
     end
   end
   assign csr_o.crmd = crmd_q;
+
   logic prmd_we,prmd_re;
   assign prmd_we = csr_we && (csr_w_addr_i == `_CSR_PRMD);
   always_ff @(posedge clk) begin
@@ -142,6 +143,7 @@ module la_csr(
     end
   end
   assign csr_o.prmd = prmd_q;
+
   logic euen_we,euen_re;
   assign euen_we = csr_we && (csr_w_addr_i == `_CSR_EUEN);
   always_ff @(posedge clk) begin
