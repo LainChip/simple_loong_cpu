@@ -3,6 +3,7 @@
         "_ALU_GTYPE_BW": "2'd0",
         "_ALU_GTYPE_INT": "2'd1",
         "_ALU_GTYPE_LI": "2'd1",
+        "_ALU_GTYPE_MUL": "2'd1",
         "_ALU_GTYPE_SFT": "2'd2",
         "_ALU_GTYPE_CMP": "2'd3",
 
@@ -15,10 +16,10 @@
         "_ALU_STYPE_LIEMPTYSLOT": "2'b00",
         "_ALU_STYPE_SUB": "2'b10",
         "_ALU_STYPE_PCPLUS4": "2'b10",
-        "_ALU_STYPE_LUI": "2'b01",
         "_ALU_STYPE_INTEMPTYSLOT0": "2'b00",
+        "_ALU_STYPE_LUI": "2'b01",
+        "_ALU_STYPE_INTEMPTYSLOT1": "2'b10",
         "_ALU_STYPE_PCADDUI": "2'b11",
-        "_ALU_STYPE_INTEMPTYSLOT1": "2'b00",
 
         "_ALU_STYPE_SRA": "2'b00",
         "_ALU_STYPE_SLL": "2'b10",
@@ -188,35 +189,38 @@
         "mul.w": {
             "opcode": "00000000000111000",
             "need_mul": 1,
+            "alu_grand_op": "`_ALU_GTYPE_MUL",
             "alu_op": "`_MUL_TYPE_MULL",
             "reg_type_r0": "`_REG_R0_RK",
             "reg_type_r1": "`_REG_R1_RJ",
             "reg_type_w": "`_REG_W_RD",
             "latest_r0_ex": 1,
             "latest_r1_ex": 1,
-            "fu_sel_m2": "`_FUSEL_M2_MUL"
+            "fu_sel_m2": "`_FUSEL_M2_ALU"
         },
         "mulh.w": {
             "opcode": "00000000000111001",
             "need_mul": 1,
+            "alu_grand_op": "`_ALU_GTYPE_MUL",
             "alu_op": "`_MUL_TYPE_MULH",
             "reg_type_r0": "`_REG_R0_RK",
             "reg_type_r1": "`_REG_R1_RJ",
             "reg_type_w": "`_REG_W_RD",
             "latest_r0_ex": 1,
             "latest_r1_ex": 1,
-            "fu_sel_m2": "`_FUSEL_M2_MUL"
+            "fu_sel_m2": "`_FUSEL_M2_ALU"
         },
         "mulh.wu": {
             "opcode": "00000000000111010",
             "need_mul": 1,
+            "alu_grand_op": "`_ALU_GTYPE_MUL",
             "alu_op": "`_MUL_TYPE_MULHU",
             "reg_type_r0": "`_REG_R0_RK",
             "reg_type_r1": "`_REG_R1_RJ",
             "reg_type_w": "`_REG_W_RD",
             "latest_r0_ex": 1,
             "latest_r1_ex": 1,
-            "fu_sel_m2": "`_FUSEL_M2_MUL"
+            "fu_sel_m2": "`_FUSEL_M2_ALU"
         },
         "div.w": {
             "opcode": "00000000001000000",

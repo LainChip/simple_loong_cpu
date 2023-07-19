@@ -283,20 +283,21 @@ module backend(
     logic[31:0] jump_target;
     logic[31:0] vaddr, rel_target;
     detachable_alu #(
-          .USE_LI(1),
-          .USE_INT(0),
-          .USE_SFT(0),
-          .USE_CMP(0)
-        )ex_alu(
-          .grand_op_i(pipeline_ctrl_ex_q[p].decode_info.alu_grand_op),
-          .op_i(pipeline_ctrl_ex_q[p].decode_info.alu_op),
+                     .USE_LI(1),
+                     .USE_INT(0),
+                     .USE_SFT(0),
+                     .USE_CMP(0)
+                   )ex_alu(
+                     .grand_op_i(pipeline_ctrl_ex_q[p].decode_info.alu_grand_op),
+                     .op_i(pipeline_ctrl_ex_q[p].decode_info.alu_op),
 
-          .r0_i(pipeline_data_ex_q[p].r_data[0]),
-          .r1_i(pipeline_data_ex_q[p].r_data[1]),
-          .pc_i(pipeline_ctrl_ex_q[p].pc),
+                     .mul_i('0),
+                     .r0_i(pipeline_data_ex_q[p].r_data[0]),
+                     .r1_i(pipeline_data_ex_q[p].r_data[1]),
+                     .pc_i(pipeline_ctrl_ex_q[p].pc),
 
-          .res_o(alu_result)
-        );
+                     .res_o(alu_result)
+                   );
 
     excp_flow_t ex_excp_flow;
     // ex_excp_flow 产生逻辑
@@ -377,22 +378,23 @@ module backend(
     excp_flow_t m1_excp_flow; // TODO: FIXME
     logic lsu_valid;
     detachable_alu #(
-          .USE_LI(0),
-          .USE_INT(1),
-          .USE_SFT(1),
-          .USE_CMP(1)
-        )m1_alu(
-          .clk(clk),
-          .rst_n(rst_n),
-          .grand_op_i(pipeline_ctrl_m1_q[p].decode_info.alu_grand_op),
-          .op_i(pipeline_ctrl_m1_q[p].decode_info.alu_op),
+                     .USE_LI(0),
+                     .USE_INT(1),
+                     .USE_SFT(1),
+                     .USE_CMP(1)
+                   )m1_alu(
+                     .clk(clk),
+                     .rst_n(rst_n),
+                     .grand_op_i(pipeline_ctrl_m1_q[p].decode_info.alu_grand_op),
+                     .op_i(pipeline_ctrl_m1_q[p].decode_info.alu_op),
 
-          .r0_i(pipeline_data_m1_q[p].r_data[0]),
-          .r1_i(pipeline_data_m1_q[p].r_data[1]),
-          .pc_i(pipeline_ctrl_m1_q[p].pc),
+                     .mul_i('0),
+                     .r0_i(pipeline_data_m1_q[p].r_data[0]),
+                     .r1_i(pipeline_data_m1_q[p].r_data[1]),
+                     .pc_i(pipeline_ctrl_m1_q[p].pc),
 
-          .result_o(alu_result)
-        );
+                     .result_o(alu_result)
+                   );
 
     // M1 的额外部分
     // 跳转的处理：TODO 完成相关模块
@@ -410,17 +412,17 @@ module backend(
           );
     // 异常的处理：完成相关模块
     excp_handler m1_excp(
-      .clk(clk),
-      .rst_n(rst_n),
-      .csr_i(csr_value),
-      .valid_i(!m1_stall && exc_m1_q.valid_inst && exc_m1_q.need_commit),
-      .excp_flow_i(m1_excp_flow),
-      .target_o(excp_target),
-      .trigger_o(m1_excp_detect)
-    );
+                   .clk(clk),
+                   .rst_n(rst_n),
+                   .csr_i(csr_value),
+                   .valid_i(!m1_stall && exc_m1_q.valid_inst && exc_m1_q.need_commit),
+                   .excp_flow_i(m1_excp_flow),
+                   .target_o(excp_target),
+                   .trigger_o(m1_excp_detect)
+                 );
 
     assign m1_target[p] = m1_excp_detect[p] ? excp_target : pipeline_ctrl_m1_q[p].jump_target;
-    
+
     always_comb begin
       m1_invalidate_req[p] = '0;
     end
@@ -461,11 +463,56 @@ module backend(
   /* ------ ------ ------ ------ ------ M2 级 ------ ------ ------ ------ ------ */
   // M2 数据接受前递部分（WB）完全
 
-  // M2 的 FU 部分，接入 ALU、LSU、MUL、CSR
+  for(genvar p = 0 ; p < 2 ; p++) begin
+    // M2 的 FU 部分，接入 ALU、LSU、MUL、CSR
+    logic[31:0] alu_result, lsu_result, mul_result, csr_result;
+    // MUL 结果复用 ALU 传回
+    detachable_alu #(
+                     .USE_LI(0),
+                     .USE_INT(0),
+                     .USE_MUL(1),
+                     .USE_SFT(1),
+                     .USE_CMP(0)
+                   )m2_alu(
+                     .clk(clk),
+                     .rst_n(rst_n),
+                     .grand_op_i(pipeline_ctrl_m2_q[p].decode_info.alu_grand_op),
+                     .op_i(pipeline_ctrl_m2_q[p].decode_info.alu_op),
 
-  // M2 的额外部分
-  // CSR 修改相关指令的执行，如写 CSR、写 TLB、缓存控制均在此处执行。
+                     .mul_i(mul_result),
+                     .r0_i(pipeline_data_m2_q[p].r_data[0]),
+                     .r1_i(pipeline_data_m2_q[p].r_data[1]),
+                     .pc_i(pipeline_ctrl_m2_q[p].pc),
 
+                     .result_o(alu_result)
+                   );
+
+    // M2 的额外部分
+    // CSR 修改相关指令的执行，如写 CSR、写 TLB、缓存控制均在此处执行。
+
+    // M2 的数据选择
+    always_comb begin
+      pipeline_wdata_m2[p] = pipeline_wdata_m1_q[p]; // TODO: FIXME
+      case(pipeline_ctrl_m2_q[p].fu_sel_m1)
+        default: begin
+          // NOTING TO DO
+        end
+        `_FUSEL_M2_ALU: begin
+          pipeline_wdata_m2[p].w_data = alu_result;
+          pipeline_wdata_m2[p].w_flow.w_valid = &pipeline_data_m1_q[p].r_flow.r_ready;
+        end
+        `_FUSEL_M2_MEM: begin
+          pipeline_wdata_m2[p].w_data = lsu_result;
+          pipeline_wdata_m2[p].w_flow.w_valid = 1'b1;
+        end
+        `_FUSEL_M2_CSR: begin
+          pipeline_wdata_m2[p].w_data = csr_result;
+          pipeline_wdata_m2[p].w_flow.w_valid = 1'b1;
+        end
+      endcase
+    end
+  
+  end
   /* ------ ------ ------ ------ ------ WB 级 ------ ------ ------ ------ ------ */
   // 不存在数据前递
 
