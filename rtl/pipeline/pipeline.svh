@@ -112,4 +112,38 @@ typedef struct packed {
           logic[1:0] issue;
         }frontend_resp_t;
 
+typedef struct packed {
+          logic [31:0]    crmd;
+          logic [31:0]    prmd;
+          logic [31:0]    euen;
+          logic [31:0]    ectl;
+          logic [31:0]    estat;
+          logic [31:0]    era;
+          logic [31:0]    badv;
+          logic [31:0]    eentry;
+          logic [31:0]    tlbidx;
+          logic [31:0]    tlbehi;
+          logic [31:0]    tlbelo0;
+          logic [31:0]    tlbelo1;
+          logic [31:0]    asid;
+          logic [31:0]    pgdl;
+          logic [31:0]    pgdh;
+          logic [31:0]    cpuid;
+          logic [31:0]    save0;
+          logic [31:0]    save1;
+          logic [31:0]    save2;
+          logic [31:0]    save3;
+          logic [31:0]    tid;
+          logic [31:0]    tcfg;
+          logic [31:0]    tval;
+          logic [31:0]    cntc;
+          logic [31:0]    ticlr;
+          logic [31:2]    llbctl;
+          logic llbit;
+          logic [31:0]    tlbrentry;
+          logic [31:0]    ctag;
+          logic [31:0]    dmw0;
+          logic [31:0]    dmw1;
+        }csr_t;
+
 `endif

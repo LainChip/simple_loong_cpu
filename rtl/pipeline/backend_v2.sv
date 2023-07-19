@@ -159,6 +159,28 @@ module backend(
                 .result_o(mul_result)
               );
 
+  // TODO: CONNECT CSR
+
+  // CSR 接入 (M1)
+  logic[1:0] csr_r_req;
+  logic[1:0][13:0] csr_r_addr_req;
+  logic[13:0] csr_r_addr;
+
+  // CSR 接入 (M2)
+  logic[1:0] csr_op_req;
+  logic[1:0][13:0] csr_w_addr_req;
+  logic[13:0] csr_w_addr;
+  logic[1:0][31:0] csr_w_data_req,csr_w_mask_req;
+  logic[31:0] csr_r_data,csr_w_data,csr_w_mask;
+
+  // TLB REQ 接入
+  logic[1:0] tlb_req;
+  logic[1:0][4:0] tlb_op_req;
+  logic[4:0] tlb_op; // ONE HOT ENCODING OF TLBSRCH | TLBRD | TLBWR | TLBFILL | INVTLB
+
+  // CSR output
+  csr_t csr_value;
+
   /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
 
   /* ------ ------ ------ ------ ------ IS 级 ------ ------ ------ ------ ------ */
@@ -346,13 +368,96 @@ module backend(
   end
 
   /* ------ ------ ------ ------ ------ M1 级 ------ ------ ------ ------ ------ */
-  // M1 数据接受前递部分（M2、WB） 完全
+  logic[1:0] m1_missed_branch, m1_excp_detect;
+  logic[1:0][31:0] m1_target;
+  for(genvar p = 0 ; p < 2 ; p++) begin
+    // M1 的 FU 部分，接入 ALU、LSU（EARLY）
+    logic[31:0] alu_result, lsu_result;
+    logic[31:0] excp_target; // TODO: CONNECT ME
+    excp_flow_t m1_excp_flow; // TODO: FIXME
+    logic lsu_valid;
+    detachable_alu #(
+          .USE_LI(0),
+          .USE_INT(1),
+          .USE_SFT(1),
+          .USE_CMP(1)
+        )m1_alu(
+          .clk(clk),
+          .rst_n(rst_n),
+          .grand_op_i(pipeline_ctrl_m1_q[p].decode_info.alu_grand_op),
+          .op_i(pipeline_ctrl_m1_q[p].decode_info.alu_op),
 
-  // M1 的 FU 部分，接入 ALU、LSU（EARLY）
+          .r0_i(pipeline_data_m1_q[p].r_data[0]),
+          .r1_i(pipeline_data_m1_q[p].r_data[1]),
+          .pc_i(pipeline_ctrl_m1_q[p].pc),
 
-  // M1 的额外部分
-  // CSR读写地址的输入 / 跳转及异常的处理 ， BARRIER 指令的执行（DBAR、 IBAR）。
+          .result_o(alu_result)
+        );
 
+    // M1 的额外部分
+    // 跳转的处理：TODO 完成相关模块
+    b_cmp m1_cmp(
+            .clk(clk),
+            .rst_n(rst_n),
+            .valid_i(!m1_stall && exc_m1_q.valid_inst && exc_m1_q.need_commit),
+            .branch_type_i(pipeline_ctrl_m1_q[p].decode_info.branch_type),
+            .cmp_type_i(pipeline_ctrl_m1_q[p].decode_info.cmp_type),
+            .bpu_predict_i(pipeline_ctrl_m1_q[p].bpu_predict),
+            .target_i(pipeline_ctrl_m1_q[p].jump_target),
+            .r0_i(pipeline_data_m1_q[p].r_data[0]),
+            .r1_i(pipeline_data_m1_q[p].r_data[1]),
+            .miss_o(m1_missed_branch[p])
+          );
+    // 异常的处理：完成相关模块
+    excp_handler m1_excp(
+      .clk(clk),
+      .rst_n(rst_n),
+      .csr_i(csr_value),
+      .valid_i(!m1_stall && exc_m1_q.valid_inst && exc_m1_q.need_commit),
+      .excp_flow_i(m1_excp_flow),
+      .target_o(excp_target),
+      .trigger_o(m1_excp_detect)
+    );
+
+    assign m1_target[p] = m1_excp_detect[p] ? excp_target : pipeline_ctrl_m1_q[p].jump_target;
+    
+    always_comb begin
+      m1_invalidate_req[p] = '0;
+    end
+    // CSR 控制 TODO: FIXME
+
+    // BARRIER 指令的执行（DBAR、 IBAR）。 TODO：FIXME
+
+    // M1 的结果选择部分: 注意： 转发逻辑不受跳转逻辑影响。 对于跳转指令，本身后续指令流就会被丢弃。
+    always_comb begin
+      pipeline_wdata_m1[p] = pipeline_wdata_m1_q[p]; // TODO: FIXME
+      case(pipeline_ctrl_m1_q[p].fu_sel_m1)
+        default: begin
+          // NOTING TO DO
+        end
+        `_FUSEL_M1_ALU: begin
+          pipeline_wdata_m1[p].w_data = alu_result;
+          pipeline_wdata_m1[p].w_flow.w_valid = &pipeline_data_m1_q[p].r_flow.r_ready;
+        end
+        `_FUSEL_M1_MEM: begin
+          pipeline_wdata_m1[p].w_data = lsu_result;
+          pipeline_wdata_m1[p].w_flow.w_valid = lsu_valid;
+        end
+      endcase
+    end
+
+    // 接入转发源
+    always_comb begin
+      fwd_data_m1[p] = mkfwddata(pipeline_wdata_m1[p]);
+    end
+
+    // 接入暂停请求
+    always_comb begin
+      m1_stall_req[p] = ((pipeline_ctrl_m1_q[p].latest_r0_ex & ~pipeline_data_m1_q[p].r_flow.r_ready[0]) |
+                         (pipeline_ctrl_m1_q[p].latest_r0_ex & ~pipeline_data_m1_q[p].r_flow.r_ready[0]) ) &
+                  exc_m1_q.valid_inst & exc_m1_q.need_commit; // LUT6 - 1
+    end
+  end
   /* ------ ------ ------ ------ ------ M2 级 ------ ------ ------ ------ ------ */
   // M2 数据接受前递部分（WB）完全
 

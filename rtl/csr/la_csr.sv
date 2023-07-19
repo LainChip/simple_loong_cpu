@@ -104,7 +104,7 @@ logic [31:0]    reg_ectl;
 logic [31:0]    reg_estat;
 logic [31:0]    reg_era;
 logic [31:0]    reg_badv;
-(* mark_debug="true" *) logic [31:0]    reg_eentry;
+logic [31:0]    reg_eentry;
 logic [31:0]    reg_tlbidx;
 logic [31:0]    reg_tlbehi;
 logic [31:0]    reg_tlbelo0;
