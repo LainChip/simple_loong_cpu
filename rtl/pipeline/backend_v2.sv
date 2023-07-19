@@ -373,7 +373,9 @@ module backend(
   logic[1:0][31:0] m1_target;
   for(genvar p = 0 ; p < 2 ; p++) begin
     // M1 的 FU 部分，接入 ALU、LSU（EARLY）
-    logic[31:0] alu_result, lsu_result;
+    m1_t decode_info;
+    assign decode_info = pipeline_ctrl_m1_q[p].decode_info;
+    logic[31:0] alu_result, lsu_result, paddr;
     logic[31:0] excp_target; // TODO: CONNECT ME
     excp_flow_t m1_excp_flow; // TODO: FIXME
     logic lsu_valid;
@@ -385,8 +387,8 @@ module backend(
                    )m1_alu(
                      .clk(clk),
                      .rst_n(rst_n),
-                     .grand_op_i(pipeline_ctrl_m1_q[p].decode_info.alu_grand_op),
-                     .op_i(pipeline_ctrl_m1_q[p].decode_info.alu_op),
+                     .grand_op_i(decode_info.alu_grand_op),
+                     .op_i(decode_info.alu_op),
 
                      .mul_i('0),
                      .r0_i(pipeline_data_m1_q[p].r_data[0]),
@@ -402,8 +404,8 @@ module backend(
             .clk(clk),
             .rst_n(rst_n),
             .valid_i(!m1_stall && exc_m1_q.valid_inst && exc_m1_q.need_commit),
-            .branch_type_i(pipeline_ctrl_m1_q[p].decode_info.branch_type),
-            .cmp_type_i(pipeline_ctrl_m1_q[p].decode_info.cmp_type),
+            .branch_type_i(decode_info.branch_type),
+            .cmp_type_i(decode_info.cmp_type),
             .bpu_predict_i(pipeline_ctrl_m1_q[p].bpu_predict),
             .target_i(pipeline_ctrl_m1_q[p].jump_target),
             .r0_i(pipeline_data_m1_q[p].r_data[0]),
@@ -423,9 +425,6 @@ module backend(
 
     assign m1_target[p] = m1_excp_detect[p] ? excp_target : pipeline_ctrl_m1_q[p].jump_target;
 
-    always_comb begin
-      m1_invalidate_req[p] = '0;
-    end
     // CSR 控制 TODO: FIXME
 
     // BARRIER 指令的执行（DBAR、 IBAR）。 TODO：FIXME
@@ -459,11 +458,21 @@ module backend(
                          (pipeline_ctrl_m1_q[p].latest_r0_ex & ~pipeline_data_m1_q[p].r_flow.r_ready[0]) ) &
                   exc_m1_q.valid_inst & exc_m1_q.need_commit; // LUT6 - 1
     end
+
+    // 流水线间信息传递
+    always_comb begin
+      pipeline_ctrl_m2[p].decode_info = get_m2_from_m1(decode_info);
+      pipeline_ctrl_m2[p].vaddr = pipeline_ctrl_m1[p].vaddr;
+      pipeline_ctrl_m2[p].paddr = paddr;
+      pipeline_ctrl_m2[p].pc = pipeline_ctrl_ex_q[p].pc;
+    end
   end
   /* ------ ------ ------ ------ ------ M2 级 ------ ------ ------ ------ ------ */
   // M2 数据接受前递部分（WB）完全
 
   for(genvar p = 0 ; p < 2 ; p++) begin
+    m1_t decode_info;
+    assign decode_info = pipeline_ctrl_m2_q[p].decode_info;
     // M2 的 FU 部分，接入 ALU、LSU、MUL、CSR
     logic[31:0] alu_result, lsu_result, mul_result, csr_result;
     // MUL 结果复用 ALU 传回
@@ -489,6 +498,15 @@ module backend(
 
     // M2 的额外部分
     // CSR 修改相关指令的执行，如写 CSR、写 TLB、缓存控制均在此处执行。
+    always_comb begin
+      tlb_req[p] = decode_info.invtlb_en || decode_info.tlbfill_en || decode_info.tlbwr_en
+             || decode_info.tlbrd_en || decode_info.tlbsrch_en;
+      tlb_op_req[p] = {decode_info.invtlb_en,
+                       decode_info.tlbfill_en,
+                       decode_info.tlbwr_en,
+                       decode_info.tlbrd_en,
+                       decode_info.tlbsrch_en};
+    end
 
     // M2 的数据选择
     always_comb begin
@@ -511,7 +529,14 @@ module backend(
         end
       endcase
     end
-  
+
+    // 流水线间信息传递
+    always_comb begin
+      pipeline_ctrl_wb[p].decode_info = get_wb_from_m2(decode_info);
+      // pipeline_ctrl_wb[p].vaddr = pipeline_ctrl_m2[p].vaddr;
+      // pipeline_ctrl_wb[p].paddr = pipeline_ctrl_m2[p].paddr;
+      pipeline_ctrl_wb[p].pc = pipeline_ctrl_m2_q[p].pc;
+    end
   end
   /* ------ ------ ------ ------ ------ WB 级 ------ ------ ------ ------ ------ */
   // 不存在数据前递
