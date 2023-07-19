@@ -1,9 +1,6 @@
 `ifndef _CSR_HEADER
 `define _CSR_HEADER
 
-`include "common.svh"
-
-
 //INSTR
 `define _INSTR_RJ       9:5
 `define _INSTR_CSR_NUM  23:10
