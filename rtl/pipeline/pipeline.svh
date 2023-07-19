@@ -157,9 +157,14 @@ typedef struct packed {
           logic                                    v1        ;
         } tlb_entry_t;
 
+`define IE        2
+`define DA        3
+`define PG        4
 `define PLV0      0
 `define PLV3      3
 `define DMW_MAT   5:4
+`define DATF   6:5
+`define DATM   8:7
 `define PLV       1:0
 `define PPLV      1:0
 `define PSEG      27:25

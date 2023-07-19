@@ -26,9 +26,40 @@ module daddr_trans#(
     output tlb_s_resp_t tlb_raw_result_o
   );
 
+  logic da_mode;
   tlb_s_resp_t dmw0_fake_tlb;
   tlb_s_resp_t dmw1_fake_tlb;
   logic[2:0] dmw0_vseg,dmw1_vseg; // TODO: FIXME
+
+  always_comb begin
+    da_mode = csr_i.crmd[`DA];
+    dmw0_fake_tlb.dmw = 1'b1;
+    dmw0_fake_tlb.found = 1'b1;
+    dmw0_fake_tlb.index = 5'd0;
+    dmw0_fake_tlb.ps = 6'd12;
+    dmw0_fake_tlb.ppn = '0;
+    dmw0_fake_tlb.v = '1;
+    dmw0_fake_tlb.d = '1;
+    dmw0_fake_tlb.mat = csr_i.dmw0[`DMW_MAT];
+    dmw0_fake_tlb.plv = csr_i.dmw0[`PLV];
+
+    da_mode = csr_i.crmd[`DA];
+    dmw1_fake_tlb.dmw = 1'b1;
+    dmw1_fake_tlb.found = 1'b1;
+    dmw1_fake_tlb.index = 5'd0;
+    dmw1_fake_tlb.ps = 6'd12;
+    dmw1_fake_tlb.ppn = '0;
+    dmw1_fake_tlb.v = '1;
+    dmw1_fake_tlb.d = '1;
+    dmw1_fake_tlb.mat = csr_i.dmw1[`DMW_MAT];
+    dmw1_fake_tlb.plv = csr_i.dmw1[`PLV];
+    if(da_mode) begin
+      dmw0_fake_tlb.mat = csr_i.crmd[`DATM];
+      dmw0_fake_tlb.plv = csr_i.crmd[`PLV];
+      dmw1_fake_tlb.mat = csr_i.crmd[`DATM];
+      dmw1_fake_tlb.plv = csr_i.crmd[`PLV];
+    end
+  end
 
   if(ENABLE_TLB) begin
     logic[7:0][1:0] valid_table_q;
@@ -46,12 +77,17 @@ module daddr_trans#(
       if(!m1_stall_i) begin
         m1_result_q <= table_tmp_q[vaddr_i[31:29]];
         m1_tlb_vaddr_miss_q <= tlb_vaddr_q[vaddr_i[31:29]] != vaddr_i[28:12];
-        valid_q <= valid_table_q[vaddr_i[31:29]];
-        istlb_q <= istlb_table_q[vaddr_i[31:29]];
+        valid_q <= valid_table_q[vaddr_i[31:29]] || !valid_i || da_mode;
+        istlb_q <= istlb_table_q[vaddr_i[31:29]] && !da_mode;
         vaddr_q <= vaddr_i;
       end
       else begin
-
+        if(m1_miss) begin
+          m1_result_q <= tlb_resp_i;
+          m1_tlb_vaddr_miss_q <= !tlb_req_ready_i;
+          valid_q <= tlb_req_ready_i;
+          istlb_q <= tlb_req_ready_i;
+        end
       end
     end
 
@@ -100,19 +136,24 @@ module daddr_trans#(
       end
     end
     always_ff @(posedge clk) begin
-      if(!rst_n) begin
+      if(!rst_n || flush_trans_i) begin
         valid_table_q <= '0;
       end
       else begin
         if(fsm_q == TRANS_FSM_DMW0) begin
           valid_table_q[dmw0_vseg] <= 1'b1;
-          istlb_table_q[] <= 1'b0;
+          istlb_table_q[dmw0_vseg] <= 1'b0;
           table_tmp_q[dmw0_vseg] <= dmw0_fake_tlb;
         end
         else if(fsm_q == TRANS_FSM_DMW1) begin
-          valid_table_q[csr_i.dmw0[`VSEG]] <= 1'b1;
-          istlb_table_q[csr_i.dmw0[`VSEG]] <= 1'b0;
-          table_tmp_q[csr_i.dmw0[`VSEG]] <= dmw0_fake_tlb;
+          valid_table_q[dmw1_vseg] <= 1'b1;
+          istlb_table_q[dmw1_vseg] <= 1'b0;
+          table_tmp_q[dmw1_vseg] <= dmw1_fake_tlb;
+        end
+        else if(fsm_q == TRANS_FSM_TLB) begin
+          valid_table_q[vaddr_q[31:29]] <= 1'b1;
+          istlb_table_q[vaddr_q[31:29]] <= 1'b1;
+          table_tmp_q[vaddr_q[31:29]] <= tlb_resp_i;
         end
       end
     end
@@ -145,7 +186,15 @@ module daddr_trans#(
     end
     always_ff @(posedge clk) begin
       if(!m1_stall_i) begin
-        paddr_o <= paddr;
+        tlb_raw_result_o.dmw <= '1;
+        tlb_raw_result_o.ppn <= paddr[31:12];
+        tlb_raw_result_o.index <= '0;
+        tlb_raw_result_o.found <= '1;
+        tlb_raw_result_o.ps <= 6'd12;
+        tlb_raw_result_o.v <= 1;
+        tlb_raw_result_o.d <= 1;
+        tlb_raw_result_o.mat <= dmw1_hit ? dmw1_fake_tlb.mat : dmw0_fake_tlb.mat;
+        tlb_raw_result_o.plv <= dmw1_hit ? dmw1_fake_tlb.plv : dmw0_fake_tlb.plv;
       end
     end
     assign ready_o = 1'b1;
