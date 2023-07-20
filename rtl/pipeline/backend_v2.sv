@@ -242,30 +242,59 @@ module backend(
   // TODO: CONNECT CSR
 
   // CSR 接入 (M1)
-  logic[1:0] csr_r_req;
-  logic[1:0][13:0] csr_r_addr_req;
   logic[13:0] csr_r_addr;
+  logic csr_rdcnt;
 
   // CSR 接入 (M2)
-  logic[1:0] csr_op_req;
-  logic[1:0][13:0] csr_w_addr_req;
+  logic[1:0] csr_excp_req;
+  logic[1:0] m2_valid_req;
+  logic[1:0] m2_commit_req;
+  logic[1:0][31:0] m2_badv_req;
+  excp_flow_t [1:0] m2_excp_req;
+  logic csr_we;
+  logic csr_valid,csr_commit;
+  logic[31:0] csr_badv;
+  excp_flow_t [1:0] csr_excp;
   logic[13:0] csr_w_addr;
-  logic[1:0][31:0] csr_w_data_req,csr_w_mask_req;
   logic[31:0] csr_r_data,csr_w_data,csr_w_mask;
+  always_comb begin
+    csr_valid = (csr_we | csr_excp_req[0]) ? m2_valid_req[0] : m2_valid_req[1];
+    csr_commit = (csr_we | csr_excp_req[0]) ? m2_commit_req[0] : m2_commit_req[1];
+    csr_badv = csr_excp_req[0] ? m2_badv_req[0] : m2_badv_req[1];
+    csr_excp = csr_excp_req[0] ? m2_excp_req[0] : m2_excp_req[1];
+  end
 
   // TLB REQ 接入
-  logic[1:0] ctlb_req;
-  tlb_op_t[1:0] tlb_op_req;
   tlb_op_t tlb_op; // ONE HOT ENCODING OF TLBSRCH | TLBRD | TLBWR | TLBFILL | INVTLB
 
   // CACHE | MMU opcode 接入
-  logic[1:0][4:0] ctlb_opcode_req;
   logic[4:0] ctlb_opcode;
-  assign tlb_op = ctlb_req[0] ? tlb_op_req[0] : tlb_op_req[1];
-  assign ctlb_opcode = ctlb_req[0] ? ctlb_opcode_req[0] : ctlb_opcode_req[1];
 
   // CSR output
   csr_t csr_value;
+
+  la_csr  la_csr_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .excp_i(csr_excp),
+    .valid_i(csr_valid),
+    .commit_i(csr_commit),
+    .m2_stall_i(m2_stall),
+    .csr_r_addr_i(csr_r_addr),
+    .rdcnt_i(csr_rdcnt),
+    .csr_we_i(csr_we),
+    .csr_w_addr_i(csr_w_addr),
+    .csr_w_mask_i(csr_w_mask),
+    .csr_w_data_i(csr_w_data),
+    .badv_i(csr_badv),
+    .tlb_op_i(tlb_op),
+    .tlb_srch_i(/*TODO*/),
+    .tlb_entry_i(/*TODO*/),
+    .llbit_set_i(/*TODO*/),
+    .llbit_i(/*TODO*/),
+    .csr_r_data_o(csr_r_data),
+    .csr_o(csr_value)
+  );
 
   /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
 

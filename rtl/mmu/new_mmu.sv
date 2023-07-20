@@ -20,9 +20,7 @@ module mmu #(
     output tlb_w_req_t tlb_w_req_o,
     output tlb_inv_req_t tlb_inv_req_o
   );
-  always_comb begin
-    tlb_inv_req_o.en = tlb_op_i.invtlb;
-    tlb_inv_req_o.op = tlb_op_i.;
-  end
+
+  // TODO: FINISH ME.
 
 endmodule
