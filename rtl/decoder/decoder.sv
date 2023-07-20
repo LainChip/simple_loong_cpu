@@ -638,7 +638,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -688,7 +688,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1038,7 +1038,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1088,7 +1088,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1138,7 +1138,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1188,7 +1188,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1238,7 +1238,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1288,7 +1288,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1338,7 +1338,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1388,7 +1388,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;
@@ -1438,7 +1438,7 @@ module decoder(
                 is_o.need_csr = 1'd0;
                 is_o.need_mul = 1'd0;
                 is_o.need_div = 1'd0;
-                is_o.need_lsu = 1'd0;
+                is_o.need_lsu = 1'd1;
                 is_o.need_bpu = 1'd0;
                 is_o.latest_r0_ex = 1'd0;
                 is_o.latest_r0_m1 = 1'd0;

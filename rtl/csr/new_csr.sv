@@ -66,7 +66,7 @@ module la_csr(
   logic ertn_tlbr_valid;
 
   logic [5 :0] ecode;   // TODO
-  logic [8 :0] esubcode // TODO
+  logic [8 :0] esubcode; // TODO
   logic [31:0] era, badva; // TODO
   logic va_error;
 
@@ -221,7 +221,7 @@ module la_csr(
         estat_q[11] <= 1'b0;
       end 
       else if (tcfg_we) begin
-        timer_en <= csr_w_data[`TCFG_EN];
+        timer_en <= csr_w_data[`_TCFG_EN];
       end
       else if (timer_en && (tval_q == 32'b0)) begin
         estat_q[11] <= 1'b1;
@@ -321,7 +321,7 @@ module la_csr(
       end 
       else if (tlbrd_invalid_wr_en) begin
         tlbidx_q[`_TLBIDX_PS] <= 6'b0;
-        tlbidx_q[`_TLBIDX_NE] <= ~tlb_entry_t.e;
+        tlbidx_q[`_TLBIDX_NE] <= ~tlb_entry_i.e;
       end
     end
   end
