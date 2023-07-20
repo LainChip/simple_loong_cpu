@@ -56,42 +56,42 @@ typedef logic priv_req_t;
 `define _BHT_DATA_WIDTH 4
 `define _BPU_DIRECTION_FIXED (1'd0)
 `define _BPU_DIRECTION_CONDITION (1'd1)
-`define _BPU_TARGET_NPC  (2'd0) 
+`define _BPU_TARGET_NPC  (2'd0)
 `define _BPU_TARGET_CALL (2'd1)
 `define _BPU_TARGET_RETURN (2'd2)
 `define _BPU_TARGET_IMM (2'd3)
 
 typedef struct {
-        logic fsc;
-        logic[31:2] target_pc;
-        logic[`_BTB_TAG_ADDR_WIDTH  - 1 : 0 ] tag;
-        logic dir_type;
-        logic[1:0] branch_type;
-      }btb_t;
+          logic fsc;
+          logic[31:2] target_pc;
+          logic[`_BTB_TAG_ADDR_WIDTH  - 1 : 0 ] tag;
+          logic dir_type;
+          logic[1:0] branch_type;
+        }btb_t;
 typedef struct packed {
-	logic taken;
-	logic [31:0] predict_pc;
-	logic [1:0] lphr;
-	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
-        logic dir_type;
-        logic true_dir;
-} bpu_predict_t;
+          logic taken;
+          logic [31:0] predict_pc;
+          logic [1:0] lphr;
+          logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
+          logic dir_type;
+          logic true_dir;
+        } bpu_predict_t;
 typedef struct packed {
-        logic miss;
-        logic [31:0] pc;
-	logic true_taken;
-        logic [31:0] true_target;
-	logic [1:0] lphr;
-	logic [`_BHT_DATA_WIDTH- 1:0] history;
+          logic miss;
+          logic [31:0] pc;
+          logic true_taken;
+          logic [31:0] true_target;
+          logic [1:0] lphr;
+          logic [`_BHT_DATA_WIDTH- 1:0] history;
 
-        logic miss_dir_type;
-        logic true_dir;
+          logic miss_dir_type;
+          logic true_dir;
 
-        logic miss_target_type;
-        logic[1:0] true_target_type;
+          logic miss_target_type;
+          logic[1:0] true_target_type;
 
-        logic [`_RAS_ADDR_WIDTH - 1: 0] ras_ptr;
-} bpu_correct_t;
+          logic [`_RAS_ADDR_WIDTH - 1: 0] ras_ptr;
+        } bpu_correct_t;
 // 解码出来的寄存器信息
 typedef struct packed{
           logic [1:0][4:0] r_reg; // 0 for rk, 1 for rj
@@ -196,6 +196,9 @@ typedef struct packed {
 typedef struct packed {
           logic[1:0] inst_valid;
           inst_t[1:0] inst;
+
+          // ICACHE INSTRUCTION
+          logic icache_ready;
         }frontend_req_t;
 typedef struct packed {
           logic[1:0] issue;
@@ -204,6 +207,23 @@ typedef struct packed {
           logic tlb_we;
           logic[$clog2(`_TLB_ENTRY_NUM) - 1 : 0] tlb_w_index_i;
           tlb_entry_t tlb_w_entry_i;
+
+          // BRANCH RELATED
+          logic rst_jmp;
+          logic[31:0] rst_jmp_target;
+          bpu_correct_t bpu_correct;
+
+          // WAIT INSTRUCTION
+          logic wait_inst;
+          logic int_detect;
+
+          // ICACHE INSTRUCTION
+          logic icache_op_valid;
+          logic[1:0] icache_op;
+          logic[31:0] icacheop_addr;
+
+          // BUS CONTROLLING
+          logic bus_busy;
         }frontend_resp_t;
 
 `define IE        2

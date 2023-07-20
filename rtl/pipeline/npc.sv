@@ -31,7 +31,7 @@ endfunction
 
 module npc(
     input logic clk,
-    input logic rst,
+    input logic rst_n,
 
     input logic rst_jmp,
     input logic[31:0] rst_target,
@@ -123,6 +123,9 @@ module npc(
           end
         end
       end
+    end
+    if(f_stall_i) begin
+      valid_o = 2'b00;
     end
   end
 
