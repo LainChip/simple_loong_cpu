@@ -6,7 +6,6 @@
 `define _TLB_ENTRY_NUM (32)
 `define _TLB_PORT (2)
 
-
         typedef struct packed {
           logic  [18:0] vppn;
           logic  [ 5:0] ps;
@@ -48,6 +47,43 @@ typedef struct packed {
 typedef logic priv_resp_t;
 typedef logic priv_req_t;
 
+// 分支预测信息
+`define _BTB_ADDR_WIDTH 10
+`define _TAG_ADDR_WIDTH 6
+`define _LPHT_ADDR_WIDTH 8
+`define _RAS_ADDR_WIDTH 3
+`define _BHT_ADDR_WIDTH 6
+`define _BHT_DATA_WIDTH 4
+`define _BPU_DIRECTION_FIXED (1'd0)
+`define _BPU_DIRECTION_CONDITION (1'd1)
+`define _BPU_TARGET_NPC  (2'd0) 
+`define _BPU_TARGET_CALL (2'd1)
+`define _BPU_TARGET_RETURN (2'd2)
+`define _BPU_TARGET_IMM (2'd3)
+typedef struct packed {
+	logic taken;
+	logic [31:0] predict_pc;
+	logic [1:0] lphr;
+	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
+        logic dir_type;
+        logic true_dir;
+} bpu_predict_t;
+typedef struct packed {
+        logic miss;
+        logic [31:0] pc;
+	logic true_taken;
+        logic [31:0] true_target;
+	logic [1:0] lphr;
+	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
+
+        logic miss_dir_type;
+        logic true_dir;
+
+        logic miss_target_type;
+        logic[1:0] true_target_type;
+
+        logic [`_RAS_ADDR_WIDTH - 1: 0] ras_ptr;
+} bpu_correct_t;
 // 解码出来的寄存器信息
 typedef struct packed{
           logic [1:0][4:0] r_reg; // 0 for rk, 1 for rj
@@ -216,5 +252,6 @@ typedef struct packed{
           logic tlbrd;
           logic tlbsrch;
         } tlb_op_t;
+
 
 `endif

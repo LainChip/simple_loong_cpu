@@ -3,7 +3,8 @@
 module sim_dpram_byteen
 #( 
     parameter int WIDTH = 32,
-    parameter int DEPTH = 256
+    parameter int DEPTH = 256,
+    parameter int LATENCY = 1
 )
 (
     input                          clka,
