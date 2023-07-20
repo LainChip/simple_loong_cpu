@@ -138,7 +138,7 @@ module frontend(
            .attached_i(f_predict),
 
            // TLB INTERFACE
-           .mmu_req_vpc_o,
+        //    .mmu_req_vpc_o,
            .mmu_resp_i(/*TODO*/),
 
            .vpc_o(m_pc),

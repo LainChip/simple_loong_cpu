@@ -18,9 +18,9 @@ module iaddr_trans#(
     input csr_t csr_i,
     input logic flush_i, // trigger when address translation change.
 
-    output tlb_s_req_t tlb_req_o,
+    // TLB LOOKUP INTERFACE
+    output logic[31:12] tlb_req_vppn,
     output logic tlb_req_valid_o,
-
     input logic tlb_req_ready_i,
     input tlb_s_resp_t tlb_resp_i
   );
@@ -57,6 +57,8 @@ module iaddr_trans#(
       end
     end
     assign paddr_q[31:29] = '0;
+    assign paddr_o = paddr_q;
+    assign ready_o = 1'b1;
     // assign fetch_excp_o.adef = ;
     always_ff@(posedge clk) begin
       fetch_excp_o.adef <= (|vaddr_i[1:0]) || (!da_mode && !dmw0_hit && !dmw1_hit);
@@ -66,6 +68,8 @@ module iaddr_trans#(
     assign fetch_excp_o.tlbr = '0;
     assign fetch_excp_o.pif = '0;
     assign fetch_excp_o.ppi = '0;
+    assign tlb_req_vppn = '0;
+    assign tlb_req_valid_o = '0;
   end
 
 endmodule
