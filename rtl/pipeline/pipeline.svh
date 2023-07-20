@@ -6,8 +6,46 @@
 `define _TLB_ENTRY_NUM (32)
 `define _TLB_PORT (2)
 
-        // TODO
-        typedef logic priv_resp_t;
+
+        typedef struct packed {
+          logic  [18:0] vppn;
+          logic  [ 5:0] ps;
+          logic g;
+          logic [ 9:0] asid;
+          logic e;
+        } tlb_key_t;
+
+typedef struct packed{
+          logic [19:0] ppn;
+          logic [ 1:0] plv;
+          logic [ 1:0] mat;
+          logic d;
+          logic v;
+        } tlb_value_t;
+
+typedef struct packed {
+          logic dmw;
+          logic found;
+          logic [$clog2(`_TLB_ENTRY_NUM)-1:0] index;
+          logic [5:0] ps;
+          tlb_value_t value;
+        } tlb_s_resp_t;
+
+typedef struct packed {
+          tlb_key_t key;
+          tlb_value_t [1:0]value;
+        } tlb_entry_t;
+
+typedef struct packed {
+          logic clr_global;
+          logic clr_nonglobal;
+          logic clr_nonglobal_check_asid;
+          logic clr_nonglobal_check_vpn;
+          logic [ 9:0] asid;
+          logic [18:0] vpn;
+        } tlb_inv_req_t;
+// TODO
+typedef logic priv_resp_t;
 typedef logic priv_req_t;
 
 // 解码出来的寄存器信息
@@ -117,45 +155,13 @@ typedef struct packed {
         }frontend_req_t;
 typedef struct packed {
           logic[1:0] issue;
+
+          // TLB RELATED
+          logic tlb_we;
+          logic[$clog2(`_TLB_ENTRY_NUM) - 1 : 0] tlb_w_index_i;
+          tlb_entry_t tlb_w_entry_i;
         }frontend_resp_t;
 
-typedef struct packed {
-          logic  [18:0] vppn;
-          logic  [ 5:0] ps;
-          logic g;
-          logic [ 9:0] asid;
-          logic e;
-        } tlb_key_t;
-
-typedef struct packed{
-          logic [19:0] ppn;
-          logic [ 1:0] plv;
-          logic [ 1:0] mat;
-          logic d;
-          logic v;
-        } tlb_value_t;
-
-typedef struct packed {
-          logic dmw;
-          logic found;
-          logic [$clog2(`_TLB_ENTRY_NUM)-1:0] index;
-          logic [5:0] ps;
-          tlb_value_t value;
-        } tlb_s_resp_t;
-
-typedef struct packed {
-          tlb_key_t key;
-          tlb_value_t [1:0]value;
-        } tlb_entry_t;
-
-typedef struct packed {
-          logic clr_global;
-          logic clr_nonglobal;
-          logic clr_nonglobal_check_asid;
-          logic clr_nonglobal_check_vpn;
-          logic [ 9:0] asid;
-          logic [18:0] vpn;
-        } tlb_inv_req_t;
 `define IE        2
 `define DA        3
 `define PG        4

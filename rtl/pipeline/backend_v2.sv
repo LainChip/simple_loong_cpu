@@ -15,10 +15,7 @@ module backend(
     output frontend_resp_t frontend_resp_o,
 
     input cache_bus_resp_t bus_resp_i,
-    output cache_bus_req_t bus_req_o,
-
-    output tlb_w_req_t itlb_w_req_o,
-    output tlb_inv_req_t itlb_inv_req_o
+    output cache_bus_req_t bus_req_o
   );
 
   /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
@@ -145,21 +142,21 @@ module backend(
   dram_manager_resp_t[1:0] dm_resp;
   dram_manager_snoop_t dm_snoop;
   lsu_dm # (
-    .PIPE_MANAGE_NUM(2),
-    .BANK_NUM(2),
-    .WAY_CNT(1),
-    .SLEEP_CNT(4)
-  )
-  lsu_dm_inst (
-    .clk(clk),
-    .rst_n(rst_n),
-    .dm_req_i(dm_req),
-    .dm_resp_o(dm_resp),
-    .dm_snoop_i(dm_snoop),
-    .bus_req_o(bus_req_o),
-    .bus_resp_i(bus_resp_i),
-    .bus_busy_o(bus_busy_o)
-  );
+           .PIPE_MANAGE_NUM(2),
+           .BANK_NUM(2),
+           .WAY_CNT(1),
+           .SLEEP_CNT(4)
+         )
+         lsu_dm_inst (
+           .clk(clk),
+           .rst_n(rst_n),
+           .dm_req_i(dm_req),
+           .dm_resp_o(dm_resp),
+           .dm_snoop_i(dm_snoop),
+           .bus_req_o(bus_req_o),
+           .bus_resp_i(bus_resp_i),
+           .bus_busy_o(bus_busy_o)
+         );
   // LSU 端口实例化
   logic m1_lsu_busy,m2_lsu_busy;
   logic[1:0] ex_mem_read,m1_mem_read,m2_mem_valid,m1_mem_uncached,m2_mem_uncached;
@@ -173,40 +170,40 @@ module backend(
   logic[1:0][2:0] m2_mem_op;
   for(genvar p = 0 ; p < 2 ; p ++) begin
     lsu # (
-      .WAY_CNT(1)
-    )
-    lsu_inst (
-      .clk(clk),
-      .rst_n(rst_n),
-      .ex_vaddr_i(ex_mem_vaddr[p]),
-      .ex_valid_i(ex_mem_read[p]),
-      .m1_vaddr_i(m1_mem_vaddr[p]),
-      .m1_paddr_i(m1_mem_paddr[p]),
-      .m1_strobe_i(m1_mem_strobe[p]),
-      .m1_read_i(m1_mem_read[p]),
-      .m1_uncached_i(m1_mem_uncached[p]),
-      .m1_busy_o(m1_lsu_busy[p]),
-      .m1_stall_i(m1_stall[p]),
-      .m1_rdata_o(m1_mem_rdata[p]),
-      .m1_rvalid_o(m1_mem_rvalid[p]),
-      .m2_vaddr_i(m2_mem_vaddr[p]),
-      .m2_paddr_i(m2_mem_paddr[p]),
-      .m2_wdata_i(m2_mem_wdata[p]),
-      .m2_strobe_i(m2_mem_strobe[p]),
-      .m2_valid_i(m2_mem_valid[p]),
-      .m2_uncached_i(m2_mem_uncached[p]),
-      .m2_size_i(m2_mem_size[p]),
-      .m2_busy_o(m2_lsu_busy[p]),
-      .m2_stall_i(m2_stall[p]),
-      .m2_op_i(m2_mem_op[p]),
-      .m2_rdata_o(m2_mem_rdata[p]),
-      .m2_rvalid_o(m2_mem_rvalid[p]),
-      .wb_rdata_o(),
-      .wb_rvalid_o(),
-      .dm_req_o(dm_req[p]),
-      .dm_resp_i(dm_resp[p]),
-      .dm_snoop_i(dm_snoop)
-    );
+          .WAY_CNT(1)
+        )
+        lsu_inst (
+          .clk(clk),
+          .rst_n(rst_n),
+          .ex_vaddr_i(ex_mem_vaddr[p]),
+          .ex_valid_i(ex_mem_read[p]),
+          .m1_vaddr_i(m1_mem_vaddr[p]),
+          .m1_paddr_i(m1_mem_paddr[p]),
+          .m1_strobe_i(m1_mem_strobe[p]),
+          .m1_read_i(m1_mem_read[p]),
+          .m1_uncached_i(m1_mem_uncached[p]),
+          .m1_busy_o(m1_lsu_busy[p]),
+          .m1_stall_i(m1_stall[p]),
+          .m1_rdata_o(m1_mem_rdata[p]),
+          .m1_rvalid_o(m1_mem_rvalid[p]),
+          .m2_vaddr_i(m2_mem_vaddr[p]),
+          .m2_paddr_i(m2_mem_paddr[p]),
+          .m2_wdata_i(m2_mem_wdata[p]),
+          .m2_strobe_i(m2_mem_strobe[p]),
+          .m2_valid_i(m2_mem_valid[p]),
+          .m2_uncached_i(m2_mem_uncached[p]),
+          .m2_size_i(m2_mem_size[p]),
+          .m2_busy_o(m2_lsu_busy[p]),
+          .m2_stall_i(m2_stall[p]),
+          .m2_op_i(m2_mem_op[p]),
+          .m2_rdata_o(m2_mem_rdata[p]),
+          .m2_rvalid_o(m2_mem_rvalid[p]),
+          .wb_rdata_o(),
+          .wb_rvalid_o(),
+          .dm_req_o(dm_req[p]),
+          .dm_resp_i(dm_resp[p]),
+          .dm_snoop_i(dm_snoop)
+        );
   end
 
   // MUL 端口实例化
@@ -274,27 +271,27 @@ module backend(
   csr_t csr_value;
 
   la_csr  la_csr_inst (
-    .clk(clk),
-    .rst_n(rst_n),
-    .excp_i(csr_excp),
-    .valid_i(csr_valid),
-    .commit_i(csr_commit),
-    .m2_stall_i(m2_stall),
-    .csr_r_addr_i(csr_r_addr),
-    .rdcnt_i(csr_rdcnt),
-    .csr_we_i(csr_we),
-    .csr_w_addr_i(csr_w_addr),
-    .csr_w_mask_i(csr_w_mask),
-    .csr_w_data_i(csr_w_data),
-    .badv_i(csr_badv),
-    .tlb_op_i(tlb_op),
-    .tlb_srch_i(/*TODO*/),
-    .tlb_entry_i(/*TODO*/),
-    .llbit_set_i(/*TODO*/),
-    .llbit_i(/*TODO*/),
-    .csr_r_data_o(csr_r_data),
-    .csr_o(csr_value)
-  );
+            .clk(clk),
+            .rst_n(rst_n),
+            .excp_i(csr_excp),
+            .valid_i(csr_valid),
+            .commit_i(csr_commit),
+            .m2_stall_i(m2_stall),
+            .csr_r_addr_i(csr_r_addr),
+            .rdcnt_i(csr_rdcnt),
+            .csr_we_i(csr_we),
+            .csr_w_addr_i(csr_w_addr),
+            .csr_w_mask_i(csr_w_mask),
+            .csr_w_data_i(csr_w_data),
+            .badv_i(csr_badv),
+            .tlb_op_i(tlb_op),
+            .tlb_srch_i(/*TODO*/),
+            .tlb_entry_i(/*TODO*/),
+            .llbit_set_i(/*TODO*/),
+            .llbit_i(/*TODO*/),
+            .csr_r_data_o(csr_r_data),
+            .csr_o(csr_value)
+          );
 
   /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
 
@@ -462,7 +459,7 @@ module backend(
     // 接入 dcache
     assign ex_mem_read[p] = decode_info.mem_read;
     assign ex_mem_vaddr[p] = vaddr;
-  
+
     // 接入 mul
     always_comb begin
       mul_req[p] = pipeline_ctrl_ex_q[p].decode_info.need_mul;
@@ -613,21 +610,21 @@ module backend(
 
     // M2 的额外部分
     // CSR 修改相关指令的执行，如写 CSR、写 TLB、缓存控制均在此处执行。
-    always_comb begin
-      ctlb_req[p] = decode_info.invtlb_en || decode_info.tlbfill_en || decode_info.tlbwr_en
-              || decode_info.tlbrd_en || decode_info.tlbsrch_en || decode_info.mem_cacop;
-      {
-        tlb_op_req[p].invtlb,
-        tlb_op_req[p].tlbfill,
-        tlb_op_req[p].tlbwr,
-        tlb_op_req[p].tlbrd,
-        tlb_op_req[p].tlbsrch
-      } = {
-        decode_info.invtlb_en,
-        decode_info.tlbfill_en,
-        decode_info.tlbwr_en,
-        decode_info.tlbrd_en,
-        decode_info.tlbsrch_en};
+    if( p == 0) begin
+      always_comb begin
+        {
+          tlb_op_req.invtlb,
+          tlb_op_req.tlbfill,
+          tlb_op_req.tlbwr,
+          tlb_op_req.tlbrd,
+          tlb_op_req.tlbsrch
+        } = {
+          decode_info.invtlb_en,
+          decode_info.tlbfill_en,
+          decode_info.tlbwr_en,
+          decode_info.tlbrd_en,
+          decode_info.tlbsrch_en};
+      end
     end
 
     // M2 的数据选择

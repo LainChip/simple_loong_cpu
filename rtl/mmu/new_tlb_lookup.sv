@@ -62,7 +62,8 @@ module tlb_lookup_0_stage#(
 endmodule
 
 module tlb_lookup_1_stage#(
-    parameter TLB_ENTRY_NUM = 32
+    parameter TLB_ENTRY_NUM = 32,
+    parameter bit TLB_SUPPORT_4M_PAGE = 0
   )(
     input logic clk,
     input logic rst_n,
@@ -71,5 +72,21 @@ module tlb_lookup_1_stage#(
     input logic[31:0] vaddr_i,
     output tlb_s_resp_t tlb_s_resp_o
   );
-
+  tlb_s_resp_t tlb_s_resp_q,tlb_s_resp;
+  tlb_lookup_0_stage # (
+    .TLB_ENTRY_NUM(TLB_ENTRY_NUM),
+    .TLB_SUPPORT_4M_PAGE(TLB_SUPPORT_4M_PAGE)
+  )
+  tlb_lookup_0_stage_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .asid(asid),
+    .entries_i(entries_i),
+    .vaddr_i(vaddr_i),
+    .tlb_s_resp_o(tlb_s_resp)
+  );
+  always_ff@(posedge clk) begin
+    tlb_s_resp_q <= tlb_s_resp;
+  end
+  assign tlb_s_resp_o = tlb_s_resp_q;
 endmodule
