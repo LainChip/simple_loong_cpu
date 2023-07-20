@@ -49,7 +49,7 @@ typedef logic priv_req_t;
 
 // 分支预测信息
 `define _BTB_ADDR_WIDTH 10
-`define _TAG_ADDR_WIDTH 6
+`define _BTB_TAG_ADDR_WIDTH 6
 `define _LPHT_ADDR_WIDTH 8
 `define _RAS_ADDR_WIDTH 3
 `define _BHT_ADDR_WIDTH 6
@@ -60,6 +60,14 @@ typedef logic priv_req_t;
 `define _BPU_TARGET_CALL (2'd1)
 `define _BPU_TARGET_RETURN (2'd2)
 `define _BPU_TARGET_IMM (2'd3)
+
+typedef struct {
+        logic fsc;
+        logic[31:2] target_pc;
+        logic[`_BTB_TAG_ADDR_WIDTH  - 1 : 0 ] tag;
+        logic dir_type;
+        logic[1:0] branch_type;
+      }btb_t;
 typedef struct packed {
 	logic taken;
 	logic [31:0] predict_pc;
@@ -74,7 +82,7 @@ typedef struct packed {
 	logic true_taken;
         logic [31:0] true_target;
 	logic [1:0] lphr;
-	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
+	logic [`_BHT_DATA_WIDTH- 1:0] history;
 
         logic miss_dir_type;
         logic true_dir;
