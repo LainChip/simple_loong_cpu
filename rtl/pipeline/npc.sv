@@ -81,7 +81,7 @@ module npc(
 
   // btb 生成
   simpleDualPortRamRE # (
-                        .dataWidth(dataWidth),
+                        .dataWidth(),
                         .ramSize(),
                         .latency(1),
                         .readMuler(1)
