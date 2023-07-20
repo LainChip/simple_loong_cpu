@@ -1,4 +1,3 @@
-
 `include "../pipeline/pipeline.svh"
 
 module daddr_trans#(
@@ -29,10 +28,12 @@ module daddr_trans#(
   logic da_mode;
   tlb_s_resp_t dmw0_fake_tlb;
   tlb_s_resp_t dmw1_fake_tlb;
-  logic[2:0] dmw0_vseg,dmw1_vseg; // TODO: FIXME
+  logic[2:0] dmw0_vseg,dmw1_vseg;
+  logic plv0, plv3; 
 
   always_comb begin
     da_mode = csr_i.crmd[`DA];
+    dmw0_vseg = csr_i.dmw0[`VSEG];
     dmw0_fake_tlb.dmw = 1'b1;
     dmw0_fake_tlb.found = 1'b1;
     dmw0_fake_tlb.index = 5'd0;
@@ -43,7 +44,7 @@ module daddr_trans#(
     dmw0_fake_tlb.mat = csr_i.dmw0[`DMW_MAT];
     dmw0_fake_tlb.plv = csr_i.dmw0[`PLV];
 
-    da_mode = csr_i.crmd[`DA];
+    dmw1_vseg = csr_i.dmw1[`VSEG];
     dmw1_fake_tlb.dmw = 1'b1;
     dmw1_fake_tlb.found = 1'b1;
     dmw1_fake_tlb.index = 5'd0;
@@ -59,6 +60,8 @@ module daddr_trans#(
       dmw1_fake_tlb.mat = csr_i.crmd[`DATM];
       dmw1_fake_tlb.plv = csr_i.crmd[`PLV];
     end
+    plv0 = csr_i.crmd[`PLV] == 2'd0;
+    plv3 = csr_i.crmd[`PLV] == 2'd3;
   end
 
   if(ENABLE_TLB) begin
