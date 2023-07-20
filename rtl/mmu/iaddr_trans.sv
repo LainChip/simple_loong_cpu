@@ -13,6 +13,7 @@ module iaddr_trans#(
     input logic f_stall_i,
     output logic ready_o,
     output logic[31:0] paddr_o,
+    output logic uncached_o,
     output fetch_excp_t fetch_excp_o,
 
     input csr_t csr_i,
@@ -26,14 +27,18 @@ module iaddr_trans#(
   );
 
   logic da_mode;
+  logic[1:0] da_matf,dmw0_mat,dmw1_mat;
   logic[2:0] dmw0_vseg,dmw1_vseg,dmw0_pseg,dmw1_pseg; // TODO: FIXME
   logic dmw0_plv0,dmw1_plv0;
   logic dmw0_plv3,dmw1_plv3;
-  logic plv0, plv3; 
+  logic plv0, plv3;
   always_comb begin
     da_mode = csr_i.crmd[`DA];
+    da_matf = csr_i.crmd[`DATF];
     dmw0_vseg = csr_i.dmw0[`VSEG];
+    dmw0_mat = csr_i.dmw0[`DMW_MAT];
     dmw1_vseg = csr_i.dmw1[`VSEG];
+    dmw1_mat = csr_i.dmw1[`DMW_MAT];
     dmw0_pseg = csr_i.dmw0[`PSEG];
     dmw1_pseg = csr_i.dmw1[`PSEG];
     plv0 = csr_i.crmd[`PLV] == 2'd0;
@@ -50,26 +55,34 @@ module iaddr_trans#(
   else begin
     logic[31:0] paddr_q;
     logic dmw0_hit, dmw1_hit;
+    assign paddr_q[31:29] = '0;
+    assign paddr_o = paddr_q;
+    assign ready_o = 1'b1;
+    logic uncached;
     always_ff@(posedge clk) begin
       if(!f_stall_i) begin
         paddr_q[28:0] <= vaddr_i[28:0];
         paddr_q[31:29] <= dmw0_hit ? dmw0_pseg : dmw1_pseg;
+        fetch_excp_o.adef <= (|vaddr_i[1:0]) || (!da_mode && !dmw0_hit && !dmw1_hit);
+        uncached_o <= uncached;
       end
     end
-    assign paddr_q[31:29] = '0;
-    assign paddr_o = paddr_q;
-    assign ready_o = 1'b1;
     // assign fetch_excp_o.adef = ;
-    always_ff@(posedge clk) begin
-      fetch_excp_o.adef <= (|vaddr_i[1:0]) || (!da_mode && !dmw0_hit && !dmw1_hit);
-    end
     assign dmw0_hit = ((dmw0_plv0 & plv0) || (dmw0_plv3 & plv3)) && dmw0_vseg == vaddr_i[31:29];
-    assign dmw0_hit = ((dmw1_plv0 & plv0) || (dmw1_plv3 & plv3)) && dmw1_vseg == vaddr_i[31:29];
+    assign dmw1_hit = ((dmw1_plv0 & plv0) || (dmw1_plv3 & plv3)) && dmw1_vseg == vaddr_i[31:29];
     assign fetch_excp_o.tlbr = '0;
     assign fetch_excp_o.pif = '0;
     assign fetch_excp_o.ppi = '0;
     assign tlb_req_vppn = '0;
     assign tlb_req_valid_o = '0;
+    always_comb begin
+      if(da_mode) begin
+        uncached = da_matf != 2'd1;
+      end
+      else begin
+        uncached = dmw0_hit ? (dmw0_mat != 2'd1) : (dmw1_mat != 2'd1);
+      end
+    end
   end
 
 endmodule

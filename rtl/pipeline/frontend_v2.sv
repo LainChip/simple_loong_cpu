@@ -122,41 +122,55 @@ module frontend(
   bpu_predict_t m_predict;
   fetch_excp_t m_excp;
   logic[1:0][31:0] m_inst;
-  icache #(
-           .FETCH_SIZE(2),
-           .ATTACHED_INFO_WIDTH($bits(bpu_predict_t))
-         ) icache_module(
-           .clk,    // Clock
-           .rst_n,  // Asynchronous reset active low
 
+  logic paddr_ready;
+  logic[31:0] m_ppc;
+  iaddr_trans # (
+                .ENABLE_TLB(1'b0)
+              )
+              iaddr_trans_inst (
+                .clk(clk),
+                .rst_n(rst_n),
+                .valid_i(|f_valid),
+                .vaddr_i(f_pc),
+                .f_stall_i(!icache_ready),
+                .ready_o(paddr_ready),
+                .paddr_o(m_ppc),
+                .fetch_excp_o(m_excp),
+                .csr_i(frontend_resp_i.csr_reg),
+                .flush_i(flush_i),
+                .tlb_req_vppn(tlb_req_vppn),
+                .tlb_req_valid_o(),
+                .tlb_req_ready_i('0), // TODO: CONNECT ME
+                .tlb_resp_i('0)
+              );
+
+  ifetch # (
+           .ATTACHED_INFO_WIDTH($bits(bpu_predict_t))
+         )
+         ifetch_inst (
+           .clk(clk),
+           .rst_n(rst_n),
            .cacheop_i(icacheop),
            .cacheop_valid_i(icacheop_valid),
            .cacheop_ready_o(icacheop_ready),
-
-           .vpc_i(icacheop_valid ? icacheop_addr : f_pc),
            .valid_i(f_valid),
+           .ready_o(icache_ready),
+           .vpc_i(f_pc),
            .attached_i(f_predict),
-
-           // TLB INTERFACE
-        //    .mmu_req_vpc_o,
-           .mmu_resp_i(/*TODO*/),
-
+           .ppc_i(m_ppc),
+           .paddr_valid_i(paddr_ready),
+           .uncached_i(),
            .vpc_o(m_pc),
-           .ppc_o(/*NOT CONNECT*/),
+           .ppc_o(),
+           .ready_i(mimo_ready),
            .valid_o(m_valid),
            .attached_o(m_predict),
-           // .decode_output_o(fetch_decode_info),
            .inst_o(m_inst),
-           .fetch_excp_o(m_excp),
-
-           .ready_i(mimo_ready),
-           .ready_o(icache_ready),
            .clr_i(frontend_resp_i.rst_jmp),
-
            .bus_busy_i(frontend_resp_i.bus_busy),
-
-           .bus_req_o,
-           .bus_resp_i
+           .bus_req_o(bus_req_o),
+           .bus_resp_i(bus_resp_i)
          );
   // MIMO fifo
   typedef struct packed {

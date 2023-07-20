@@ -201,45 +201,6 @@ typedef struct packed {
           logic icache_ready;
         }frontend_req_t;
 typedef struct packed {
-          logic[1:0] issue;
-
-          // TLB RELATED
-          logic tlb_we;
-          logic[$clog2(`_TLB_ENTRY_NUM) - 1 : 0] tlb_w_index_i;
-          tlb_entry_t tlb_w_entry_i;
-
-          // BRANCH RELATED
-          logic rst_jmp;
-          logic[31:0] rst_jmp_target;
-          bpu_correct_t bpu_correct;
-
-          // WAIT INSTRUCTION
-          logic wait_inst;
-          logic int_detect;
-
-          // ICACHE INSTRUCTION
-          logic icache_op_valid;
-          logic[1:0] icache_op;
-          logic[31:0] icacheop_addr;
-
-          // BUS CONTROLLING
-          logic bus_busy;
-        }frontend_resp_t;
-
-`define IE        2
-`define DA        3
-`define PG        4
-`define PLV0      0
-`define PLV3      3
-`define DMW_MAT   5:4
-`define DATF   6:5
-`define DATM   8:7
-`define PLV       1:0
-`define PPLV      1:0
-`define PSEG      27:25
-`define VSEG      31:29
-
-typedef struct packed {
           logic [31:0]    crmd;
           logic [31:0]    prmd;
           logic [31:0]    euen;
@@ -272,6 +233,48 @@ typedef struct packed {
           logic [31:0]    dmw0;
           logic [31:0]    dmw1;
         }csr_t;
+typedef struct packed {
+          logic[1:0] issue;
+
+          // TLB RELATED
+          logic tlb_we;
+          logic[$clog2(`_TLB_ENTRY_NUM) - 1 : 0] tlb_w_index_i;
+          tlb_entry_t tlb_w_entry_i;
+
+          // BRANCH RELATED
+          logic rst_jmp;
+          logic[31:0] rst_jmp_target;
+          bpu_correct_t bpu_correct;
+
+          // WAIT INSTRUCTION
+          logic wait_inst;
+          logic int_detect;
+
+          // ICACHE INSTRUCTION
+          logic icache_op_valid;
+          logic[1:0] icache_op;
+          logic[31:0] icacheop_addr;
+
+          // BUS CONTROLLING
+          logic bus_busy;
+
+          // CSR
+          csr_t csr_reg;
+        }frontend_resp_t;
+
+`define IE        2
+`define DA        3
+`define PG        4
+`define PLV0      0
+`define PLV3      3
+`define DMW_MAT   5:4
+`define DATF   6:5
+`define DATM   8:7
+`define PLV       1:0
+`define PPLV      1:0
+`define PSEG      27:25
+`define VSEG      31:29
+
 
 typedef struct packed{
           logic invtlb;
