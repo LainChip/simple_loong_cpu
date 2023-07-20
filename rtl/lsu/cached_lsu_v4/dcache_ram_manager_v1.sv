@@ -40,8 +40,8 @@ module lsu_dm#(
     output dram_manager_resp_t[PIPE_MANAGE_NUM - 1:0] dm_resp_o,
     output dram_manager_snoop_t dm_snoop_i,
 
-    output axi_req_t bus_req_o,
-    input axi_resp_t bus_resp_i,
+    output cache_bus_req_t bus_req_o,
+    input cache_bus_resp_t bus_resp_i,
 
     output logic bus_busy_o
   );

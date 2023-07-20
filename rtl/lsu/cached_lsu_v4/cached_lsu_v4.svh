@@ -12,8 +12,34 @@
 `define _DTAG_LEN 20
 `define _DCAHE_OP_READ 1
 `define _DCAHE_OP_WRITE 2
+        typedef struct packed{
+          // 请求信号
+          logic valid;                             // 拉高时说明cache的请求有效，请求有效后，valid信号应该被拉低
+          logic write;                             // 拉高时说明cache请求进行写入
+          logic [3:0] burst_size;                   // 0 for no burst, n for n + 1 times burst
+          logic cached;                            // 0 for uncached, 1 for cached, when cached and coherence exchange imple,
+          // cached is although responsible for shareable between masters.
+          logic [1:0] data_size;                    // n for (1 << n) bytes in a transfer
+          logic[31:0] addr;                        // cache请求的物理地址
 
-        typedef struct packed {
+          // 数据
+          logic data_ok;                           // 写入时，此信号用于说明cache已准备好提供数据。 读取时，此信号说明cache已准备好接受数据。
+          logic data_last;                         // 拉高时标记最后一个元素，只有读到此信号才认为传输事务结束
+          logic[3 :0] data_strobe;
+          logic[31:0] w_data; // cache请求的写数据
+        }cache_bus_req_t;
+
+typedef struct packed{
+          // 响应信号
+          logic ready;                               // 说明cache的请求被响应，响应后ready信号也应该被拉低
+
+          // 数据
+          logic data_ok;                             // 拉高时说明总线数据有效
+          logic data_last;                           // 最后一个有效数据
+          logic[31:0] r_data; // 总线返回的数据
+        }cache_bus_resp_t;
+
+typedef struct packed {
           logic valid;
           logic[`_DTAG_LEN - 1 : 0] addr;
         } dcache_tag_t;

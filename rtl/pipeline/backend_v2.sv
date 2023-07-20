@@ -140,43 +140,74 @@ module backend(
     end
   end
 
-  // LSU 端口实例化
-  logic[1:0] ex_mem_read;
-  logic[1:0][31:0] ex_mem_vaddr,m1_mem_vaddr,m1_mem_paddr;
-  lsu # (
-    .WAY_CNT(1)
-  )  lsu_inst (
+  // DM 模块实例化
+  dram_manager_req_t[1:0] dm_req;
+  dram_manager_resp_t[1:0] dm_resp;
+  dram_manager_snoop_t dm_snoop;
+  lsu_dm # (
+    .PIPE_MANAGE_NUM(2),
+    .BANK_NUM(2),
+    .WAY_CNT(1),
+    .SLEEP_CNT(4)
+  )
+  lsu_dm_inst (
     .clk(clk),
     .rst_n(rst_n),
-    .ex_vaddr_i(ex_mem_vaddr),
-    .ex_valid_i(ex_mem_read),
-    .m1_vaddr_i(m1_mem_vaddr),
-    .m1_paddr_i(m1_mem_paddr),
-    .m1_wdata_i(m1_wdata_i),
-    .m1_strobe_i(m1_strobe_i),
-    .m1_valid_i(m1_valid_i),
-    .m1_uncached_i(m1_uncached_i),
-    .m1_busy_o(m1_busy_o),
-    .m1_stall_i(m1_stall_i),
-    .m1_rdata_o(m1_rdata_o),
-    .m1_rvalid_o(m1_rvalid_o),
-    .m2_vaddr_i(m2_vaddr_i),
-    .m2_paddr_i(m2_paddr_i),
-    .m2_strobe_i(m2_strobe_i),
-    .m2_valid_i(m2_valid_i),
-    .m2_uncached_i(m2_uncached_i),
-    .m2_size_i(m2_size_i),
-    .m2_busy_o(m2_busy_o),
-    .m2_stall_i(m2_stall_i),
-    .m2_op_i(m2_op_i),
-    .m2_rdata_o(m2_rdata_o),
-    .m2_rvalid_o(m2_rvalid_o),
-    .wb_rdata_o(wb_rdata_o),
-    .wb_rvalid_o(wb_rvalid_o),
-    .dm_req_o(dm_req_o),
-    .dm_resp_i(dm_resp_i),
-    .dm_snoop_i(dm_snoop_i)
+    .dm_req_i(dm_req),
+    .dm_resp_o(dm_resp),
+    .dm_snoop_i(dm_snoop),
+    .bus_req_o(bus_req_o),
+    .bus_resp_i(bus_resp_i),
+    .bus_busy_o(bus_busy_o)
   );
+  // LSU 端口实例化
+  logic m1_lsu_busy,m2_lsu_busy;
+  logic[1:0] ex_mem_read,m1_mem_read,m2_mem_valid,m1_mem_uncached,m2_mem_uncached;
+  logic[1:0][1:0] m2_mem_size;
+  logic[1:0][31:0] ex_mem_vaddr,m1_mem_vaddr,m1_mem_paddr,m2_mem_vaddr,m2_mem_paddr;
+  logic[1:0][3:0] m1_mem_strobe, m2_mem_strobe;
+
+  logic[1:0] m1_mem_rvalid,m2_mem_rvalid;
+  logic[1:0][31:0] m1_mem_rdata,m2_mem_rdata;
+  logic[1:0][31:0] m2_mem_wdata;
+  logic[1:0][2:0] m2_mem_op;
+  for(genvar p = 0 ; p < 2 ; p ++) begin
+    lsu # (
+      .WAY_CNT(1)
+    )
+    lsu_inst (
+      .clk(clk),
+      .rst_n(rst_n),
+      .ex_vaddr_i(ex_mem_vaddr[p]),
+      .ex_valid_i(ex_mem_read[p]),
+      .m1_vaddr_i(m1_mem_vaddr[p]),
+      .m1_paddr_i(m1_mem_paddr[p]),
+      .m1_strobe_i(m1_mem_strobe[p]),
+      .m1_read_i(m1_mem_read[p]),
+      .m1_uncached_i(m1_mem_uncached[p]),
+      .m1_busy_o(m1_lsu_busy[p]),
+      .m1_stall_i(m1_stall[p]),
+      .m1_rdata_o(m1_mem_rdata[p]),
+      .m1_rvalid_o(m1_mem_rvalid[p]),
+      .m2_vaddr_i(m2_mem_vaddr[p]),
+      .m2_paddr_i(m2_mem_paddr[p]),
+      .m2_wdata_i(m2_mem_wdata[p]),
+      .m2_strobe_i(m2_mem_strobe[p]),
+      .m2_valid_i(m2_mem_valid[p]),
+      .m2_uncached_i(m2_mem_uncached[p]),
+      .m2_size_i(m2_mem_size[p]),
+      .m2_busy_o(m2_lsu_busy[p]),
+      .m2_stall_i(m2_stall[p]),
+      .m2_op_i(m2_mem_op[p]),
+      .m2_rdata_o(m2_mem_rdata[p]),
+      .m2_rvalid_o(m2_mem_rvalid[p]),
+      .wb_rdata_o(),
+      .wb_rvalid_o(),
+      .dm_req_o(dm_req[p]),
+      .dm_resp_i(dm_resp[p]),
+      .dm_snoop_i(dm_snoop)
+    );
+  end
 
   // MUL 端口实例化
   logic[1:0] mul_req;
@@ -359,7 +390,6 @@ module backend(
     always_comb begin
 
     end
-
     // EX 的额外部分
     // EX 级别的访存地址计算 / 地址翻译逻辑
     always_comb begin
@@ -401,8 +431,9 @@ module backend(
     end
 
     // 接入 dcache
-    /* TODO */
-
+    assign ex_mem_read[p] = decode_info.mem_read;
+    assign ex_mem_vaddr[p] = vaddr;
+  
     // 接入 mul
     always_comb begin
       mul_req[p] = pipeline_ctrl_ex_q[p].decode_info.need_mul;

@@ -11,7 +11,7 @@ module lsu #(
     input logic [31:0] m1_vaddr_i,
     input logic [31:0] m1_paddr_i,
     input logic [ 3:0] m1_strobe_i, // 读写复用
-    input logic m1_valid_i,
+    input logic m1_read_i,
     input logic m1_uncached_i,
     output logic m1_busy_o, // M1 级的 LSU 允许 stall
     input logic m1_stall_i,
@@ -28,7 +28,7 @@ module lsu #(
     input logic [1:0] m2_size_i, // uncached 专用
     output logic m2_busy_o, // M2 级别的 LSU 允许 stall
     input logic m2_stall_i,
-    input logic [2:0] m2_op_i,
+    input logic [2:0] m2_op_i, // TODO: CONNECT ME
 
     output logic [31:0] m2_rdata_o,
     output logic m2_rvalid_o,  // 需要 fmt 的结果级
@@ -78,7 +78,7 @@ module lsu #(
     m1_fsm = m1_fsm_q;
     casez(m1_fsm_q)
       3'b??1: begin
-        if(m1_valid_i && !dm_resp_i.r_valid_d1) begin
+        if(m1_read_i && !dm_resp_i.r_valid_d1) begin
           m1_fsm = M1_FSM_WAIT;
         end
         else if(m1_stall_i) begin
@@ -155,7 +155,7 @@ module lsu #(
 
   // M1 busy 电路
   always_comb begin
-    m1_busy_o = (m1_fsm_q != M1_FSM_NORMAL) || (m1_fsm_q == M1_FSM_NORMAL && m1_valid_i && !dm_resp_i.r_valid_d1);
+    m1_busy_o = (m1_fsm_q != M1_FSM_NORMAL) || (m1_fsm_q == M1_FSM_NORMAL && m1_read_i && !dm_resp_i.r_valid_d1);
   end
 
   // 注意：这部分需要在 M1 - M2 级之间进行流水。
