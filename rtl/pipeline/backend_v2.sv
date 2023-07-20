@@ -19,8 +19,6 @@ module backend(
   );
 
   /* -- -- -- -- -- GLOBAL CONTROLLING LOGIC BEGIN -- -- -- -- -- */
-  // TODO: DTLB L0 HERE
-
   // TODO: PIPELINE ME
   pipeline_ctrl_ex_t[1:0] pipeline_ctrl_is,pipeline_ctrl_skid_q,
                     pipeline_ctrl_ex,pipeline_ctrl_ex_q;
@@ -57,6 +55,8 @@ module backend(
   logic[1:0] lsu_stall_req;
 
   // 注意： invalidate 不同于 ~rst_n ，只要求无效化指令，不清除管线中的指令。
+  logic m1_refetch;
+  logic [1:0][31:0]m1_jump_target_req;
   logic [1:0]m1_invalidate, m1_invalidate_req;
   logic ex_invalidate;
 
@@ -72,13 +72,18 @@ module backend(
     wb_stall = |wb_stall_req;
   end
 
-  // M2 级的跳转寄存器设计位
+  // M2 级的跳转寄存器设计位 : TODO CONNECT ME
   logic[31:0] m2_jump_target_q;
   logic m2_jump_valid_q;
+  always_ff @(posedge clk) begin
+    m2_jump_valid_q <= |m1_invalidate_req | m1_refetch;
+    m2_jump_target_q <= (m1_invalidate_req[1]) ? m1_jump_target_req[1] : m1_jump_target_req[0];
+  end
+
 
   // INVALIDATE MANAGER
   always_comb begin
-    ex_invalidate = |m1_invalidate_req;
+    ex_invalidate = |m1_invalidate_req | m1_refetch;
     m1_invalidate[0] = m1_invalidate_req[0];
     m1_invalidate[1] = m1_invalidate_req[0] | m1_invalidate_req[1];
   end
@@ -205,7 +210,10 @@ module backend(
           .dm_snoop_i(dm_snoop)
         );
   end
+  // TODO: DTLB L0 HERE
+  for(genvar p = 0 ; p < 2 ; p++) begin
 
+  end
   // MUL 端口实例化
   logic[1:0] mul_req;
   logic[1:0][1:0] mul_op_req;
@@ -558,6 +566,11 @@ module backend(
           pipeline_wdata_m1[p].w_flow.w_valid = lsu_valid;
         end
       endcase
+    end
+
+    // REFETCHER
+    if(p == 0) begin
+      assign m1_refetch = decode_info.refetch;
     end
 
     // 接入转发源
