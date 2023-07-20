@@ -13,7 +13,7 @@
 `define _DCAHE_OP_READ 1
 `define _DCAHE_OP_WRITE 2
 
-typedef struct packed {
+        typedef struct packed {
           logic valid;
           logic[`_DTAG_LEN - 1 : 0] addr;
         } dcache_tag_t;
@@ -58,7 +58,7 @@ typedef struct packed {
           logic [7:0] tag_waddr;
           dcache_tag_t tag_wdata;
 
-          logic [`_DBANK_CNT - 1 : 0][`_DWAY_CNT - 1 : 0] data_we;
+          logic [`_DBANK_CNT - 1 : 0][`_DWAY_CNT - 1 : 0][3:0] data_we;
           logic [`_DBANK_CNT - 1 : 0][`_DIDX_LEN - 1 : 2 + $clog2(`_DBANK_CNT)] data_waddr;
           logic [`_DBANK_CNT - 1 : 0][31:0] data_wdata;
         } dram_manager_snoop_t;
@@ -81,24 +81,41 @@ endfunction
 function logic[31:0] mkstrobe(logic[31:0] data, logic[3:0] mask);
   return data & {{8{mask[3]}},{8{mask[2]}},{8{mask[1]}},{8{mask[0]}}};
 endfunction
-function logic[31:0] mksft(logic[31:0] raw, logic[31:0] va);
+function logic[31:0] mkrsft(logic[31:0] raw, logic[31:0] va);
   // M1 WDATA 电路
-  mksft = raw;
+  mkrsft = raw;
   case(va[1:0])
     default: begin
-      mksft = raw;
+      mkrsft = raw;
     end
     2'b01: begin
-      mksft[7:0] = raw[15:8];
+      mkrsft[7:0] = raw[15:8];
     end
     2'b10: begin
-      mksft[15:0] = raw[31:16];
+      mkrsft[15:0] = raw[31:16];
     end
     2'b11: begin
-      mksft[7:0] = raw[31:24];
+      mkrsft[7:0] = raw[31:24];
     end
   endcase
-
+endfunction
+function logic[31:0] mkwsft(logic[31:0] raw, logic[31:0] va);
+  // M1 WDATA 电路
+  mkwsft = raw;
+  case(va[1:0])
+    default: begin
+      mkwsft = raw;
+    end
+    2'b01: begin
+      mkwsft[15:8] = raw[7:0];
+    end
+    2'b10: begin
+      mkwsft[31:16] = raw[15:0];
+    end
+    2'b11: begin
+      mkwsft[31:24] = raw[7:0];
+    end
+  endcase
 endfunction
 
 typedef struct packed {

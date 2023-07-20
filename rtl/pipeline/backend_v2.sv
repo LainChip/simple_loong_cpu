@@ -141,7 +141,42 @@ module backend(
   end
 
   // LSU 端口实例化
-
+  logic[1:0] ex_mem_read;
+  logic[1:0][31:0] ex_mem_vaddr,m1_mem_vaddr,m1_mem_paddr;
+  lsu # (
+    .WAY_CNT(1)
+  )  lsu_inst (
+    .clk(clk),
+    .rst_n(rst_n),
+    .ex_vaddr_i(ex_mem_vaddr),
+    .ex_valid_i(ex_mem_read),
+    .m1_vaddr_i(m1_mem_vaddr),
+    .m1_paddr_i(m1_mem_paddr),
+    .m1_wdata_i(m1_wdata_i),
+    .m1_strobe_i(m1_strobe_i),
+    .m1_valid_i(m1_valid_i),
+    .m1_uncached_i(m1_uncached_i),
+    .m1_busy_o(m1_busy_o),
+    .m1_stall_i(m1_stall_i),
+    .m1_rdata_o(m1_rdata_o),
+    .m1_rvalid_o(m1_rvalid_o),
+    .m2_vaddr_i(m2_vaddr_i),
+    .m2_paddr_i(m2_paddr_i),
+    .m2_strobe_i(m2_strobe_i),
+    .m2_valid_i(m2_valid_i),
+    .m2_uncached_i(m2_uncached_i),
+    .m2_size_i(m2_size_i),
+    .m2_busy_o(m2_busy_o),
+    .m2_stall_i(m2_stall_i),
+    .m2_op_i(m2_op_i),
+    .m2_rdata_o(m2_rdata_o),
+    .m2_rvalid_o(m2_rvalid_o),
+    .wb_rdata_o(wb_rdata_o),
+    .wb_rvalid_o(wb_rvalid_o),
+    .dm_req_o(dm_req_o),
+    .dm_resp_i(dm_resp_i),
+    .dm_snoop_i(dm_snoop_i)
+  );
 
   // MUL 端口实例化
   logic[1:0] mul_req;

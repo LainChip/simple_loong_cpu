@@ -7,10 +7,9 @@ module lsu #(
     input logic rst_n,
 
     input logic [31:0] ex_vaddr_i,
-    input logic ex_valid_i,
+    input logic ex_read_i,
     input logic [31:0] m1_vaddr_i,
     input logic [31:0] m1_paddr_i,
-    input logic [31:0] m1_wdata_i,
     input logic [ 3:0] m1_strobe_i, // 读写复用
     input logic m1_valid_i,
     input logic m1_uncached_i,
@@ -22,6 +21,7 @@ module lsu #(
 
     input logic [31:0] m2_vaddr_i,
     input logic [31:0] m2_paddr_i,
+    input logic [31:0] m2_wdata_i,
     input logic [ 3:0] m2_strobe_i, // 读写复用
     input logic m2_valid_i,
     input logic m2_uncached_i,
@@ -51,7 +51,7 @@ module lsu #(
 
   // EX 级接线（真的就是单纯的接线）
   always_comb begin
-    dm_req_o.rvalid = ex_valid_i;
+    dm_req_o.rvalid = ex_read_i;
     dm_req_o.raddr = ex_vaddr_i;
   end
 
@@ -118,8 +118,11 @@ module lsu #(
     m1_data = ((m1_fsm_q & (M1_FSM_NORMAL | M1_FSM_WAIT)) != 0) ? dm_resp_i.rdata_d1 : m1_data_q;
     for(integer b = 0 ; b < `_DBANK_CNT ; b++) begin
       for(integer i = 0 ; i < WAY_CNT ; i++) begin
-        if(dm_snoop_i.data_we[b][i] && {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m1_vaddr_i)) begin
-          m1_data[i] = dm_snoop_i.data_wdata[b];
+        for(integer s = 0 ; s < 4 ; s++) begin
+          if(dm_snoop_i.data_we[b][i][s] &&
+              {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m1_vaddr_i)) begin
+            m1_data[i][7 + 8 * s -: 8] = dm_snoop_i.data_wdata[b[$clog2(`_DBANK_CNT) - 1: 0]][7 + 8 * s -: 8];
+          end
         end
       end
     end
@@ -158,13 +161,7 @@ module lsu #(
   // 注意：这部分需要在 M1 - M2 级之间进行流水。
   logic [WAY_CNT - 1 : 0] m1_hit,m2_hit_q,m2_hit;
   logic m1_miss,m2_miss_q,m2_miss;
-  logic[31:0] m1_wdata,m2_wdata,m2_wdata_q;
-
-  // M1 WDATA 电路
-  always_comb begin
-    // 需要在这里对 strobe 进行处理
-    m1_wdata = mkstrobe(m1_data,~m1_strobe_i) | mkstrobe(mksft(m1_wdata_i,m1_vaddr_i),m1_strobe_i);
-  end
+  logic[31:0] m2_wdata;
 
   // M1 HIT MISS 电路
   for(genvar i = 0 ; i < WAY_CNT ; i++) begin
@@ -176,7 +173,6 @@ module lsu #(
   always_ff @(posedge clk) begin
     m2_hit_q  <= m2_hit;
     m2_miss_q <= m2_miss;
-    m2_wdata_q <= m2_wdata;
     m2_data_q <= m2_data;
   end
 
@@ -328,9 +324,11 @@ module lsu #(
       m2_data = m2_data_q;
       for(integer b = 0 ; b < `_DBANK_CNT ; b++) begin
         for(integer i = 0 ; i < WAY_CNT ; i++) begin
-          if(m2_miss_q && dm_snoop_i.data_we[b][i] &&
-              {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m2_vaddr_i)) begin
-            m2_data[i] = dm_snoop_i.data_wdata[b[$clog2(`_DBANK_CNT) - 1: 0]];
+          for(integer s = 0 ; s < 4;s++) begin
+            if(m2_miss_q && dm_snoop_i.data_we[b][i][s] &&
+                {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m2_vaddr_i)) begin
+              m2_data[i][7 + 8 * s -: 8] = dm_snoop_i.data_wdata[b[$clog2(`_DBANK_CNT) - 1: 0]][7 + 8 * s -: 8];
+            end
           end
         end
       end
@@ -342,20 +340,7 @@ module lsu #(
 
   // M2 写数据维护
   always_comb begin
-    if(!m2_stall_i) begin
-      m2_wdata = m1_wdata;
-    end
-    else begin
-      m2_wdata = m2_wdata_q;
-      for(integer b = 0 ; b < `_DBANK_CNT ; b++) begin
-        for(integer i = 0 ; i < WAY_CNT ; i++) begin
-          if(m2_miss_q && dm_snoop_i.data_we[b][i] &&
-              {dm_snoop_i.data_waddr[b[$clog2(`_DBANK_CNT) - 1: 0]], b[$clog2(`_DBANK_CNT) - 1: 0]} == dramaddr(m2_vaddr_i)) begin
-            m2_wdata = mkstrobe(dm_snoop_i.data_wdata[b[$clog2(`_DBANK_CNT) - 1: 0]],~m2_strobe_i) | mkstrobe(m2_wdata_q,m2_strobe_i);
-          end
-        end
-      end
-    end
+    m2_wdata = mkstrobe(mkwsft(m2_wdata_i, m2_vaddr_i),m2_strobe_i);
   end
 
   // 产生向 DM 的请求
@@ -369,7 +354,7 @@ module lsu #(
     dm_req_o.strobe = m2_strobe_i;
     dm_req_o.size = m2_size_i;
     dm_req_o.we_sel = m2_hit_q;
-    dm_req_o.wdata = m2_wdata_q;
+    dm_req_o.wdata = m2_wdata;
   end
 
   // 输出管理
@@ -380,7 +365,7 @@ module lsu #(
   // output logic [31:0] wb_rdata_o,
   // output logic wb_rvalid_o,
   always_comb begin
-    m2_rdata_o = mkstrobe(mksft(m2_data_q,m2_vaddr_i), m2_strobe_i);
+    m2_rdata_o = mkstrobe(mkrsft(m2_data_q,m2_vaddr_i), m2_strobe_i);
     m2_rvalid_o = !m2_busy_o && m2_valid_i && m2_op_i == `_DCAHE_OP_READ;
   end
 
@@ -388,7 +373,8 @@ module lsu #(
     if(!m2_stall_i) begin
       wb_rdata_o <= m2_rdata_o;
       wb_rvalid_o <= m2_rvalid_o;
-    end else begin
+    end
+    else begin
       wb_rvalid_o <= '0;
     end
   end
