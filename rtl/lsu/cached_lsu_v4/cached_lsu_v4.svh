@@ -12,6 +12,10 @@
 `define _DTAG_LEN 20
 `define _DCAHE_OP_READ 1
 `define _DCAHE_OP_WRITE 2
+`define _IWAY_CNT 1
+`define _IIDX_LEN 12
+`define _ITAG_LEN 20
+
         typedef struct packed{
           // 请求信号
           logic valid;                             // 拉高时说明cache的请求有效，请求有效后，valid信号应该被拉低
