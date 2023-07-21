@@ -10,6 +10,7 @@
 
 `include "bpu.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module pht #(
 	parameter ADDR_WIDTH = 8
 ) (

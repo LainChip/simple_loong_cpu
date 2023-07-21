@@ -1,3 +1,5 @@
+
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 //CRMD
 `define PLV       1:0
 `define IE        2

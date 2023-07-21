@@ -5,6 +5,7 @@
 `include "common.svh"
 `include "decoder.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module mdu #(
     parameter bit SIMPLIFIED_MODULE = 1'b1
 )(

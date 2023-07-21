@@ -6,6 +6,7 @@
 
 `ifdef __MULTIPLIER_VER_1
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module multiplier (
     input mul_signed_i,
     input  [31:0] X_i,

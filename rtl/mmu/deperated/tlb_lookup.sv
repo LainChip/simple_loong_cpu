@@ -1,5 +1,6 @@
 `include "tlb.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module tlb_lookup#(
     parameter int TLB_ENTRY_NUM = `_TLB_ENTRY_NUM
 )(

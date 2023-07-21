@@ -6,6 +6,7 @@
 
 `ifdef __MULTIPLIER_VER_2
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module multiplier_v2 (
     input clk,
     input rst_n,

@@ -1,6 +1,7 @@
 `ifndef _BPU_SVH_
 `define _BPU_SVH_
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 `define _STRONGLY_TAKEN 2'b11
 `define _WEAKLY_TAKEN 2'b10
 `define _WEAKLY_NOT_TAKEN 2'b01

@@ -2,6 +2,7 @@
 2023-1-13 v1: xrb完成
 */
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module wallacetree (    /* 17 way wallace tree */
     input  [16:0] in,
     input  [13:0] c_i,

@@ -7,7 +7,7 @@
 // Revise : 2023-01-10 10:27:36
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
-
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 `include "bpu.svh"
 
 module bht #(

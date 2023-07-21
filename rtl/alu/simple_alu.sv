@@ -2,6 +2,7 @@
 2023-01-08 v1: xrb初步完成
 */
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 `include "common.svh"
 `include "decoder.svh"
 

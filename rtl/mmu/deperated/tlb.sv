@@ -4,6 +4,7 @@
 
 //`ifdef _TLB_VER_1
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module tlb #(
     parameter int TLB_ENTRY_NUM = `_TLB_ENTRY_NUM,
     parameter int TLB_PORT = `_TLB_PORT

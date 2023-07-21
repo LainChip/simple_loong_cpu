@@ -5,6 +5,7 @@
 
 //`ifdef __CSR_VER_1
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module la_csr(
     input           clk,
     input           rst_n,

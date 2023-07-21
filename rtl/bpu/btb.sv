@@ -8,6 +8,7 @@
 // Editor : sublime text4, tab size (4)
 // -----------------------------------------------------------------------------
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 `include "bpu.svh"
 
 module btb #(

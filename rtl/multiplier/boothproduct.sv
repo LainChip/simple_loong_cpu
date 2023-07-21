@@ -2,6 +2,7 @@
 2023-1-13 v1: xrb完成
 */
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 
 module boothproduct #(
     parameter int FACIEND_WIDTH = 68 // 被乘数位宽

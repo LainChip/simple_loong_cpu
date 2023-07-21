@@ -1,6 +1,8 @@
 `include "../pipeline/pipeline.svh"
 `include "../lsu/cached_lsu_v4/cached_lsu_v4.svh"
 
+/*--JSON--{"module_name":"icache","module_ver":"4","module_type":"module"}--JSON--*/
+
 module ifetch#(
     parameter int ATTACHED_INFO_WIDTH = 32,     // 用于捆绑bpu输出的信息，跟随指令流水
     parameter int WAY_CNT = `_IWAY_CNT                  // 指示cache的组相联度

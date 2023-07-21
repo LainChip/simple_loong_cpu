@@ -1,6 +1,7 @@
 `include "mycpu.h"
 `include "csr.h"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module csr 
 #(
 	parameter TLBNUM = 32

@@ -10,6 +10,7 @@
 
 `include "bpu.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module ras #(
 	parameter STACK_DEPTH = `_RAS_STACK_DEPTH
 ) (

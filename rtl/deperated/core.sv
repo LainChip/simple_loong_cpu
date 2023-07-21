@@ -6,6 +6,7 @@
 `include "csr.svh"
 `include "tlb.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module core(
     input clk,
     input rst_n,

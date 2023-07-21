@@ -3,6 +3,7 @@
 `include "csr.svh"
 `include "tlb.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module excp_handler(
     input decode_info_t decode_info_i,
     input logic [31:0] vpc_i,

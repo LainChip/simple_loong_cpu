@@ -11,6 +11,7 @@
 `include "common.svh"
 `include "bpu.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 `ifdef __NPC_VER_1
 
 module npc (

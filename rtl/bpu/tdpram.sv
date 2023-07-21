@@ -9,6 +9,7 @@
 // Brief  : 
 // -----------------------------------------------------------------------------
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module tdpram #(
   	parameter DATA_WIDTH = 8,
   	parameter ADDR_WIDTH = 4

@@ -9,6 +9,7 @@
 // Brief  : 
 // -----------------------------------------------------------------------------
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 `include "decoder.svh"
 `include "bpu.svh"
 

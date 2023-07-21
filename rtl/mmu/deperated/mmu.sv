@@ -1,6 +1,7 @@
 `include "tlb.svh"
 `include "csr.svh"
 
+/*--JSON--{"module_name":"deperated","module_ver":"3","module_type":"module"}--JSON--*/
 module mmu #(
     parameter TLB_ENTRY_NUM = `_TLB_ENTRY_NUM,
     parameter TLB_PORT = 2,
