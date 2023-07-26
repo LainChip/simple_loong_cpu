@@ -130,7 +130,7 @@ module mdu #(
 
     divider instance_divider (
         .clk(clk),
-        .rst_n(rst_n | ~clr_i[2]),   // force reset
+        .rst_n(rst_n & ~clr_i[2]),   // force reset
 
         .div_valid(div_valid_m),
         .div_ready(div_ready_s),      
