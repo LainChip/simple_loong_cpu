@@ -348,6 +348,8 @@ module icache #(
             end
         end
     end
+    // 暂停信号
+    logic fsm_busy;
     always_ff @(posedge clk) begin
         if(~rst_n) begin
             ctrl <= C_NONE;
@@ -369,8 +371,6 @@ module icache #(
         end
     end
 
-    // 暂停信号
-    logic fsm_busy;
     assign fsm_busy = (fsm_state != S_NORMAL) || (fsm_state_next != S_NORMAL);
     assign stall = !ready_i || fsm_busy;
     assign ready_o = !stall && !cacheop_valid_i;
