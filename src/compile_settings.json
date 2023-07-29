@@ -4,5 +4,8 @@
     },
     "lsu" :{
         "module_ver" : "3"
+    },
+    "mycpu_top" :{
+        "module_ver" : "3"
     }
 }
