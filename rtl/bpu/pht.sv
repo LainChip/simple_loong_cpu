@@ -29,18 +29,19 @@ module pht #(
             phr_i == 2'b01 ? (taken_i ? 2'b10 : 2'b00) :
                              (taken_i ? 2'b01 : 2'b00);
 
-    sdpram #(
-        .ADDR_WIDTH ( ADDR_WIDTH    ),
-        .DATA_WIDTH ( 2             )
-    ) u_sdpram (
-        .clk                     ( clk     ),
-        .rst_n                   ( rst_n   ),
-        .en                      ( 1'b1    ),
-        .we                      ( we_i    ),
-        .raddr                  ( rindex_i ),
-        .waddr                  ( windex_i ),
-        .wdata                   ( wdata   ),
-        .rdata                   ( phr_o   )
+    simpleDualPortRam #(
+        .dataWidth(2),
+        .ramSize(1 << ADDR_WIDTH),
+        .readMuler(1)
+    ) inst_simpleDualPortRam (
+        .clk      (clk),
+        .rst_n    (rst_n),
+        .addressA (windex_i),
+        .we       (we_i),
+        .addressB (rindex_i),
+        .inData   (wdata),
+        .outData  (phr_o)
     );
+
 
 endmodule : pht

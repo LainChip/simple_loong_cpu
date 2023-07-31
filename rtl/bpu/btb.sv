@@ -56,19 +56,20 @@ module btb #(
     logic [31: 2] bta;
     logic [TAG_WIDTH - 1: 0] tag;
 
-    sdpram #(
-        .ADDR_WIDTH (ADDR_WIDTH),
-        .DATA_WIDTH (ENTRY_WIDTH)
-    ) way0 (
-        .clk    (clk),
-        .rst_n  (rst_n),
-        .en     (1'b1),
-        .we     (update_i),
-        .raddr  (index_r),
-        .waddr  (index_w),
-        .wdata  ({1'b1, wpc_i[2], tag_w, bta_i, Br_type_i}),
-        .rdata  ({valid, fsc, tag, bta, Br_type})
+    simpleDualPortRam #(
+        .dataWidth(ENTRY_WIDTH),
+        .ramSize(1 << ADDR_WIDTH),
+        .readMuler(1)
+    ) inst_simpleDualPortRam (
+        .clk      (clk),
+        .rst_n    (rst_n),
+        .addressA (index_w),
+        .we       (update_i),
+        .addressB (index_r),
+        .inData   ({1'b1, wpc_i[2], tag_w, bta_i, Br_type_i}),
+        .outData  ({valid, fsc, tag, bta, Br_type})
     );
+
 
     // 1 clk delay for rpc
     logic [31: 2] pre_pc;

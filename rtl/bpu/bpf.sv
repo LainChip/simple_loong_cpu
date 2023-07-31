@@ -42,9 +42,12 @@ module bpf (
 	(* mark_debug="true" *) wire [31:0] target = (branch_type_i == `_BRANCH_IMMEDIATE) 		    ? (pc_i + (offs_26)) :(
 					     						 (branch_type_i == `_BRANCH_INDIRECT)  		    ? (rj_i + (offs_16)) :(
 					     						 (branch_type_i == `_BRANCH_CONDITION && taken) ? (pc_i + (offs_16)) :(
-								   						       			// pc_i + 4;
+								   						       			// pc_i + 4 or pc_i + 8;
 								   						       			{pc_i[31:3] + 29'd1, 3'b000})));
+
+	wire predict_taken = predict_i.fsc == pc_i[2] ? predict_i.taken : 1'b0;
 	wire [31:0] predict_npc = {predict_i.npc, 2'b00};
+	
 	
 	always_comb begin : proc_taken
 		if (branch_type_i == `_BRANCH_CONDITION) begin
@@ -73,7 +76,7 @@ module bpf (
 	// 添加taken的判断，因为有分支指令的目标为pc+8，如果bpu未预测到则pc+4的指令会被标记为有效
 	// 需要在此处检查这样的预测错误
 	wire target_miss = predict_npc != target;
-	wire direction_miss = predict_i.taken != taken;
+	wire direction_miss = predict_taken != taken;
 	wire predict_miss = (target_miss & predict_i.taken) | direction_miss;
 	assign update_o.flush = (~stall_i & predict_miss & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
@@ -83,7 +86,7 @@ module bpf (
 								(pc_i[2] == '0 && taken == '0 && predict_i.taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} : 
 								target[31:0];
 
-	assign update_o.btb_update = 1'b1;
+	assign update_o.btb_update = (branch_type_i != `_BRANCH_INVALID);
 	always_comb begin : proc_br_type
 		if ((branch_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || decode_i.ex.branch_link) begin
 			update_o.br_type = `_CALL;
@@ -96,17 +99,34 @@ module bpf (
 		end
 	end
 
-	assign update_o.bht_update = 1'b1;
-
-	assign update_o.lpht_update = 1'b1;
+	assign update_o.lpht_update = (branch_type_i != `_BRANCH_INVALID);
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = predict_i.lphr_index;
-
-	// debug
-	wire wb_valid = decode_i.wb.valid;
-	wire flush = update_o.flush;
-	wire predict_taken = predict_i.taken;
-	wire [1:0] br_type = update_o.br_type;
+	assign update_o.ras_ptr = update_o.br_type == `_CALL && predict_i.br_type != `_CALL ?  predict_i.ras_ptr + 1 : 
+							  update_o.br_type == `_RETURN && predict_i.br_type != `_RETURN ? predict_i.ras_ptr - 1 :
+							  predict_i.ras_ptr;
+	assign update_o.ras_redirect = update_o.br_type == `_CALL && predict_i.br_type != `_CALL ? 'd2:
+								   update_o.flush ? 'd1 :
+								   'd0;
 	
+
+	// summary
+	int total = 0;
+	int miss = 0;
+	always_ff @(posedge clk) begin
+		if (branch_type_i != `_BRANCH_INVALID) begin
+			total <= total + 1;
+			if (update_o.flush) begin
+				miss <= miss + 1;
+				$display("SRC：%x", pc_i);
+				$display("目标：%x", target);
+				$display("predict_i: lpht: %d, npc: %x, taken: %d, br_type: %d", predict_i.lphr, {predict_i.npc, 2'd0}, predict_i.taken, predict_i.br_type);
+				$display("update_o: target: %x, br_type: %d", update_o.br_target, update_o.br_type);
+				$display("total: %d, miss: %d, miss_rate: %f", total, miss, 1.0 * miss/total);
+				
+			end
+		end
+	end
+
 endmodule : bpf
 

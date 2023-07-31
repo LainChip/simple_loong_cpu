@@ -3,6 +3,7 @@
 `include "pipeline.svh"
 `include "lsu_types.svh"
 `include "bpu.svh"
+`include "tlb.svh"
 
 module frontend(
 	input clk,
@@ -108,8 +109,9 @@ module frontend(
         end
     end
     fetch_excp_t fetch_excp;
-    bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict;
+    bpu_predict_t[1:0] fetch_predict_fifo,fifo_predict, bpf_front_predict;
     bpu_predict_t bpu_predict,fetch_predict;
+    bpu_update_t bpf_front_update;
     decode_info_t [1:0]fifo_decode_info;
     logic [31:0] bpu_vpc,bpu_ppc,fetch_vpc,fifo_vpc;
     logic [1:0] bpu_pc_valid,fetch_pc_valid,fetch_valid;
@@ -118,33 +120,34 @@ module frontend(
     logic[1:0][31:0] fetch_inst,fetch_inst_fifo;
     logic[1:0][63 + $bits(bpu_predict_t) + $bits(fetch_excp_t):0] fetch_fifo_out;
     inst_t [1:0] fifo_inst;
-    logic [1:0] fifo_write_num,fetch_write_num;
+    logic [1:0] fifo_write_num,fetch_write_num, bpf_front_valid;
 
     // NPC / BPU 模块
-    npc npc_module(
-        .clk,
-        .rst_n,
-        .stall_i(bpu_stall),
-        .update_i(bpu_feedback_i),
-        .predict_o(bpu_predict),
-        .pc_o(bpu_vpc),
-        .stall_o(bpu_stall_req)
-    );
-
-    assign bpu_pc_valid = {~frontend_clr & rst_n & ~idle_lock, ~frontend_clr & ~bpu_vpc[2] & rst_n & ~idle_lock};
-
-
-    // bpu inst_bpu
-    // (
+    // npc npc_module(
     //     .clk,
     //     .rst_n,
     //     .stall_i(bpu_stall),
     //     .update_i(bpu_feedback_i),
     //     .predict_o(bpu_predict),
     //     .pc_o(bpu_vpc),
-    //     .stall_o(bpu_stall_req),
-    //     .pc_valid_o(bpu_pc_valid)
+    //     .stall_o(bpu_stall_req)
     // );
+
+    // assign bpu_pc_valid = {~frontend_clr & rst_n & ~idle_lock, ~frontend_clr & ~bpu_vpc[2] & rst_n & ~idle_lock};
+
+
+    bpu inst_bpu
+    (
+        .clk,
+        .rst_n,
+        .stall_i(bpu_stall | idle_lock),
+        .update_back_i(bpu_feedback_i),
+        .update_front_i(bpf_front_update),
+        .predict_o(bpu_predict),
+        .pc_valid_o(bpu_pc_valid),
+        .pc_o(bpu_vpc),
+        .stall_o(bpu_stall_req)
+    );
 
 
     // 暂停以及清零控制逻辑
@@ -198,7 +201,7 @@ module frontend(
 
         .ready_i(fetch_ready),
         .ready_o(icache_ready),
-        .clr_i(frontend_clr),
+        .clr_i(frontend_clr | bpf_front_update.flush),
 
         .bus_busy_i(bus_busy_i),
         .uncached_i(uncached_i),
@@ -219,7 +222,7 @@ module frontend(
         .clk,
         .rst_n,
 
-        .flush_i(frontend_clr),
+        .flush_i(frontend_clr | bpf_front_update.flush),
 
         .write_valid_i(1'b1),
         .write_ready_o(fetch_ready),
@@ -255,15 +258,31 @@ module frontend(
 		.inst_string_o(/*NC*/)
 	);
 
+    bpf_front inst_bpf_front
+    (
+        .clk       (clk),
+        .rst_n     (rst_n),
+        .fifo_ready_i (fifo_ready),
+        .pc0_i     (fetch_fifo_out[0][63:32]),
+        .pc1_i     (fetch_fifo_out[1][63:32]),
+        .valid_i   (fetch_valid),
+        .decode_i  (fifo_decode_info),
+        .predict0_i(fetch_fifo_out[0][63+$bits(bpu_predict_t):64]),
+        .predict1_i(fetch_fifo_out[1][63+$bits(bpu_predict_t):64]),
+        .update_o  (bpf_front_update),
+        .predict_o (bpf_front_predict),
+        .valid_o   (bpf_front_valid)
+    );
+
     always_comb begin
-        fifo_write_num = {fetch_valid[0] & fetch_valid[1], fetch_valid[0] ^ fetch_valid[1]};
-        fifo_inst[0].bpu_predict = fetch_fifo_out[0][63+$bits(bpu_predict_t):64];
+        fifo_write_num = {bpf_front_valid[0] & bpf_front_valid[1], bpf_front_valid[0] ^ bpf_front_valid[1]};
+        fifo_inst[0].bpu_predict = bpf_front_predict[0]; // fetch_fifo_out[0][63+$bits(bpu_predict_t):64];
         fifo_inst[0].decode_info = fifo_decode_info[0];
         fifo_inst[0].pc = fetch_fifo_out[0][63:32];
         fifo_inst[0].valid = 1'b1;
         fifo_inst[0].register_info = get_register_info(fifo_decode_info[0]);
         fifo_inst[0].fetch_excp = fetch_fifo_out[0][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
-        fifo_inst[1].bpu_predict = fetch_fifo_out[1][63+$bits(bpu_predict_t):64];
+        fifo_inst[1].bpu_predict = bpf_front_predict[1]; // fetch_fifo_out[1][63+$bits(bpu_predict_t):64];
         fifo_inst[1].decode_info = fifo_decode_info[1];
         fifo_inst[1].pc = fetch_fifo_out[1][63:32];
         fifo_inst[1].valid = 1'b1;
