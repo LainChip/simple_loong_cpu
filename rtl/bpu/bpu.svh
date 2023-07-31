@@ -13,7 +13,7 @@
 
 // scale
 `define _BTB_ADDR_WIDTH 10
-`define _LPHT_ADDR_WIDTH 10
+`define _LPHT_ADDR_WIDTH 9
 `define _RAS_STACK_DEPTH 8
 `define _BHT_ADDR_WIDTH 5
 `define _BHT_DATA_WIDTH 3
@@ -39,7 +39,7 @@ typedef struct packed {
 	// for lpht
 	logic lpht_update;
 	logic [1:0] lphr;
-	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
+	logic [`_LPHT_ADDR_WIDTH:0] lphr_index;
 
 	// for ras
 	logic [1:0] ras_redirect;
@@ -52,7 +52,6 @@ typedef struct packed {
 	logic taken;
 	logic [31:2] npc;
 	logic [1:0] lphr;
-	logic [`_LPHT_ADDR_WIDTH - 1:0] lphr_index;
 	logic [$clog2(`_RAS_STACK_DEPTH) - 1:0] ras_ptr;
 	logic [1:0] br_type;
 } bpu_predict_t;

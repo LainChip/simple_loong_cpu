@@ -20,16 +20,14 @@ module btb #(
     input  [31:2] wpc_i,
     input  [31:2] bta_i,
     input  [ 1:0] Br_type_i,
-    output        miss_o,
-    output        fsc_o,
-    output [31:2] bta_o,
-    output [ 1:0] Br_type_o
+    output [31:2] bta_o [1:0],
+    output [ 1:0] Br_type_o [1:0]
 );
 
 /*                              -btb entry-
-    ==============================================================
-    || valid || fsc || TAG[14:0] || BTA[31：2] || Br_type[1 :0] ||
-    ==============================================================
+    =======================================================
+    || valid || TAG[14:0] || BTA[31：2] || Br_type[1 :0] ||
+    =======================================================
 */
     function logic[14:0] mktag(logic[31:2] pc);
         return pc[31:17] ^ pc[17:3];
@@ -51,30 +49,43 @@ module btb #(
 
 
     // ram
-    logic en, valid, fsc;
-    logic [ 1: 0] Br_type;
-    logic [31: 2] bta;
-    logic [TAG_WIDTH - 1: 0] tag;
+    logic valid [1:0];
+    logic [ 1: 0] Br_type [1:0];
+    logic [31: 2] bta [1:0];
+    logic [TAG_WIDTH - 1: 0] tag [1:0];
 
     simpleDualPortRam #(
         .dataWidth(ENTRY_WIDTH),
-        .ramSize(1 << ADDR_WIDTH),
+        .ramSize(1 << (ADDR_WIDTH - 1)),
         .readMuler(1)
-    ) inst_simpleDualPortRam (
+    ) inst_bank0 (
         .clk      (clk),
         .rst_n    (rst_n),
         .addressA (index_w),
-        .we       (update_i),
+        .we       (update_i && !wpc_i[2]),
         .addressB (index_r),
-        .inData   ({1'b1, wpc_i[2], tag_w, bta_i, Br_type_i}),
-        .outData  ({valid, fsc, tag, bta, Br_type})
+        .inData   ({1'b1, tag_w, bta_i, Br_type_i}),
+        .outData  ({valid[0], tag[0], bta[0], Br_type[0]})
+    );
+
+    simpleDualPortRam #(
+        .dataWidth(ENTRY_WIDTH),
+        .ramSize(1 << (ADDR_WIDTH - 1)),
+        .readMuler(1)
+    ) inst_bank1 (
+        .clk      (clk),
+        .rst_n    (rst_n),
+        .addressA (index_w),
+        .we       (update_i && wpc_i[2]),
+        .addressB (index_r),
+        .inData   ({1'b1, tag_w, bta_i, Br_type_i}),
+        .outData  ({valid[1], tag[1], bta[1], Br_type[1]})
     );
 
 
     // 1 clk delay for rpc
     logic [31: 2] pre_pc;
     logic [TAG_WIDTH - 1:0] pre_tag;
-    logic [ADDR_WIDTH - 1:0] pre_index;
 
     always @(posedge clk ) begin
         if (~rst_n) begin
@@ -85,13 +96,15 @@ module btb #(
     end
 
     assign pre_tag = mktag(pre_pc);
-    assign pre_index = pre_pc[ADDR_WIDTH + 2:3];
 
     // output
-    wire hit = valid & tag == pre_tag;
-    assign miss_o = ~hit;
-    assign fsc_o = fsc;
-    assign bta_o = valid & tag == pre_tag ? bta : {pre_pc[31:3] + 29'd1, 1'b0};
-    assign Br_type_o = valid & tag == pre_tag ? Br_type : `_PC_RELATIVE;
+    logic hit [1:0];
+    assign hit[0] = valid[0] & tag[0] == pre_tag;
+    assign hit[1] = valid[1] & tag[1] == pre_tag;
+    assign bta_o[0] = hit[0] ? bta[0] : {pre_pc[31:3] + 29'd1, 1'b0};
+    assign Br_type_o[0] = hit[0] ? Br_type[0] : `_PC_RELATIVE;
+    
+    assign bta_o[1] = hit[1] ? bta[1] : {pre_pc[31:3] + 29'd1, 1'b0};
+    assign Br_type_o[1] = hit[1] ? Br_type[1] : `_PC_RELATIVE;
 
 endmodule : btb

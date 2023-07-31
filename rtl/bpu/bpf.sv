@@ -86,7 +86,7 @@ module bpf (
 								(pc_i[2] == '0 && taken == '0 && predict_i.taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} : 
 								target[31:0];
 
-	assign update_o.btb_update = (branch_type_i != `_BRANCH_INVALID);
+	assign update_o.btb_update = (branch_type_i != `_BRANCH_INVALID) & ~stall_i;
 	always_comb begin : proc_br_type
 		if ((branch_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || decode_i.ex.branch_link) begin
 			update_o.br_type = `_CALL;
@@ -99,34 +99,33 @@ module bpf (
 		end
 	end
 
-	assign update_o.lpht_update = (branch_type_i != `_BRANCH_INVALID);
+	assign update_o.lpht_update = (branch_type_i != `_BRANCH_INVALID) & ~stall_i;
 	assign update_o.lphr = predict_i.lphr;
-	assign update_o.lphr_index = predict_i.lphr_index;
-	assign update_o.ras_ptr = update_o.br_type == `_CALL && predict_i.br_type != `_CALL ?  predict_i.ras_ptr + 1 : 
-							  update_o.br_type == `_RETURN && predict_i.br_type != `_RETURN ? predict_i.ras_ptr - 1 :
+	assign update_o.lphr_index = pc_i[`_LPHT_ADDR_WIDTH + 2:2];
+	assign update_o.ras_ptr = update_o.br_type == `_CALL ?  predict_i.ras_ptr + 1 : 
+							  update_o.br_type == `_RETURN ? predict_i.ras_ptr - 1 :
 							  predict_i.ras_ptr;
-	assign update_o.ras_redirect = update_o.br_type == `_CALL && predict_i.br_type != `_CALL ? 'd2:
-								   update_o.flush ? 'd1 :
-								   'd0;
-	
+	assign update_o.ras_redirect = (update_o.br_type == `_CALL && predict_i.br_type != `_CALL ? 'd2 :
+								   update_o.br_type == `_RETURN && predict_i.br_type != `_RETURN ? 'd1 :
+								   update_o.flush) & {2{~stall_i}};
 
 	// summary
-	int total = 0;
-	int miss = 0;
-	always_ff @(posedge clk) begin
-		if (branch_type_i != `_BRANCH_INVALID) begin
-			total <= total + 1;
-			if (update_o.flush) begin
-				miss <= miss + 1;
-				$display("SRC：%x", pc_i);
-				$display("目标：%x", target);
-				$display("predict_i: lpht: %d, npc: %x, taken: %d, br_type: %d", predict_i.lphr, {predict_i.npc, 2'd0}, predict_i.taken, predict_i.br_type);
-				$display("update_o: target: %x, br_type: %d", update_o.br_target, update_o.br_type);
-				$display("total: %d, miss: %d, miss_rate: %f", total, miss, 1.0 * miss/total);
+	// int total = 0;
+	// int miss = 0;
+	// always_ff @(posedge clk) begin
+	// 	if (branch_type_i != `_BRANCH_INVALID) begin
+	// 		total <= total + 1;
+	// 		if (update_o.flush) begin
+	// 			miss <= miss + 1;
+	// 			$display("SRC：%x", pc_i);
+	// 			$display("目标：%x", target);
+	// 			$display("predict_i: lpht: %d, npc: %x, taken: %d, br_type: %d, fsc: %d", predict_i.lphr, {predict_i.npc, 2'd0}, predict_i.taken, predict_i.br_type, predict_i.fsc);
+	// 			$display("update_o: target: %x, br_type: %d", update_o.br_target, update_o.br_type);
+	// 			$display("total: %d, miss: %d, miss_rate: %f", total, miss, 1.0 * miss/total);
 				
-			end
-		end
-	end
+	// 		end
+	// 	end
+	// end
 
 endmodule : bpf
 

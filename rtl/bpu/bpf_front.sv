@@ -34,12 +34,13 @@ module bpf_front (
 	assign update_o.pc = fst_miss ? pc0_i[31:2] : pc1_i[31:2];
 	assign update_o.br_target = fst_miss ? pc0_i + 4 : pc1_i + 4;
 	assign update_o.lphr = fst_miss ? predict0_i.lphr : predict1_i;
-	assign update_o.lphr_index = fst_miss ? predict0_i.lphr_index : predict1_i;
+	assign update_o.lphr_index = fst_miss ? pc0_i[`_LPHT_ADDR_WIDTH + 2:2] : pc1_i[`_LPHT_ADDR_WIDTH + 2:2];
 	assign update_o.br_taken = 1'b0;
 	assign update_o.br_type = `_PC_RELATIVE;
 	assign update_o.btb_update = update_o.flush;
 	assign update_o.lpht_update = update_o.flush;
 	assign update_o.ras_ptr = fst_miss ? predict0_i.ras_ptr : predict1_i.ras_ptr;
+	assign update_o.ras_redirect = update_o.flush;
 
 
 	always_comb begin
