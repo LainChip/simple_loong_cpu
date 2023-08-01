@@ -1,4 +1,4 @@
-/*--JSON--{"module_name":"mycpu_top","module_ver":"1","module_type":"module"}--JSON--*/
+/*--JSON--{"module_name":"mycpu_top","module_ver":"3","module_type":"module"}--JSON--*/
 
 module mycpu_top(
     input           aclk,
@@ -48,7 +48,7 @@ module mycpu_top(
     output          bready,
 
     output [31:0] debug_wb_pc,
-    output [3 :0] debug_wb_rf_we,
+    output [3 :0] debug_wb_rf_wen,
     output [4 :0] debug_wb_rf_wnum,
     output [31:0] debug_wb_rf_wdata,
     output [31:0] debug_wb_instr
@@ -102,7 +102,7 @@ module mycpu_top(
     );
     
     assign wid = 4'b0;
-    assign debug_wb_rf_we = 4'b0;
+    assign debug_wb_rf_wen = 4'b0;
     assign debug_wb_rf_wnum = 5'b0;
 
 endmodule
