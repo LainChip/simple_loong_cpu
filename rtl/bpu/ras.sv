@@ -53,12 +53,12 @@ module ras #(
     assign stack_ptr_o = ras_ptr;
 
     // for debug
-    generate
-        wire [31:0] ras_32 [STACK_DEPTH - 1:0];
-        genvar i;
-        for (i = 0; i < 8; i++) begin
-            assign ras_32[i] = {ras[i], 2'b00}; 
-        end
-    endgenerate
+    // generate
+    //     wire [31:0] ras_32 [STACK_DEPTH - 1:0];
+    //     genvar i;
+    //     for (i = 0; i < 8; i++) begin
+    //         assign ras_32[i] = {ras[i], 2'b00}; 
+    //     end
+    // endgenerate
 
 endmodule : ras

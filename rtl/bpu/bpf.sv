@@ -62,28 +62,29 @@ module bpf (
 				`_CMP_GEU: taken = rj_i >= rd_i;
 				default : taken = 1'b0;
 			endcase
-		end else if (branch_type_i != `_BRANCH_INVALID) begin
-			taken = 1'b1;
-		end else begin
+		end else if (branch_type_i == `_BRANCH_INVALID) begin
 			taken = 1'b0;
+		end else begin
+			taken = 1'b1;
 		end
 	end
 
 	// link
-	assign pc_link_o = pc_i + 4;
+	assign pc_link_o = pc_i + 'd4;
 
 	// bpu update
 	// 添加taken的判断，因为有分支指令的目标为pc+8，如果bpu未预测到则pc+4的指令会被标记为有效
 	// 需要在此处检查这样的预测错误
 	wire target_miss = predict_npc != target;
 	wire direction_miss = predict_taken != taken;
-	wire predict_miss = (target_miss & predict_i.taken) | direction_miss;
+	wire predict_miss = (target_miss & predict_taken) | direction_miss;
+
 	assign update_o.flush = (~stall_i & predict_miss & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
 	// 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
-	assign update_o.br_target = csr_flush_i ? csr_target_i[31:0] : 
-								(pc_i[2] == '0 && taken == '0 && predict_i.taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} : 
+	assign update_o.br_target = csr_flush_i ? csr_target_i : 
+								(pc_i[2] == '0 && taken == '0 && predict_taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} : 
 								target[31:0];
 
 	assign update_o.btb_update = (branch_type_i != `_BRANCH_INVALID) & ~stall_i;
