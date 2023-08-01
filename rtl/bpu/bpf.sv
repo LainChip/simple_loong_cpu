@@ -70,11 +70,10 @@ module bpf (
 	end
 
 	// link
-	assign pc_link_o = pc_i + 'd4;
+	assign pc_link_o = {pc_i[31:2] + 30'd1, 2'b00};
 
 	// bpu update
-	// 添加taken的判断，因为有分支指令的目标为pc+8，如果bpu未预测到则pc+4的指令会被标记为有效
-	// 需要在此处检查这样的预测错误
+	// 添加taken的判断，因为有分支指令的目标为pc+8，如果bpu未预测到则pc+4的指令会被标记为有效, 需要在此处检查这样的预测错误
 	wire target_miss = predict_npc != target;
 	wire direction_miss = predict_taken != taken;
 	wire predict_miss = (target_miss & predict_taken) | direction_miss;
@@ -82,11 +81,10 @@ module bpf (
 	assign update_o.flush = (~stall_i & predict_miss & decode_i.wb.valid) | csr_flush_i;
 	assign update_o.br_taken = taken;
 	assign update_o.pc = pc_i[31:2];
-	// 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
 	assign update_o.br_target = csr_flush_i ? csr_target_i : 
-								(pc_i[2] == '0 && taken == '0 && predict_taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} : 
-								target[31:0];
-
+								(pc_i[2] == '0 && taken == '0 && predict_taken == '1) ? {pc_i[31:2] + 30'd1, 2'b00} :  // 如果第一条(pc[2] == 0)指令被误判为跳转，修复的目标为pc+4
+								target;
+	// btb update
 	assign update_o.btb_update = (branch_type_i != `_BRANCH_INVALID) & ~stall_i;
 	always_comb begin : proc_br_type
 		if ((branch_type_i == `_BRANCH_INDIRECT && rd_index_i == 1) || decode_i.ex.branch_link) begin
@@ -99,10 +97,11 @@ module bpf (
 			update_o.br_type = `_PC_RELATIVE;
 		end
 	end
-
+	// pht update
 	assign update_o.lpht_update = (branch_type_i != `_BRANCH_INVALID) & ~stall_i;
 	assign update_o.lphr = predict_i.lphr;
 	assign update_o.lphr_index = pc_i[`_LPHT_ADDR_WIDTH + 2:2];
+	// ras update
 	assign update_o.ras_ptr = update_o.br_type == `_CALL ?  predict_i.ras_ptr + 1 : 
 							  update_o.br_type == `_RETURN ? predict_i.ras_ptr - 1 :
 							  predict_i.ras_ptr;
@@ -110,7 +109,7 @@ module bpf (
 								   update_o.br_type == `_RETURN && predict_i.br_type != `_RETURN ? 'd1 :
 								   update_o.flush) & {2{~stall_i}};
 
-	// summary
+	// debug
 	// int total = 0;
 	// int miss = 0;
 	// always_ff @(posedge clk) begin

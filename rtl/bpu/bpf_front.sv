@@ -27,21 +27,28 @@ module bpf_front (
 	output [1:0] valid_o
 );
 
-	wire fst_miss = predict0_i.taken && predict0_i.fsc == pc0_i[2] && decode_i[0].ex.branch_type == `_BRANCH_INVALID && valid_i[0];
-	wire sec_miss = predict1_i.taken && predict1_i.fsc == pc1_i[2] && decode_i[1].ex.branch_type == `_BRANCH_INVALID && valid_i[1];
+	wire fst_miss = predict0_i.taken && (predict0_i.fsc == pc0_i[2]) && (decode_i[0].ex.branch_type == `_BRANCH_INVALID) && valid_i[0];
+	wire sec_miss = predict1_i.taken && (predict1_i.fsc == pc1_i[2]) && (decode_i[1].ex.branch_type == `_BRANCH_INVALID) && valid_i[1];
+
+	// debug
+	// always_ff @(posedge clk or negedge rst_n) begin
+	// 	if (fst_miss) begin
+	// 		$display("front fst_miss: pc0_i: %x", pc0_i);
+	// 		$display("predict_i: lpht: %d, npc: %x, taken: %d, br_type: %d, fsc: %d", predict0_i.lphr, {predict0_i.npc, 2'd0}, predict0_i.taken, predict0_i.br_type, predict0_i.fsc);
+	// 	end
+	// end
 
 	assign update_o.flush = (fst_miss | sec_miss) & fifo_ready_i;
 	assign update_o.pc = fst_miss ? pc0_i[31:2] : pc1_i[31:2];
-	assign update_o.br_target = fst_miss ? pc0_i + 4 : pc1_i + 4;
-	assign update_o.lphr = fst_miss ? predict0_i.lphr : predict1_i;
+	assign update_o.br_target = fst_miss ? pc0_i + 'd4 : pc1_i + 'd4;
+	assign update_o.lphr = '0;
 	assign update_o.lphr_index = fst_miss ? pc0_i[`_LPHT_ADDR_WIDTH + 2:2] : pc1_i[`_LPHT_ADDR_WIDTH + 2:2];
 	assign update_o.br_taken = 1'b0;
 	assign update_o.br_type = `_PC_RELATIVE;
 	assign update_o.btb_update = update_o.flush;
 	assign update_o.lpht_update = update_o.flush;
-	assign update_o.ras_ptr = fst_miss ? predict0_i.ras_ptr : predict1_i.ras_ptr;
 	assign update_o.ras_redirect = update_o.flush;
-
+	assign update_o.ras_ptr = fst_miss ? predict0_i.ras_ptr : predict1_i.ras_ptr;
 
 	always_comb begin
 		predict_o[0] = predict0_i;
