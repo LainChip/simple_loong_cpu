@@ -15,7 +15,7 @@
 module bpf_front (
 	input clk,    // Clock
 	input rst_n,  // Asynchronous reset active low
-	input fifo_ready_i,
+	input [1:0] fifo_ready_i,
 	input [31:0] pc0_i,
 	input [31:0] pc1_i,
 	input [1:0] valid_i,
@@ -38,7 +38,8 @@ module bpf_front (
 	// 	end
 	// end
 
-	assign update_o.flush = (fst_miss | sec_miss) & fifo_ready_i;
+	// assign update_o.flush = (fst_miss | sec_miss) & fifo_ready_i;
+	assign update_o.flush = |({sec_miss, fst_miss} & fifo_ready_i);
 	assign update_o.pc = fst_miss ? pc0_i[31:2] : pc1_i[31:2];
 	assign update_o.br_target = fst_miss ? pc0_i + 'd4 : pc1_i + 'd4;
 	assign update_o.lphr = '0;

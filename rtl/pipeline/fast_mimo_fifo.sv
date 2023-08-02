@@ -23,20 +23,22 @@ module fast_mimo_fifo #(
 
 assign write_ready_o = 1'b1;
 (*MAX_FANOUT=70*) dtype[1:0] read_data;
-  (*MAX_FANOUT=70*) logic[1:0] read_valid;
+(*MAX_FANOUT=70*) logic[1:0] read_valid;
+(*MAX_FANOUT=70*) logic[1:0] read_valid_q;
+assign read_valid_o = read_valid_q & {2{!flush_i}};
   always_ff @(posedge clk) begin
     if(flush_i || ~rst_n) begin
-      read_valid_o <= '0;
+      read_valid_q <= '0;
     end else begin
-      read_valid_o <= read_valid;
+      read_valid_q <= read_valid;
     end
     read_data_o <= read_data;
   end
   always_comb begin
     write_num_o      = '0;
-    read_valid = read_valid_o;
+    read_valid = read_valid_q;
     read_data  = read_data_o;
-    unique casez({read_valid_o, write_valid_i, issue_i})
+    unique casez({read_valid_q, write_valid_i, issue_i})
       // NO VALID INST YET
       6'b00???? : begin
         read_valid        = write_valid_i;

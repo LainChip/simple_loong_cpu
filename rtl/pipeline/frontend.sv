@@ -115,7 +115,8 @@ module frontend(
     decode_info_t [1:0]fifo_decode_info;
     logic [31:0] bpu_vpc,bpu_ppc,fetch_vpc,fifo_vpc;
     logic [1:0] bpu_pc_valid,fetch_pc_valid,fetch_valid;
-    logic frontend_clr, bpu_stall, bpu_stall_req,icache_ready,fetch_ready,fifo_ready;
+    logic frontend_clr, bpu_stall, bpu_stall_req,icache_ready,fetch_ready;
+    logic [1:0] fifo_ready;
 
     logic[1:0][31:0] fetch_inst,fetch_inst_fifo;
     logic[1:0][63 + $bits(bpu_predict_t) + $bits(fetch_excp_t):0] fetch_fifo_out;
@@ -214,7 +215,7 @@ module frontend(
     // FIFO 模块
     multi_channel_fifo #(
         .DATA_WIDTH(64 + $bits(bpu_predict_t) + $bits(fetch_excp_t)),
-        .DEPTH(8),
+        .DEPTH(4),
         .BANK(4),
         .WRITE_PORT(2),
         .READ_PORT(2)
@@ -305,7 +306,7 @@ module frontend(
          (issue_num_i[1] | issue_num_i[0]) & ~backend_stall_i}),
         .read_data_o(inst_o)
       );
-      assign fifo_ready = |fifo_write_num;
+      assign fifo_ready = {fifo_write_num[1], fifo_write_num[0] | fifo_write_num[1]};
     // multi_channel_fifo #(
     // ) decoded_fifo(
     //     .clk,
