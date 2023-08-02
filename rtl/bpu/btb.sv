@@ -54,6 +54,16 @@ module btb #(
     logic [31: 2] bta [1:0];
     logic [TAG_WIDTH - 1: 0] tag [1:0];
 
+    logic rst_q;
+    logic [ADDR_WIDTH - 1 : 0] rst_addr_q;
+    always_ff @(posedge clk) begin
+        rst_q <= !rst_n;
+        if(rst_n) begin
+            rst_addr_q <= '0;
+        end else begin
+            rst_addr_q <= rst_addr_q + 1;
+        end
+    end
     simpleDualPortRam #(
         .dataWidth(ENTRY_WIDTH),
         .ramSize(1 << (ADDR_WIDTH - 1)),
@@ -61,10 +71,10 @@ module btb #(
     ) inst_bank0 (
         .clk      (clk),
         .rst_n    (rst_n),
-        .addressA (index_w),
-        .we       (update_i && !wpc_i[2]),
+        .addressA (index_w ^ rst_addr_q),
+        .we       ((update_i && !wpc_i[2]) || rst_q),
         .addressB (index_r),
-        .inData   ({1'b1, tag_w, bta_i, Br_type_i}),
+        .inData   ({!rst_q, tag_w, bta_i, Br_type_i}),
         .outData  ({valid[0], tag[0], bta[0], Br_type[0]})
     );
 
@@ -75,10 +85,10 @@ module btb #(
     ) inst_bank1 (
         .clk      (clk),
         .rst_n    (rst_n),
-        .addressA (index_w),
-        .we       (update_i && wpc_i[2]),
+        .addressA (index_w ^ rst_addr_q),
+        .we       ((update_i && wpc_i[2]) || rst_q),
         .addressB (index_r),
-        .inData   ({1'b1, tag_w, bta_i, Br_type_i}),
+        .inData   ({!rst_q, tag_w, bta_i, Br_type_i}),
         .outData  ({valid[1], tag[1], bta[1], Br_type[1]})
     );
 
