@@ -290,27 +290,28 @@ module frontend(
         fifo_inst[1].fetch_excp = fetch_fifo_out[1][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
     end
 
-    multi_channel_fifo #(
-        .DATA_WIDTH($bits(inst_t)),
-        .DEPTH(2),
-        .BANK(2),
-        .WRITE_PORT(2),
-        .READ_PORT(2)
-    ) decoded_fifo(
-        .clk,
-        .rst_n,
+    // multi_channel_fifo #(
+    //     .DATA_WIDTH($bits(inst_t)),
+    //     .DEPTH(2),
+    //     .BANK(2),
+    //     .WRITE_PORT(2),
+    //     .READ_PORT(2)
+    // ) decoded_fifo(
+    //     .clk,
+    //     .rst_n,
 
-        .flush_i(frontend_clr),
+    //     .flush_i(frontend_clr),
 
-        .write_valid_i(1'b1),
-        .write_ready_o(fifo_ready),
-        .write_num_i (fifo_write_num),
-        .write_data_i(fifo_inst),
+    //     .write_valid_i(1'b1),
+    //     .write_ready_o(fifo_ready),
+    //     .write_num_i (fifo_write_num),
+    //     .write_data_i(fifo_inst),
 
-        .read_valid_o(inst_valid_o),
-        .read_ready_i(~backend_stall_i),
-        .read_num_i(issue_num_i),
-        .read_data_o(inst_o)
-    );
+    //     .read_valid_o(inst_valid_o),
+    //     .read_ready_i(~backend_stall_i),
+    //     .read_num_i(issue_num_i),
+    //     .read_data_o(inst_o)
+    // );
+    
 
 endmodule
