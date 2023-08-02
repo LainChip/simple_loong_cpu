@@ -600,7 +600,7 @@ module lsu #(
     always_comb begin
         // 正常情况时, 检查是WRITE 或是 INVALIDATE CACOP
         ram_w_tag.valid = rst_n_q;
-        ram_w_tag.dirty = 1'b1;
+        ram_w_tag.dirty = rst_n_q;
         ram_w_tag.ppn   = paddr[31:12];
         if(fsm_state == S_NORMAL) begin
             if(ctrl == C_INVALID || ctrl == C_HIT_WB || ctrl == C_INVALID_WB) begin

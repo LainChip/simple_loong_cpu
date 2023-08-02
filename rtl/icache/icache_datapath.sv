@@ -95,7 +95,7 @@ spram_256x22 sram_tag(
     .CLK(clk),
     .CEN(1'b1),
     .A(addr_i[11:4] ^ reset_addr_q),
-    .WEN(tag_we_i || !rst_n),
+    .WEN(tag_we_i || reset_we_q),
     .D(tag_i)
 );
 
