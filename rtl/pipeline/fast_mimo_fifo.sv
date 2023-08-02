@@ -66,14 +66,14 @@ assign write_ready_o = 1'b1;
       end
       6'b1?0001 : begin
         read_valid           = 2'b01;
-        read_data[0] = read_data_q[1];
+        read_data[0] = read_data_o[1];
       end
       6'b1?001? : begin
         read_valid = 2'b00;
       end
       6'b1?0101 : begin
         read_valid           = 2'b11;
-        read_data[0] = read_data_q[1];
+        read_data[0] = read_data_o[1];
         read_data[1] = write_data_i[0];
         write_num_o          = 1;
       end
@@ -84,7 +84,7 @@ assign write_ready_o = 1'b1;
       end
       6'b1?1?01 : begin
         read_valid           = 2'b11;
-        read_data[0] = read_data_q[1];
+        read_data[0] = read_data_o[1];
         read_data[1] = write_data_i[0];
         write_num_o          = 1;
       end

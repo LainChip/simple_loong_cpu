@@ -275,7 +275,7 @@ module frontend(
     );
 
     always_comb begin
-        fifo_write_num = {bpf_front_valid[0] & bpf_front_valid[1], bpf_front_valid[0] ^ bpf_front_valid[1]};
+        // fifo_write_num = {bpf_front_valid[0] & bpf_front_valid[1], bpf_front_valid[0] ^ bpf_front_valid[1]};
         fifo_inst[0].bpu_predict = bpf_front_predict[0]; // fetch_fifo_out[0][63+$bits(bpu_predict_t):64];
         fifo_inst[0].decode_info = fifo_decode_info[0];
         fifo_inst[0].pc = fetch_fifo_out[0][63:32];
@@ -290,12 +290,23 @@ module frontend(
         fifo_inst[1].fetch_excp = fetch_fifo_out[1][63+$bits(bpu_predict_t)+$bits(fetch_excp_t):64+$bits(bpu_predict_t)];
     end
 
+    fast_mimo_fifo # (
+        .DATA_WIDTH($bits(inst_t))
+      )
+      fast_mimo_fifo_inst (
+        .clk(clk),
+        .rst_n(rst_n),
+        .flush_i(frontend_clr),
+        .write_valid_i(bpf_front_valid),
+        .write_num_o(fifo_write_num),
+        .write_data_i(fifo_inst),
+        .read_valid_o(inst_valid_o),
+        .issue_i({issue_num_i[1] & ~backend_stall_i,
+         (issue_num_i[1] | issue_num_i[0]) & ~backend_stall_i}),
+        .read_data_o(inst_o)
+      );
+      assign fifo_ready = |fifo_write_num;
     // multi_channel_fifo #(
-    //     .DATA_WIDTH($bits(inst_t)),
-    //     .DEPTH(2),
-    //     .BANK(2),
-    //     .WRITE_PORT(2),
-    //     .READ_PORT(2)
     // ) decoded_fifo(
     //     .clk,
     //     .rst_n,
