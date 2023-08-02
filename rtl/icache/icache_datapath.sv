@@ -74,15 +74,29 @@ spram_256x32 sram_block_11(
     .WEN(data_we_i & addr_i[3] & addr_i[2]), // 输入写使能
     .D(data_i)    // 输入数据
 );
+logic[7:0] reset_addr_q;
+logic reset_we_q;
+// if(need_reset) begin
+    always_ff @(posedge clk) begin
+        if(!rst_n) begin
+            reset_addr_q <= reset_addr_q + 1;
+            reset_we_q <= '1;
+        end else begin
+            reset_addr_q <= '0;
+            reset_we_q <= '0;
+        end
+    end
+// else begin
+
+// end
 
 spram_256x22 sram_tag(
     .Q(tag_o),
     .CLK(clk),
     .CEN(1'b1),
-    .A(addr_i[11:4]),
-    .WEN(tag_we_i),
+    .A(addr_i[11:4] ^ reset_addr_q),
+    .WEN(tag_we_i || !rst_n),
     .D(tag_i)
 );
-
 
 endmodule

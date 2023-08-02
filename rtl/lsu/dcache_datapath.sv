@@ -33,6 +33,21 @@ module dcache_datapath(
 	    .outData(data_o)
     );
 
+logic[7:0] reset_addr_q;
+logic reset_we_q;
+// if(need_reset) begin
+    always_ff @(posedge clk) begin
+        if(!rst_n) begin
+            reset_addr_q <= reset_addr_q + 1;
+            reset_we_q <= '1;
+        end else begin
+            reset_addr_q <= '0;
+            reset_we_q <= '0;
+        end
+    end
+// else begin
+
+// end
     simpleDualPortRam #(
         .dataWidth(22),
         .ramSize(256),
@@ -41,8 +56,8 @@ module dcache_datapath(
     ) tag_ram (
         .clk,
         .rst_n,
-        .addressA(w_addr_i[11:4]),
-        .we(tag_we_i),
+        .addressA(w_addr_i[11:4] ^ reset_addr_q),
+        .we(tag_we_i || reset_we_q),
         .addressB(r_addr_i[11:4]),
         .inData(tag_i),
         .outData(tag_o)
