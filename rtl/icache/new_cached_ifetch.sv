@@ -441,9 +441,13 @@ module icache #(
     end
 
     // ram_w_tag 逻辑 TODO: check
+    logic rst_valid_q;
+    always_ff @(posedge clk) begin
+        rst_valid_q <= rst_n;
+    end
     always_comb begin
         // 正常情况时, 检查是否是 INVALIDATE CACOP 或者 REFILL
-        ram_w_tag.valid = 1'b1;
+        ram_w_tag.valid = rst_valid_q /* if reset is needed */;
         ram_w_tag.ppn   = paddr[31:12];
         if(fsm_state == S_SYNC) begin
             ram_w_tag.valid = 1'b0;

@@ -593,9 +593,13 @@ module lsu #(
     end
 
     // ram_w_tag 逻辑 TODO: check
+    logic rst_n_q;
+    always_ff @(posedge clk) begin
+        rst_n_q <= rst_n;
+    end
     always_comb begin
         // 正常情况时, 检查是WRITE 或是 INVALIDATE CACOP
-        ram_w_tag.valid = 1'b1;
+        ram_w_tag.valid = rst_n_q;
         ram_w_tag.dirty = 1'b1;
         ram_w_tag.ppn   = paddr[31:12];
         if(fsm_state == S_NORMAL) begin
