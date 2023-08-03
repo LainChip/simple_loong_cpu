@@ -5,6 +5,7 @@ module mmu #(
     parameter TLB_ENTRY_NUM = `_TLB_ENTRY_NUM,
     parameter TLB_PORT = 2,
     parameter bit LFSR_RAND = 1'b0,
+    parameter bit ENABLE_TLB = 1'b1,
 
     // DO NOT CHANGE
     parameter INDEX_LEN = $clog2(TLB_ENTRY_NUM)
@@ -126,7 +127,8 @@ assign da_mode = csr_da_i && !csr_pg_i;
 
 tlb #(
     .TLB_ENTRY_NUM(TLB_ENTRY_NUM),
-    .TLB_PORT(TLB_PORT)
+    .TLB_PORT(TLB_PORT),
+    .ENABLE_TLB(ENABLE_TLB)
 )tlb(
     .clk(clk),
     .s_req_i(tlb_s_req),

@@ -134,7 +134,8 @@ backend backend(
 
 // MMU
 mmu #(
-	.TLB_PORT(2)
+	.TLB_PORT(2),
+	.ENABLE_TLB(1'b0)
 ) mmu(
 	.clk(clk),
 	.rst_n(rst_n),

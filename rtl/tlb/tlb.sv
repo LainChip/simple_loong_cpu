@@ -6,7 +6,8 @@
 
 module tlb #(
     parameter int TLB_ENTRY_NUM = `_TLB_ENTRY_NUM,
-    parameter int TLB_PORT = `_TLB_PORT
+    parameter int TLB_PORT = `_TLB_PORT,
+    parameter bit ENABLE_TLB = 1'b1
 )
 (
     input                                       clk         ,
@@ -28,6 +29,7 @@ tlb_entry_t [TLB_ENTRY_NUM-1 : 0] tlb_entry;
 
 //search
 generate
+    if(ENABLE_TLB) begin
     for(genvar i = 0; i < TLB_PORT; ++i) begin
         tlb_lookup #(
             .TLB_ENTRY_NUM(TLB_ENTRY_NUM)
@@ -36,6 +38,9 @@ generate
             .req_i(s_req_i[i]),
             .resp_o(s_resp_o[i])
         );
+    end
+    end else begin
+        assign s_resp_o = '0;
     end
 endgenerate
 
